@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.js": "javascriptreact",
+        "avcodec.h": "c",
+        "codec.h": "c",
+        "codec_id.h": "c"
+    }
+}
