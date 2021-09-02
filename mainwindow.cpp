@@ -6,10 +6,10 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setMouseTracking(true);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
-
