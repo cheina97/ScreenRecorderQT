@@ -43,7 +43,7 @@ AVCodec *pAVCodec;
 AVCodecContext *pAVCodecContext;
 int VideoStreamIndx;
 
-void openCamera(int display_number, int screen_number, int offset_x, int offset_y) {
+void openCamera(int display_number, int screen_number, int offset_x, int offset_y, int width, int height) {
     string url = ":" + to_string(display_number) + "." + to_string(screen_number) + "+" + to_string(offset_x) + "," + to_string(offset_y);
     // esempio =>  :1.0+10,250"
     int value = 0;
@@ -57,10 +57,18 @@ refer : https://www.ffmpeg.org/ffmpeg-devices.html#x11grab
 */
     /* current below is for screen recording. to connect with camera use v4l2 as a input parameter for av_find_input_format */
     pAVInputFormat = av_find_input_format("x11grab");
+
+    /* setting up the video size (how big are the frames captured, width x height)*/
+    value = av_dict_set(&options, "video_size", (to_string(width)+"x"+to_string(height)).c_str(), 0);
+    if (value < 0) {
+        printf("\nerror in setting video_size");
+        exit(1);
+    }
+
     //X11 sintex: :display_number.screen_number[+x_offset,y_offset]
     //display_number -> x11 server port
     //screen_number -> real screen number (in case of an extended screen setup gnome and maybe other de/wm see the group of screen as only one screen)
-    value = avformat_open_input(&pAVFormatContext, url.c_str(), pAVInputFormat, NULL);
+    value = avformat_open_input(&pAVFormatContext, url.c_str(), pAVInputFormat, &options);
     if (value != 0) {
         printf("\nerror in opening input device, errore %d", value);
         exit(1);
@@ -119,15 +127,17 @@ refer : https://www.ffmpeg.org/ffmpeg-devices.html#x11grab
     if (value < 0) {
         printf("\nunable to open the av codec");
         exit(1);
-    } 
+    }
 }
 
 int main(int argc, char const *argv[]) {
     avdevice_register_all();
 
     //open camera
-    openCamera(1,0,0,0);
-     printf("Open Camera ok!\n");
+    openCamera(1, 0, 10, 10, 200, 200);
+    printf("Open Camera ok!\n");
+    ////
+
     //init_outputfile
 
     return 0;

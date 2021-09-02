@@ -248,7 +248,7 @@ refer : https://www.ffmpeg.org/ffmpeg-devices.html#x11grab
 /* initialize the video output file and its properties  */
 int ScreenRecorder::init_outputfile()
 {
-	outAVFormatContext = NULL;
+	outAVFormatContext = NULL; //media file handle
 	value = 0;
 	output_file = "../media/output.mp4";
 
@@ -260,6 +260,7 @@ int ScreenRecorder::init_outputfile()
 	}
 
 /* Returns the output format in the list of registered output formats which best matches the provided parameters, or returns NULL if there is no match. */
+	//FIXME => output_format mai utilizzato. forse da eliminare
 	output_format = av_guess_format(NULL, output_file ,NULL);
 	if( !output_format )
 	{
@@ -294,6 +295,8 @@ int ScreenRecorder::init_outputfile()
 	outAVCodecContext->time_base.num = 1;
 	outAVCodecContext->time_base.den = 30; // 15fps
 
+
+	// FIXME => codec_id mai settato. forse da eliminare
 	if (codec_id == AV_CODEC_ID_H264)
 	{
 	 av_opt_set(outAVCodecContext->priv_data, "preset", "slow", 0);
