@@ -1,18 +1,24 @@
+//TODO : passare da NULL a nullptr
 #include <iostream>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
+#include <libavformat/avio.h>
 #include <libswscale/swscale.h>
 }
 
 using namespace std;
 
-AVFormatContext *pFormatCtx;
-AVCodecContext *pCodecCtx;
+//Inizializzate in initDataStructures
+AVFormatContext *pFormatCtx;  //contiene lo stream del desktop
+AVCodecContext *pCodecCtx;    // codec dello stream che arriva dal desktop
 AVCodec *pCodec;
-AVDictionary *options = NULL;
+AVDictionary *options = NULL;  //opzioni con cui viene aperto xgrab11
+
+//Serve da setupOutput in poi
+AVStream *video_st;
 
 typedef struct {
     int screen_number;
@@ -83,6 +89,31 @@ void initDataStructures(X11_GrabParameters x11gp) {
     cout << "Data structures inited" << endl;
 }
 
+void setupOutput(string outFileName) {
+    pFormatCtx->oformat = av_guess_format(NULL, outFileName.c_str(), NULL);
+    if (avio_open(&pFormatCtx->pb, outFileName.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
+        printf("Failed to open output file! \n");
+        exit(-1);
+    }
+    video_st = avformat_new_stream(pFormatCtx, 0);
+    if (video_st == NULL) {
+        exit(-1);
+    }
+
+    //pCodecCtx = video_st->codec;
+    //pCodecCtx->codec_id =AV_CODEC_ID_HEVC;
+    pCodecCtx->codec_id = pFormatCtx->oformat->video_codec;
+    pCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
+    pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    //pCodecCtx->width = in_w;
+    //pCodecCtx->height = in_h;
+    pCodecCtx->bit_rate = 400000;
+    pCodecCtx->gop_size = 250;
+
+    pCodecCtx->time_base.num = 1;
+    pCodecCtx->time_base.den = 30;
+}
+
 int main(int argc, char const *argv[]) {
     X11_GrabParameters x11gp;
     x11gp.screen_number = 0;
@@ -91,5 +122,19 @@ int main(int argc, char const *argv[]) {
     x11gp.height = 1080;
     x11gp.width = 1920;
     initDataStructures(x11gp);
+    setupOutput("output.mp4");
+    
+    cout << "Stampa parametri pCodecCtx" << endl
+         << "pCodecCtx->codec_id: " << pCodecCtx->codec_id << endl
+         << "pCodecCtx->codec_type: " << pCodecCtx->codec_type << endl
+         << "pCodecCtx->pix_fmt: " << pCodecCtx->pix_fmt << endl
+         << "pCodecCtx->width: " << pCodecCtx->width << endl
+         << "pCodecCtx->height: " << pCodecCtx->height << endl
+         << "pCodecCtx->bit_rate: " << pCodecCtx->bit_rate << endl
+         << "pCodecCtx->gop_size: " << pCodecCtx->gop_size << endl
+         << "pCodecCtx->time_base.num: " << pCodecCtx->time_base.num << endl
+         << "pCodecCtx->time_base.den: " << pCodecCtx->time_base.den << endl;
+
+
     return 0;
 }
