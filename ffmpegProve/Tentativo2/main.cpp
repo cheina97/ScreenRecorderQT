@@ -69,6 +69,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
 
     av_dict_set(&avRawOptions, "video_size", (to_string(x11pmt.width) + "*" + to_string(x11pmt.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", "30", 0);
+    av_dict_set(&avRawOptions, "probesize", "30M", 0);
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
     if (avInputFmt == NULL) {
@@ -80,6 +81,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
         printf("Couldn't open input stream.\n");
         exit(-1);
     }
+
 
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0) {
         printf("Couldn't find stream information.\n");
@@ -111,6 +113,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
         printf("Could not open decodec . \n");
         exit(-1);
     }
+
 
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
@@ -228,12 +231,12 @@ void captureStart(int frameNumber) {
 
 int main(int argc, char const *argv[]) {
     X11parameters x11pmt;
-    x11pmt.width = 900;
-    x11pmt.height = 500;
+    x11pmt.width = 1920;
+    x11pmt.height = 1080;
     x11pmt.offset_x = 0;
     x11pmt.offset_y = 0;
     x11pmt.screen_number = 0;
-    initScreenSource(x11pmt, false);
-    captureStart(30 * 10);
+    initScreenSource(x11pmt, true);
+    captureStart(30*10);
     return 0;
 }
