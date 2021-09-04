@@ -1,4 +1,8 @@
+#include <iostream>
+
 extern "C" {
+#include <X11/Xlib.h>
+
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
 #include "libavformat/avformat.h"
@@ -8,59 +12,78 @@ extern "C" {
 #include "unistd.h"
 }
 
-unsigned int width = 1920;
-unsigned int height = 1080;
+using namespace std;
 
-static pthread_t thrId;
-static void *handleStreamThreadFunc(void *);
+AVFormatContext *avFmtCtx = NULL;
+AVCodecContext *avRawCodecCtx = NULL;
+AVCodecContext *avEncoderCtx;
+AVDictionary *avRawOptions = NULL;
+AVCodec *avDecodec = NULL;
+AVCodec *avEncodec = NULL;
+struct SwsContext *swsCtx = NULL;
+AVPacket *avRawPkt = NULL;
+int videoIndex = -1;
+AVFrame *avYUVFrame = NULL;
+int width;
+int height;
 
-static AVFormatContext *avFmtCtx = NULL;
-static AVCodecContext *avRawCodecCtx = NULL;
-static AVCodecContext *avEncoderCtx;
-static AVDictionary *avRawOptions = NULL;
-static AVCodec *avDecodec = NULL;
-static AVCodec *avEncodec = NULL;
-static struct SwsContext *swsCtx = NULL;
-static AVPacket *avRawPkt = NULL;
-static int videoIndex = -1;
-static AVFrame *avYUVFrame = NULL;
+typedef struct {
+    int width;
+    int height;
+    int offset_x;
+    int offset_y;
+    int screen_number;
+} X11parameters;
 
-int main(int argc, char **argv) {
-    //av_register_all();
+void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     avdevice_register_all();
 
     avFmtCtx = avformat_alloc_context();
     avRawPkt = (AVPacket *)malloc(sizeof(AVPacket));
     char *displayName = getenv("DISPLAY");
-    /* Display * display = XOpenDisplay(displayName); 
-    int screenNum = DefaultScreen(display);
-    width = DisplayWidth(display, screenNum);
-    height = DisplayHeight(display, screenNum);
+
+    if (fullscreen) {
+        x11pmt.offset_x = 0;
+        x11pmt.offset_y = 0;
+        Display *display = XOpenDisplay(displayName);
+        int screenNum = DefaultScreen(display);
+        width = DisplayWidth(display, screenNum);
+        height = DisplayHeight(display, screenNum);
+        x11pmt.width = width;
+        x11pmt.height = height;
+        XCloseDisplay(display);
+    } else {
+        height = x11pmt.height;
+        width = x11pmt.width;
+    }
+    
     if (width % 32 != 0) {
         width = width / 32 * 32;
     }
     if (height % 2 != 0) {
         height = height / 2 * 2;
     }
-    XCloseDisplay(display); */
-    char val[255];
-    sprintf(val, "%d*%d", width, height);
-    av_dict_set(&avRawOptions, "video_size", val, 0);
-    av_dict_set(&avRawOptions, "framerate", "15", 0);
 
+    x11pmt.height = height;
+    x11pmt.width = width;
+
+    av_dict_set(&avRawOptions, "video_size", (to_string(x11pmt.width) + "*" + to_string(x11pmt.height)).c_str(), 0);
+    av_dict_set(&avRawOptions, "framerate", "30", 0);
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
+
     if (avInputFmt == NULL) {
         printf("av_find_input_format not found......\n");
-        return 0;
+        exit(-1);
     }
 
-    if (avformat_open_input(&avFmtCtx, ":1.0+0,0", avInputFmt, &avRawOptions) != 0) {
+    if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(x11pmt.screen_number) + "+" + to_string(x11pmt.offset_x) + "," + to_string(x11pmt.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0) {
         printf("Couldn't open input stream.\n");
-        return 0;
+        exit(-1);
     }
+
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0) {
         printf("Couldn't find stream information.\n");
-        return 0;
+        exit(-1);
     }
 
     for (int i = 0; i < avFmtCtx->nb_streams; ++i) {
@@ -72,7 +95,7 @@ int main(int argc, char **argv) {
 
     if (videoIndex == -1 || videoIndex >= avFmtCtx->nb_streams) {
         printf("Didn't find a video stream.\n");
-        return 0;
+        exit(-1);
     }
 
     //deprecato: avRawCodecCtx = avFmtCtx->streams[videoIndex]->codecpar;
@@ -82,11 +105,11 @@ int main(int argc, char **argv) {
     avDecodec = avcodec_find_decoder(avRawCodecCtx->codec_id);
     if (avDecodec == NULL) {
         printf("Codec not found.\n");
-        return 0;
+        exit(-1);
     }
     if (avcodec_open2(avRawCodecCtx, avDecodec, NULL) < 0) {
         printf("Could not open decodec . \n");
-        return 0;
+        exit(-1);
     }
 
     swsCtx = sws_getContext(avRawCodecCtx->width,
@@ -112,7 +135,7 @@ int main(int argc, char **argv) {
     avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
     if (!avEncodec) {
         printf("h264 codec not found\n");
-        return 0;
+        exit(-1);
     }
 
     avEncoderCtx = avcodec_alloc_context3(avEncodec);
@@ -120,10 +143,10 @@ int main(int argc, char **argv) {
     avEncoderCtx->codec_id = AV_CODEC_ID_H264;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-    avEncoderCtx->width = width;
-    avEncoderCtx->height = height;
+    avEncoderCtx->width = x11pmt.width;
+    avEncoderCtx->height = x11pmt.height;
     avEncoderCtx->time_base.num = 1;
-    avEncoderCtx->time_base.den = 15;
+    avEncoderCtx->time_base.den = 30;
     avEncoderCtx->bit_rate = 128 * 1024 * 8;
     avEncoderCtx->gop_size = 250;
     avEncoderCtx->qmin = 1;
@@ -137,26 +160,16 @@ int main(int argc, char **argv) {
 
     if (avcodec_open2(avEncoderCtx, avEncodec, &param) < 0) {
         printf("Failed to open video encoder!\n");
-        return 0;
+        exit(-1);
     }
+}
 
+void captureStart(int frameNumber) {
     int got_picture = 0;
     int ret = 0;
     int flag = 0;
     int bufLen = 0;
     uint8_t *outBuf = NULL;
-    /* int sock = -1;
-	struct sockaddr_in toAddr;
-	sock = socket(AF_INET, SOCK_DGRAM, 0);;
-	if(sock < 0){
- 		printf("failed create socket\r\n");
- 		return 0;
-	}
-
-	memset(&toAddr, 0, sizeof(toAddr));	
-	toAddr.sin_family = AF_INET;
-	toAddr.sin_addr.s_addr = inet_addr("192.168.1.100");
-	toAddr.sin_port = htons(9000); */
 
     bufLen = width * height * 3;
     outBuf = (uint8_t *)malloc(bufLen);
@@ -174,7 +187,8 @@ int main(int argc, char **argv) {
     unsigned int pkSn = 0;
     FILE *h264Fp = fopen("out.264", "wb");
 
-    while (1) {
+    int i = 0;
+    while (i < frameNumber) {
         if (av_read_frame(avFmtCtx, avRawPkt) >= 0) {
             if (avRawPkt->stream_index == videoIndex) {
                 //Inizio DECODING
@@ -199,21 +213,7 @@ int main(int argc, char **argv) {
                     if (flag >= 0) {
                         if (got_picture == 0) {
                             int w = fwrite(pkt.data, 1, pkt.size, h264Fp);
-                            /* int len = pkt.size;
-                            char* data = (char*)pkt.data;
-                            while(len / PACKSIZE) {
-                                ret = sendto(sock, data, PACKSIZE, 0, (struct sockaddr *)&toAddr, sizeof(toAddr));
-                                if(ret == -1) {
-                                   printf("send udp data failed \n");
-                                } else {
-                                    data += PACKSIZE;
-                                    len -= PACKSIZE;
-                                }
-				                usleep(1000*10);
-                            }
-                            if(len > 0) {
-                                ret = sendto(sock, data, len, 0, (struct sockaddr *)&toAddr, sizeof(toAddr));
-                            } */
+                            cout << "Captured " << ++i << " frames" << endl;
                         }
                     }
                     av_packet_unref(&pkt);
@@ -221,7 +221,19 @@ int main(int argc, char **argv) {
                 }
             }
         }
-        usleep(1000 * 500);
     }
+    fclose(h264Fp);
+    cout << "Finished" << endl;
+}
+
+int main(int argc, char const *argv[]) {
+    X11parameters x11pmt;
+    x11pmt.width = 900;
+    x11pmt.height = 500;
+    x11pmt.offset_x = 0;
+    x11pmt.offset_y = 0;
+    x11pmt.screen_number = 0;
+    initScreenSource(x11pmt, false);
+    captureStart(30 * 10);
     return 0;
 }
