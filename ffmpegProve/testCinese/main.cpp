@@ -141,6 +141,9 @@ void setupOutput(string outFileName) {
     av_new_packet(&pkt, picture_size);
 
     for (int i = 0; i < framenum; i++) {
+
+        //Decode
+        // deprecata : int ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture, packet);
         int ret = av_read_frame(pFormatCtx, &pkt);
 
         if (ret < 0) {
@@ -170,8 +173,7 @@ void setupOutput(string outFileName) {
         //pFrame->pts=i;
         pFrame->pts = i * (video_st->time_base.den) / ((video_st->time_base.num) * 30);
         cout << "qui ci sono" << endl;
-        //Decode
-        // deprecata : int ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture, packet);
+        
 
         //Encode
         // deprecata: int ret = avcodec_encode_video2(pCodecCtx, &pkt, pFrame, &got_picture);

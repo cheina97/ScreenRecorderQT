@@ -136,7 +136,7 @@ cin>>no_frames;
 					printf("Write frame %3d (size= %2d)\n", j++, outPacket.size/1000);
 					if(av_write_frame(outAVFormatContext , &outPacket) != 0)
 					{
-						cout<<"\nerror in writing video frame";
+						cout<<"error in writing video frame";
 					}
 
 				av_packet_unref(&outPacket);
