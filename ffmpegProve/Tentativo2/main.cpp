@@ -18,6 +18,14 @@ extern "C" {
 
 using namespace std;
 
+typedef struct {
+    int width;
+    int height;
+    int offset_x;
+    int offset_y;
+    int screen_number;
+} X11parameters;
+
 //speed measures
 int readframe_clock = 0;
 int readframe_clock_start = 0;
@@ -42,16 +50,7 @@ struct SwsContext *swsCtx = NULL;
 queue<AVPacket *> avRawPkt_queue;
 int videoIndex = -1;
 AVFrame *avYUVFrame = NULL;
-int width;
-int height;
-
-typedef struct {
-    int width;
-    int height;
-    int offset_x;
-    int offset_y;
-    int screen_number;
-} X11parameters;
+X11parameters x11pmt;
 
 void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     avdevice_register_all();
@@ -64,25 +63,17 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
         x11pmt.offset_y = 0;
         Display *display = XOpenDisplay(displayName);
         int screenNum = DefaultScreen(display);
-        width = DisplayWidth(display, screenNum);
-        height = DisplayHeight(display, screenNum);
-        x11pmt.width = width;
-        x11pmt.height = height;
+        x11pmt.width = DisplayWidth(display, screenNum);
+        x11pmt.height = DisplayHeight(display, screenNum);
         XCloseDisplay(display);
-    } else {
-        height = x11pmt.height;
-        width = x11pmt.width;
     }
 
-    if (width % 32 != 0) {
-        width = width / 32 * 32;
+    if (x11pmt.width % 32 != 0) {
+        x11pmt.width = x11pmt.width / 32 * 32;
     }
-    if (height % 2 != 0) {
-        height = height / 2 * 2;
+    if (x11pmt.height % 2 != 0) {
+        x11pmt.height = x11pmt.height / 2 * 2;
     }
-
-    x11pmt.height = height;
-    x11pmt.width = width;
 
     av_dict_set(&avRawOptions, "video_size", (to_string(x11pmt.width) + "*" + to_string(x11pmt.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", "30", 0);
@@ -203,6 +194,7 @@ void getRawPackets(int frameNumber) {
         } else {
             //cout << "Captured " << avRawPkt_queue.size() << " raw packets" << endl;
         }
+        //av_packet_unref(avRawPkt);
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
@@ -220,7 +212,7 @@ void decodeAndEncode(void) {
     int bufLen = 0;
     uint8_t *outBuf = NULL;
 
-    bufLen = width * height * 3;
+    bufLen = x11pmt.width * x11pmt.height * 3;
     outBuf = (uint8_t *)malloc(bufLen);
 
     AVFrame *avOutFrame;
@@ -229,6 +221,7 @@ void decodeAndEncode(void) {
 
     av_image_fill_arrays(avOutFrame->data, avOutFrame->linesize, (uint8_t *)outBuf, avEncoderCtx->pix_fmt, avEncoderCtx->width, avEncoderCtx->height, 1);
 
+    //TODO SERVE DAVVERO?
     AVPacket pkt;  // 用来存储编码后数据
     memset(&pkt, 0, sizeof(AVPacket));
     av_init_packet(&pkt);
@@ -236,7 +229,7 @@ void decodeAndEncode(void) {
     FILE *h264Fp = fopen("out.264", "wb");
 
     AVPacket *avRawPkt;
-    int i = 0;
+    //int i = 0;
     while (!avRawPkt_queue.empty()) {
         //cout << "Remaining " << avRawPkt_queue.size() << " frames" << endl;
         avRawPkt = avRawPkt_queue.front();
@@ -291,14 +284,13 @@ void decodeAndEncode(void) {
 }
 
 int main(int argc, char const *argv[]) {
-    X11parameters x11pmt;
     x11pmt.width = 300;
     x11pmt.height = 400;
     x11pmt.offset_x = 0;
     x11pmt.offset_y = 0;
     x11pmt.screen_number = 0;
-    initScreenSource(x11pmt, false);
-    getRawPackets(30*60*30);
+    initScreenSource(x11pmt, true);
+    getRawPackets(30 * 600);
     //decodeAndEncode();
 
     cout << "Finished" << endl
