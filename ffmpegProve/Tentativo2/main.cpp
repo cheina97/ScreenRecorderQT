@@ -1,4 +1,7 @@
+#include <time.h>
+
 #include <iostream>
+#include <queue>
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -56,7 +59,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
         height = x11pmt.height;
         width = x11pmt.width;
     }
-    
+
     if (width % 32 != 0) {
         width = width / 32 * 32;
     }
@@ -81,7 +84,6 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
         printf("Couldn't open input stream.\n");
         exit(-1);
     }
-
 
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0) {
         printf("Couldn't find stream information.\n");
@@ -113,7 +115,6 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
         printf("Could not open decodec . \n");
         exit(-1);
     }
-
 
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
@@ -190,18 +191,35 @@ void captureStart(int frameNumber) {
     unsigned int pkSn = 0;
     FILE *h264Fp = fopen("out.264", "wb");
 
+    int start_clock = clock();
+    int readframe_clock = 0;
+    int readframe_clock_start = 0;
+    int readframe_clock_end = 0;
+    int decode_clock = 0;
+    int decode_clock_start = 0;
+    int decode_clock_end = 0;
+    int encode_clock = 0;
+    int encode_clock_start = 0;
+    int encode_clock_end = 0;
+
     int i = 0;
     while (i < frameNumber) {
+        readframe_clock_start = clock();
         if (av_read_frame(avFmtCtx, avRawPkt) >= 0) {
+            readframe_clock_end = clock();
+            readframe_clock += (readframe_clock_end - readframe_clock_start);
             if (avRawPkt->stream_index == videoIndex) {
                 //Inizio DECODING
                 //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
+                decode_clock_start = clock();
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
                 if (flag < 0) {
-                    printf("Errore Decoding part1");
+                    printf("Errore Decoding");
                     break;
                 }
                 got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
+                decode_clock_end = clock();
+                decode_clock += (decode_clock_end - decode_clock_start);
                 //Fine DECODING
                 if (got_picture == 0) {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
@@ -209,8 +227,11 @@ void captureStart(int frameNumber) {
                     got_picture = -1;  //forse non serve
                     //Inizio ENCODING
                     //deprecato: flag = avcodec_encode_video2(avEncoderCtx, &pkt, avYUVFrame, &got_picture);
+                    encode_clock_start = clock();
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
                     got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
+                    encode_clock_end = clock();
+                    encode_clock += (encode_clock_end - encode_clock_start);
                     //Fine ENCODING
 
                     if (flag >= 0) {
@@ -226,17 +247,22 @@ void captureStart(int frameNumber) {
         }
     }
     fclose(h264Fp);
-    cout << "Finished" << endl;
+    cout << "Finished" << endl
+         << endl;
+    int total_clock = readframe_clock + encode_clock + decode_clock;
+    cout << "ReadFrame clock: " << readframe_clock << " " << (float)100 * readframe_clock / total_clock << "%" << endl;
+    cout << "Decode clock: " << decode_clock << " " << (float)100 * decode_clock / total_clock << "%" << endl;
+    cout << "Encode clock: " << encode_clock << " " << (float)100 * encode_clock / total_clock << "%" << endl;
 }
 
 int main(int argc, char const *argv[]) {
     X11parameters x11pmt;
-    x11pmt.width = 1920;
-    x11pmt.height = 1080;
+    x11pmt.width = 300;
+    x11pmt.height = 400;
     x11pmt.offset_x = 0;
     x11pmt.offset_y = 0;
     x11pmt.screen_number = 0;
-    initScreenSource(x11pmt, true);
-    captureStart(30*10);
+    initScreenSource(x11pmt, false);
+    captureStart(30 * 180);
     return 0;
 }
