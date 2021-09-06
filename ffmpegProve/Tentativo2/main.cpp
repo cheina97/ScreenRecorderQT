@@ -26,6 +26,33 @@ typedef struct {
     int screen_number;
 } X11parameters;
 
+//mem measures
+int parseLine(char *line) {
+    // This assumes that a digit will be found and the line ends in " Kb".
+    int i = strlen(line);
+    const char *p = line;
+    while (*p < '0' || *p > '9') p++;
+    line[i - 3] = '\0';
+    i = atoi(p);
+    return i;
+}
+
+int getCurrentVMemUsedByProc() {  //Note: this value is in KB!
+    FILE *file = fopen("/proc/self/status", "r");
+    int result = -1;
+    char line[128];
+
+    while (fgets(line, 128, file) != NULL) {
+        if (strncmp(line, "VmSize:", 7) == 0) {
+            result = parseLine(line);
+            break;
+        }
+    }
+    fclose(file);
+    cout << "CurrMemUsedByProc: " << (double)result / 1024 / 1024 << "GB" << endl;
+    return result;
+}
+
 //speed measures
 int readframe_clock = 0;
 int readframe_clock_start = 0;
@@ -186,15 +213,18 @@ void getRawPackets(int frameNumber) {
     readframe_clock_start = clock();
     auto begin = std::chrono::high_resolution_clock::now();
     AVPacket *avRawPkt;
+    int allocatedspace = 0;
     for (int i = 0; i < frameNumber; i++) {
-        avRawPkt = (AVPacket *)malloc(sizeof(AVPacket));
+        avRawPkt = av_packet_alloc();
         avRawPkt_queue.push(avRawPkt);
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
             cout << "Error in getting RawPacket from x11" << endl;
         } else {
             //cout << "Captured " << avRawPkt_queue.size() << " raw packets" << endl;
+            //getCurrentVMemUsedByProc();
         }
-        //av_packet_unref(avRawPkt);
+        allocatedspace += avRawPkt->size;
+        // test for memory av_packet_unref(avRawPkt);
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
@@ -239,6 +269,9 @@ void decodeAndEncode(void) {
             //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
             decode_clock_start = clock();
             flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
+            //av_packet_unref(avRawPkt);
+            //av_packet_free(&avRawPkt);
+
             if (flag < 0) {
                 cout << "Errore Decoding: sending packet" << endl;
             }
@@ -272,7 +305,6 @@ void decodeAndEncode(void) {
                     }
                 }
                 av_packet_unref(&pkt);
-                av_packet_unref(avRawPkt);
             } else {
                 cout << "Errore Decoding: receiving packet " << got_picture << endl;
             }
@@ -284,14 +316,22 @@ void decodeAndEncode(void) {
 }
 
 int main(int argc, char const *argv[]) {
-    x11pmt.width = 300;
-    x11pmt.height = 400;
+    x11pmt.width = 1920;
+    x11pmt.height = 1080;
     x11pmt.offset_x = 0;
     x11pmt.offset_y = 0;
     x11pmt.screen_number = 0;
-    initScreenSource(x11pmt, true);
-    getRawPackets(30 * 600);
-    //decodeAndEncode();
+    getCurrentVMemUsedByProc();
+    initScreenSource(x11pmt, false);
+    getCurrentVMemUsedByProc();
+    getRawPackets(30 * 5);
+    getCurrentVMemUsedByProc();
+    decodeAndEncode();
+    getCurrentVMemUsedByProc();
+    getRawPackets(30 * 5);
+    getCurrentVMemUsedByProc();
+    decodeAndEncode();
+    getCurrentVMemUsedByProc();
 
     cout << "Finished" << endl
          << endl;
@@ -300,6 +340,9 @@ int main(int argc, char const *argv[]) {
     cout << "Decode clock: " << decode_clock << " " << (float)100 * decode_clock / total_clock << "%" << endl;
     cout << "Scaling clock: " << scaling_clock << " " << (float)100 * scaling_clock / total_clock << "%" << endl;
     cout << "Encode clock: " << encode_clock << " " << (float)100 * encode_clock / total_clock << "%" << endl;
-
+    /* while (true) {
+        usleep(500000000);
+    }
+ */
     return 0;
 }
