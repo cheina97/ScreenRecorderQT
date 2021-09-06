@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <queue>
+#include <thread>
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -75,11 +77,14 @@ AVCodec *avDecodec = nullptr;
 AVCodec *avEncodec = nullptr;
 struct SwsContext *swsCtx = nullptr;
 queue<AVPacket *> avRawPkt_queue;
+mutex avRawPkt_queue_mutex;
 int videoIndex = -1;
 AVFrame *avYUVFrame = nullptr;
 X11parameters x11pmt;
+FILE *mp4Fp;
+bool stop;
 
-void initScreenSource(X11parameters x11pmt, bool fullscreen) {
+void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps) {
     avdevice_register_all();
 
     avFmtCtx = avformat_alloc_context();
@@ -103,7 +108,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     }
 
     av_dict_set(&avRawOptions, "video_size", (to_string(x11pmt.width) + "*" + to_string(x11pmt.height)).c_str(), 0);
-    av_dict_set(&avRawOptions, "framerate", "30", 0);
+    av_dict_set(&avRawOptions, "framerate", to_string(fps).c_str(), 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
@@ -189,7 +194,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     avEncoderCtx->width = x11pmt.width;
     avEncoderCtx->height = x11pmt.height;
     avEncoderCtx->time_base.num = 1;
-    avEncoderCtx->time_base.den = 30;
+    avEncoderCtx->time_base.den = fps;
     avEncoderCtx->bit_rate = 128 * 1024 * 8;
     avEncoderCtx->gop_size = 250;
     avEncoderCtx->qmin = 1;
@@ -216,21 +221,27 @@ void getRawPackets(int frameNumber) {
     int allocatedspace = 0;
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
-        avRawPkt_queue.push(avRawPkt);
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
             cout << "Error in getting RawPacket from x11" << endl;
         } else {
-            //cout << "Captured " << avRawPkt_queue.size() << " raw packets" << endl;
+            cout << "Captured " << i << " raw packets" << endl;
             //getCurrentVMemUsedByProc();
         }
+        avRawPkt_queue_mutex.lock();
+        avRawPkt_queue.push(avRawPkt);
+        avRawPkt_queue_mutex.unlock();
         allocatedspace += avRawPkt->size;
         // test for memory av_packet_unref(avRawPkt);
     }
+    avRawPkt_queue_mutex.lock();
+    stop = true;
+    avRawPkt_queue_mutex.unlock();
+
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     readframe_clock_end = clock();
     readframe_clock += (readframe_clock_end - readframe_clock_start);
-    cout << "Capturing ended successfully, captured " << avRawPkt_queue.size() << "raw packets in " << elapsed.count() * 1e-9 << " seconds" << endl
+    cout << "Capturing ended successfully, captured " << frameNumber << "raw packets in " << elapsed.count() * 1e-9 << " seconds" << endl
          << endl;
 }
 
@@ -256,80 +267,93 @@ void decodeAndEncode(void) {
     memset(&pkt, 0, sizeof(AVPacket));
     av_init_packet(&pkt);
 
-    FILE *mp4Fp = fopen("out.mp4", "wb");
-
     AVPacket *avRawPkt;
     int i = 0;
-    while (!avRawPkt_queue.empty()) {
-        //cout << "Remaining " << avRawPkt_queue.size() << " frames" << endl;
-        avRawPkt = avRawPkt_queue.front();
-        avRawPkt_queue.pop();
-        if (avRawPkt->stream_index == videoIndex) {
-            //Inizio DECODING
-            //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
-            decode_clock_start = clock();
-            flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
-            av_packet_unref(avRawPkt);
-            av_packet_free(&avRawPkt);
 
-            if (flag < 0) {
-                cout << "Errore Decoding: sending packet" << endl;
-            }
-            got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
-            decode_clock_end = clock();
-            decode_clock += (decode_clock_end - decode_clock_start);
-            //Fine DECODING
-            if (got_picture == 0) {
-                scaling_clock_start = clock();
-                sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
-                scaling_clock_end = clock();
-                scaling_clock += (scaling_clock_end - scaling_clock_start);
+    avRawPkt_queue_mutex.lock();
+    while (!stop || !avRawPkt_queue.empty()) {
+        if (!avRawPkt_queue.empty()) {
+            cout << "Remaining " << avRawPkt_queue.size() << " frames" << endl;
+            avRawPkt = avRawPkt_queue.front();
+            avRawPkt_queue.pop();
+            avRawPkt_queue_mutex.unlock();
+            if (avRawPkt->stream_index == videoIndex) {
+                cout << "Elaborating frame" << i << endl;
+                //Inizio DECODING
+                //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
+                decode_clock_start = clock();
+                flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
+                av_packet_unref(avRawPkt);
+                av_packet_free(&avRawPkt);
 
-                //got_picture = -1;  //forse non serve
-                //Inizio ENCODING
-                //deprecato: flag = avcodec_encode_video2(avEncoderCtx, &pkt, avYUVFrame, &got_picture);
-                encode_clock_start = clock();
-                //avYUVFrame->pts = i;
-                flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
-                got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
-                encode_clock_end = clock();
-                encode_clock += (encode_clock_end - encode_clock_start);
-                //Fine ENCODING
-
-                if (flag >= 0) {
-                    if (got_picture == 0) {
-                        int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
-                        if (w != pkt.size) {
-                            cout << "Error in writing file" << endl;
-                        }
-                        //cout << "Elaborated " << i << " frames" << endl;
-                    }
+                if (flag < 0) {
+                    cout << "Errore Decoding: sending packet" << endl;
                 }
-                av_packet_unref(&pkt);
-            } else {
-                cout << "Errore Decoding: receiving packet " << got_picture << endl;
+                got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
+                decode_clock_end = clock();
+                decode_clock += (decode_clock_end - decode_clock_start);
+                //Fine DECODING
+                if (got_picture == 0) {
+                    scaling_clock_start = clock();
+                    sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
+                    scaling_clock_end = clock();
+                    scaling_clock += (scaling_clock_end - scaling_clock_start);
+
+                    //got_picture = -1;  //forse non serve
+                    //Inizio ENCODING
+                    //deprecato: flag = avcodec_encode_video2(avEncoderCtx, &pkt, avYUVFrame, &got_picture);
+                    encode_clock_start = clock();
+                    //avYUVFrame->pts = i;
+                    flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
+                    got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
+                    encode_clock_end = clock();
+                    encode_clock += (encode_clock_end - encode_clock_start);
+                    //Fine ENCODING
+
+                    if (flag >= 0) {
+                        if (got_picture == 0) {
+                            int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
+                            if (w != pkt.size) {
+                                cout << "Error in writing file" << endl;
+                            }
+                            //cout << "Elaborated " << i << " frames" << endl;
+                        }
+                    }
+                    av_packet_unref(&pkt);
+                    ;
+                } else {
+                    cout << "Errore Decoding: receiving packet " << got_picture << endl;
+                }
             }
+            i++;
+        } else {
+            avRawPkt_queue_mutex.unlock();
         }
-        i++;
+        avRawPkt_queue_mutex.lock();
     }
     cout << "Decoded and Encoded successfully" << endl
          << endl;
-    fclose(mp4Fp);
 }
 
 int main(int argc, char const *argv[]) {
-    x11pmt.width = 400;
-    x11pmt.height = 600;
+    stop = false;
+    x11pmt.width = 770;
+    x11pmt.height = 510;
     x11pmt.offset_x = 0;
-    x11pmt.offset_y = 0;
+    x11pmt.offset_y = 180;
     x11pmt.screen_number = 0;
-    getCurrentVMemUsedByProc();
-    initScreenSource(x11pmt, false);
-    getCurrentVMemUsedByProc();
-    getRawPackets(30 * 10);
-    getCurrentVMemUsedByProc();
-    decodeAndEncode();
-    getCurrentVMemUsedByProc();
+    //getCurrentVMemUsedByProc();
+    initScreenSource(x11pmt, false, 30);
+    //getCurrentVMemUsedByProc();
+    //getCurrentVMemUsedByProc();
+    mp4Fp = fopen("out.mp4", "wb");
+
+    thread capture_thread{getRawPackets, 30 * 30};
+    thread elaborate_thread{decodeAndEncode};
+    capture_thread.join();
+    elaborate_thread.join();
+    fclose(mp4Fp);
+    //getCurrentVMemUsedByProc();
 
     cout << "Finished" << endl
          << endl;
