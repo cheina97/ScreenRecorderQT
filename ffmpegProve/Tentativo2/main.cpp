@@ -42,7 +42,7 @@ int getCurrentVMemUsedByProc() {  //Note: this value is in KB!
     int result = -1;
     char line[128];
 
-    while (fgets(line, 128, file) != NULL) {
+    while (fgets(line, 128, file) != nullptr) {
         if (strncmp(line, "VmSize:", 7) == 0) {
             result = parseLine(line);
             break;
@@ -67,16 +67,16 @@ int encode_clock = 0;
 int encode_clock_start = 0;
 int encode_clock_end = 0;
 
-AVFormatContext *avFmtCtx = NULL;
-AVCodecContext *avRawCodecCtx = NULL;
+AVFormatContext *avFmtCtx = nullptr;
+AVCodecContext *avRawCodecCtx = nullptr;
 AVCodecContext *avEncoderCtx;
-AVDictionary *avRawOptions = NULL;
-AVCodec *avDecodec = NULL;
-AVCodec *avEncodec = NULL;
-struct SwsContext *swsCtx = NULL;
+AVDictionary *avRawOptions = nullptr;
+AVCodec *avDecodec = nullptr;
+AVCodec *avEncodec = nullptr;
+struct SwsContext *swsCtx = nullptr;
 queue<AVPacket *> avRawPkt_queue;
 int videoIndex = -1;
-AVFrame *avYUVFrame = NULL;
+AVFrame *avYUVFrame = nullptr;
 X11parameters x11pmt;
 
 void initScreenSource(X11parameters x11pmt, bool fullscreen) {
@@ -107,7 +107,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
-    if (avInputFmt == NULL) {
+    if (avInputFmt == nullptr) {
         cout << "av_find_input_format not found......"
              << endl;
         exit(-1);
@@ -139,16 +139,16 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     }
 
     //deprecato: avRawCodecCtx = avFmtCtx->streams[videoIndex]->codecpar;
-    avRawCodecCtx = avcodec_alloc_context3(NULL);
+    avRawCodecCtx = avcodec_alloc_context3(nullptr);
     avcodec_parameters_to_context(avRawCodecCtx, avFmtCtx->streams[videoIndex]->codecpar);
 
     avDecodec = avcodec_find_decoder(avRawCodecCtx->codec_id);
-    if (avDecodec == NULL) {
+    if (avDecodec == nullptr) {
         cout << "Codec not found."
              << endl;
         exit(-1);
     }
-    if (avcodec_open2(avRawCodecCtx, avDecodec, NULL) < 0) {
+    if (avcodec_open2(avRawCodecCtx, avDecodec, nullptr) < 0) {
         cout << "Could not open decodec . "
              << endl;
         exit(-1);
@@ -160,7 +160,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
                             avRawCodecCtx->width,
                             avRawCodecCtx->height,
                             AV_PIX_FMT_YUV420P,
-                            SWS_BICUBIC, NULL, NULL, NULL);
+                            SWS_BICUBIC, nullptr, nullptr, nullptr);
 
     avYUVFrame = av_frame_alloc();
     //deprecata: int yuvLen = avpicture_get_size(AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height);
@@ -174,16 +174,16 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen) {
     avYUVFrame->height = avRawCodecCtx->height;
     avYUVFrame->format = AV_PIX_FMT_YUV420P;
 
-    avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
+    avEncodec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
     if (!avEncodec) {
-        cout << "h264 codec not found"
+        cout << "MP4 codec not found"
              << endl;
         exit(-1);
     }
 
     avEncoderCtx = avcodec_alloc_context3(avEncodec);
 
-    avEncoderCtx->codec_id = AV_CODEC_ID_H264;
+    avEncoderCtx->codec_id = AV_CODEC_ID_MPEG4;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
     avEncoderCtx->width = x11pmt.width;
@@ -240,7 +240,7 @@ void decodeAndEncode(void) {
     int got_picture = 0;
     int flag = 0;
     int bufLen = 0;
-    uint8_t *outBuf = NULL;
+    uint8_t *outBuf = nullptr;
 
     bufLen = x11pmt.width * x11pmt.height * 3;
     outBuf = (uint8_t *)malloc(bufLen);
@@ -256,10 +256,10 @@ void decodeAndEncode(void) {
     memset(&pkt, 0, sizeof(AVPacket));
     av_init_packet(&pkt);
 
-    FILE *h264Fp = fopen("out.264", "wb");
+    FILE *mp4Fp = fopen("out.mp4", "wb");
 
     AVPacket *avRawPkt;
-    //int i = 0;
+    int i = 0;
     while (!avRawPkt_queue.empty()) {
         //cout << "Remaining " << avRawPkt_queue.size() << " frames" << endl;
         avRawPkt = avRawPkt_queue.front();
@@ -269,8 +269,8 @@ void decodeAndEncode(void) {
             //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
             decode_clock_start = clock();
             flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
-            //av_packet_unref(avRawPkt);
-            //av_packet_free(&avRawPkt);
+            av_packet_unref(avRawPkt);
+            av_packet_free(&avRawPkt);
 
             if (flag < 0) {
                 cout << "Errore Decoding: sending packet" << endl;
@@ -289,6 +289,7 @@ void decodeAndEncode(void) {
                 //Inizio ENCODING
                 //deprecato: flag = avcodec_encode_video2(avEncoderCtx, &pkt, avYUVFrame, &got_picture);
                 encode_clock_start = clock();
+                //avYUVFrame->pts = i;
                 flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
                 got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                 encode_clock_end = clock();
@@ -297,11 +298,11 @@ void decodeAndEncode(void) {
 
                 if (flag >= 0) {
                     if (got_picture == 0) {
-                        int w = fwrite(pkt.data, 1, pkt.size, h264Fp);
+                        int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
                         if (w != pkt.size) {
                             cout << "Error in writing file" << endl;
                         }
-                        //cout << "Elaborated " << ++i << " frames" << endl;
+                        //cout << "Elaborated " << i << " frames" << endl;
                     }
                 }
                 av_packet_unref(&pkt);
@@ -309,26 +310,23 @@ void decodeAndEncode(void) {
                 cout << "Errore Decoding: receiving packet " << got_picture << endl;
             }
         }
+        i++;
     }
     cout << "Decoded and Encoded successfully" << endl
          << endl;
-    fclose(h264Fp);
+    fclose(mp4Fp);
 }
 
 int main(int argc, char const *argv[]) {
-    x11pmt.width = 1920;
-    x11pmt.height = 1080;
+    x11pmt.width = 400;
+    x11pmt.height = 600;
     x11pmt.offset_x = 0;
     x11pmt.offset_y = 0;
     x11pmt.screen_number = 0;
     getCurrentVMemUsedByProc();
     initScreenSource(x11pmt, false);
     getCurrentVMemUsedByProc();
-    getRawPackets(30 * 5);
-    getCurrentVMemUsedByProc();
-    decodeAndEncode();
-    getCurrentVMemUsedByProc();
-    getRawPackets(30 * 5);
+    getRawPackets(30 * 10);
     getCurrentVMemUsedByProc();
     decodeAndEncode();
     getCurrentVMemUsedByProc();
