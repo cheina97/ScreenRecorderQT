@@ -1,5 +1,5 @@
 main: *.o
-	g++ -Wall -o main main.o -I/usr/include/x86_64-linux-gnu -lavformat -lavcodec -lavutil -lavdevice -lm -lswscale -lX11
+	g++ -Wall -o main main.o -lavformat -lavcodec -lavutil -lavdevice -lm -lswscale -lX11
 
 *.o :*.c
 	g++ -Wall -c main.cpp
