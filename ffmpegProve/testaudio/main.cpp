@@ -24,7 +24,7 @@ extern "C"
 
 using namespace std;
 
-AVFormatContext *FormatContext, *FormatContextOut = nullptr;
+AVFormatContext *FormatContext = nullptr;
 
 //AUDIO PARAMETERS
 
@@ -99,17 +99,21 @@ void initAudioSource()
   int audioIndex = -1;
   int audioIndexOut = -1;
 
-  char *displayName = getenv("AUDIO");
+  //char *displayName = getenv("AUDIO");
 
   string audioSpeaker = "audio=" + GetSpeakerDeviceName();
 
   avdevice_register_all();
   FormatContext = avformat_alloc_context();
   AudioInputFormat = av_find_input_format("alsa");
+  if (AudioInputFormat = nullptr)
+  {
+    cout << "av_find_input_format not found......" << endl;
+    exit(-1);
+  }
   //AudioCodec = avcodec_find_decoder(AV_CODEC_ID_AAC);
 
   //DECODER
-  AudioCodecContext = avcodec_alloc_context3(AudioCodec);
 
   if (avformat_open_input(&FormatContext, "TODO", AudioInputFormat, nullptr) != 0)
     ;
@@ -126,7 +130,7 @@ void initAudioSource()
 
   for (int i = 0; i < FormatContext->nb_streams; ++i)
   {
-    AudioStream = FormatContext->streams[i];
+
     if (AudioStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
       /* decoder = avcodec_find_decoder(stream->codecpar->codec_id);
@@ -143,17 +147,18 @@ void initAudioSource()
 				return -1;
 			} */
       audioIndex = i;
+      AudioStream = FormatContext->streams[i];
       break;
-    }
-
-    if (audioIndex == -1 || audioIndex >= (int)FormatContext->nb_streams)
-    {
-      cout << "Didn't find a audio stream." << endl;
-      exit(-1);
     }
   }
 
-  AudioCodec = avcodec_find_decoder(AV_CODEC_ID_AAC);
+  if (audioIndex == -1 || audioIndex >= (int)FormatContext->nb_streams)
+  {
+    cout << "Didn't find a audio stream." << endl;
+    exit(-1);
+  }
+
+  AudioCodec = avcodec_find_decoder(AudioStream->codecpar->codec_id);
   AudioCodecContext = avcodec_alloc_context3(AudioCodec);
   if (avcodec_parameters_to_context(AudioCodecContext, AudioStream->codecpar) < 0)
   {
@@ -168,25 +173,15 @@ void initAudioSource()
   }
 
   //ENCODER
-  FormatContextOut = avformat_alloc_context();
-  //AudioStreamOut = FormatContextOut->streams[i];
   if (AudioStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
   {
-    /* AudioStreamOut = avformat_new_stream(FormatContextOut, NULL);
-    if (!AudioStreamOut)
-    {
-      printf("can not new audio stream for output!\n");
-      exit(-1);
-    }
-    audioIndexOut = AudioStreamOut->index; */
-    //AudioEncoder = avcodec_find_encoder(FormatContextOut->oformat->audio_codec);
     AudioEncoder = avcodec_find_encoder(AV_CODEC_ID_AAC);
     if (!AudioEncoder)
     {
       cout << "Can not find audio encoder" << endl;
       exit(-1);
     }
-    AudioStreamOut = avformat_new_stream(FormatContextOut, AudioEncoder);
+    AudioStreamOut = avformat_new_stream(FormatContext, AudioEncoder);
     if (!AudioStreamOut)
     {
       printf("can not new audio stream for output!\n");
@@ -230,7 +225,7 @@ void initAudioSource()
     //AudioEncoderContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
     AudioEncoderContext->time_base = av_make_q(1, AudioEncoderContext->sample_rate);
     AudioStreamOut->time_base = av_make_q(1, AudioEncoderContext->sample_rate);
-    if ((FormatContextOut->oformat->flags & AVFMT_GLOBALHEADER) != 0)
+    if ((FormatContext->oformat->flags & AVFMT_GLOBALHEADER) != 0)
       AudioEncoderContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     AudioEncoderContext->codec_tag = 0;
 
@@ -271,16 +266,16 @@ void initAudioSource()
     }
   }
 
-  if (!(FormatContextOut->oformat->flags & AVFMT_NOFILE))
+  if (!(FormatContext->oformat->flags & AVFMT_NOFILE))
   {
-    if (avio_open(&FormatContextOut->pb, "PATH", AVIO_FLAG_WRITE) < 0)
+    if (avio_open(&FormatContext->pb, "PATH", AVIO_FLAG_WRITE) < 0)
     {
       printf("can not open output file handle!\n");
       exit(-1);
     }
   }
 
-  if (avformat_write_header(FormatContextOut, nullptr) < 0)
+  if (avformat_write_header(FormatContext, nullptr) < 0)
   {
     printf("can not write the header of the output file!\n");
     exit(-1);
