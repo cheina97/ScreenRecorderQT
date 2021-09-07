@@ -209,21 +209,31 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
-              <widget class="QRadioButton" name="radioButton">
+              <widget class="QRadioButton" name="radioButton15">
+               <property name="text">
+                <string>15</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButton24">
                <property name="text">
                 <string>24</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_2">
+              <widget class="QRadioButton" name="radioButton30">
                <property name="text">
                 <string>30</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_3">
+              <widget class="QRadioButton" name="radioButton60">
+               <property name="mouseTracking">
+                <bool>true</bool>
+               </property>
                <property name="text">
                 <string>60 </string>
                </property>
