@@ -343,12 +343,12 @@ int main(int argc, char const *argv[]) {
     x11pmt.offset_y = 180;
     x11pmt.screen_number = 0;
     //getCurrentVMemUsedByProc();
-    initScreenSource(x11pmt, false, 30);
+    initScreenSource(x11pmt, true, 30);
     //getCurrentVMemUsedByProc();
     //getCurrentVMemUsedByProc();
     mp4Fp = fopen("out.mp4", "wb");
 
-    thread capture_thread{getRawPackets, 30 * 30};
+    thread capture_thread{getRawPackets, 30 * 60};
     thread elaborate_thread{decodeAndEncode};
     capture_thread.join();
     elaborate_thread.join();
