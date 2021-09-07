@@ -22,29 +22,23 @@ extern "C"
 #include <thread>
 #include <fstream>
 
-
 using namespace std;
 
 AVFormatContext *FormatContext, *FormatContextOut = nullptr;
 
 //AUDIO PARAMETERS
-AVCodecContext *AudioCodecContext, *AudioEncoderContext;
-AVInputFormat *AudioInputFormat;
-const AVCodec *AudioCodec, *AudioEncoder;
-AVStream *AudioStream, *AudioStreamOut;
-AVFrame *AudioFrame;
-SwrContext *swrContext;
-int64_t NextAudioPts;
-int AudioSamplesCount;
 
-*AudioCodecContext = *AudioEncoderContext = nullptr;
-*AudioInputFormat = nullptr;
-*AudioCodec = *AudioEncoder = nullptr;
-*AudioStream = nullptr;
-*AudioFrame = nullptr;
-*swrContext = nullptr;
-NextAudioPts = 0;
-AudioSamplesCount = 0;
+AVCodecContext *AudioCodecContext = nullptr;
+AVCodecContext *AudioEncoderContext = nullptr;
+AVInputFormat *AudioInputFormat = nullptr;
+const AVCodec *AudioCodec = nullptr;
+const AVCodec *AudioEncoder = nullptr;
+AVStream *AudioStream = nullptr;
+AVStream *AudioStreamOut = nullptr;
+AVFrame *AudioFrame = nullptr;
+SwrContext *swrContext = nullptr;
+int64_t NextAudioPts = 0;
+int AudioSamplesCount = 0;
 
 string GetSpeakerDeviceName()
 {
@@ -117,7 +111,7 @@ void initAudioSource()
   //DECODER
   AudioCodecContext = avcodec_alloc_context3(AudioCodec);
 
-  if (avformat_open_input(&FormatContext, audioSpeaker, AudioInputFormat, nullptr) != 0)
+  if (avformat_open_input(&FormatContext, "TODO", AudioInputFormat, nullptr) != 0)
     ;
   {
     cout << "Couldn't open audio input stream." << endl;
@@ -199,7 +193,7 @@ void initAudioSource()
       exit(-1);
     }
     audioIndexOut = AudioStreamOut->index;
-    
+
     AudioEncoderContext = avcodec_alloc_context3(AudioEncoder);
     if (AudioEncoderContext = nullptr)
     {
@@ -210,6 +204,7 @@ void initAudioSource()
     AudioEncoderContext->bit_rate = 128000;
     AudioEncoderContext->sample_rate = 48000;
 
+    int targetSamplerate = 48000;
     if (AudioEncoder->supported_samplerates)
     {
       AudioEncoderContext->sample_rate = AudioEncoder->supported_samplerates[0];
@@ -233,9 +228,9 @@ void initAudioSource()
     }
 
     //AudioEncoderContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
-    AudioEncoderContext->time_base = AVRational{1, AudioEncoderContext->sample_rate};
-    AudioStreamOut->time_base = AVRational{1, AudioEncoderContext->sample_rate};
-    if ((AudioEncoderContext->oformat->flags & AVFMT_GLOBALHEADER) != 0)
+    AudioEncoderContext->time_base = av_make_q(1, AudioEncoderContext->sample_rate);
+    AudioStreamOut->time_base = av_make_q(1, AudioEncoderContext->sample_rate);
+    if ((FormatContextOut->oformat->flags & AVFMT_GLOBALHEADER) != 0)
       AudioEncoderContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     AudioEncoderContext->codec_tag = 0;
 
@@ -259,8 +254,8 @@ void initAudioSource()
     swrContext = swr_alloc();
     if (!swrContext)
     {
-      qDebug() << "swr_alloc failed";
-      return -1;
+      cout << "swr_alloc failed" << endl;
+      exit(-1);
     }
 
     av_opt_set_int(swrContext, "in_channel_count", AudioCodecContext->channels, 0);          //2
@@ -269,7 +264,7 @@ void initAudioSource()
     av_opt_set_int(swrContext, "out_channel_count", AudioEncoderContext->channels, 0);       //2
     av_opt_set_int(swrContext, "out_sample_rate", AudioEncoderContext->sample_rate, 0);      //44100
     av_opt_set_sample_fmt(swrContext, "out_sample_fmt", AudioEncoderContext->sample_fmt, 0); //AV_SAMPLE_FMT_FLTP
-    if ((ret = swr_init(swrContext)) < 0)
+    if ((swr_init(swrContext)) < 0)
     {
       cout << "swr_init failed" << endl;
       exit(-1);
@@ -291,30 +286,11 @@ void initAudioSource()
     exit(-1);
   }
 
-  return 0;
+  return;
 }
 
 int main(int argc, char const *argv[])
 {
-  x11pmt.width = 400;
-  x11pmt.height = 600;
-  x11pmt.offset_x = 0;
-  x11pmt.offset_y = 0;
-  x11pmt.screen_number = 0;
-  getCurrentVMemUsedByProc();
-  initScreenSource(x11pmt, false);
-  getCurrentVMemUsedByProc();
-  getRawPackets(30 * 10);
-  getCurrentVMemUsedByProc();
-  decodeAndEncode();
-  getCurrentVMemUsedByProc();
-
-  cout << "Finished" << endl;
-  int total_clock = readframe_clock + encode_clock + decode_clock + scaling_clock;
-  cout << "ReadFrame clock: " << readframe_clock << " " << (float)100 * readframe_clock / total_clock << "%" << endl;
-  cout << "Decode clock: " << decode_clock << " " << (float)100 * decode_clock / total_clock << "%" << endl;
-  cout << "Scaling clock: " << scaling_clock << " " << (float)100 * scaling_clock / total_clock << "%" << endl;
-  cout << "Encode clock: " << encode_clock << " " << (float)100 * encode_clock / total_clock << "%" << endl;
 
   return 0;
 }
