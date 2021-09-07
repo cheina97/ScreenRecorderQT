@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
+#include <QFileDialog>
+#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,6 +16,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->pushButtonSelectArea->setCheckable(true);
     ui->pushButtonSelectArea->setIcon(QIcon("../Icons/area.png"));
+
+    ui->pushButtonPause->setDisabled(true);
+    ui->pushButtonResume->setDisabled(true);
+    ui->pushButtonStop->setDisabled(true);
+
+    //line edit default text
+    ui->lineEditPath->setText(QDir::homePath());
 }
 
 MainWindow::~MainWindow()
@@ -35,4 +44,10 @@ void MainWindow::on_pushButtonFullscreen_clicked()
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
     // TODO: settare un flag che dice "fullscreen selezionato"
+}
+
+void MainWindow::on_toolButton_clicked()
+{
+    QString path = QFileDialog::getExistingDirectory(this, "Select a directory", QDir::homePath());
+    ui->lineEditPath->setText(path);
 }
