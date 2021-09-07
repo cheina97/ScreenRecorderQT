@@ -8,6 +8,7 @@
 
 extern "C" {
 #include <X11/Xlib.h>
+#include <stdlib.h>
 
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
@@ -84,7 +85,7 @@ X11parameters x11pmt;
 FILE *mp4Fp;
 bool stop;
 
-void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps) {
+void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
     avdevice_register_all();
 
     avFmtCtx = avformat_alloc_context();
@@ -162,8 +163,8 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps) {
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
                             avRawCodecCtx->pix_fmt,
-                            avRawCodecCtx->width,
-                            avRawCodecCtx->height,
+                            (int)avRawCodecCtx->width * scaling_factor,
+                            (int)avRawCodecCtx->height * scaling_factor,
                             AV_PIX_FMT_YUV420P,
                             SWS_BICUBIC, nullptr, nullptr, nullptr);
 
@@ -191,8 +192,8 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps) {
     avEncoderCtx->codec_id = AV_CODEC_ID_MPEG4;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-    avEncoderCtx->width = x11pmt.width;
-    avEncoderCtx->height = x11pmt.height;
+    avEncoderCtx->width = x11pmt.width * scaling_factor;
+    avEncoderCtx->height = x11pmt.height * scaling_factor;
     avEncoderCtx->time_base.num = 1;
     avEncoderCtx->time_base.den = fps;
     avEncoderCtx->bit_rate = 128 * 1024 * 8;
@@ -232,7 +233,9 @@ void getRawPackets(int frameNumber) {
         avRawPkt_queue_mutex.unlock();
         allocatedspace += avRawPkt->size;
         // test for memory av_packet_unref(avRawPkt);
+        //if (i == frameNumber / 2 && i % 2 == 0) usleep(5 * 1000 * 1000);
     }
+
     avRawPkt_queue_mutex.lock();
     stop = true;
     avRawPkt_queue_mutex.unlock();
@@ -336,19 +339,24 @@ void decodeAndEncode(void) {
 }
 
 int main(int argc, char const *argv[]) {
+    if (argc < 9) {
+        cout << "Errore: parametri mancanti" << endl
+             << "Utilizzo: ./main width height offset_x offset_y screen_num fps capturetime_seconds quality" << endl;
+    }
+
     stop = false;
-    x11pmt.width = 770;
-    x11pmt.height = 510;
-    x11pmt.offset_x = 0;
-    x11pmt.offset_y = 180;
-    x11pmt.screen_number = 0;
+    x11pmt.width = atoi(argv[1]);
+    x11pmt.height = atoi(argv[2]);
+    x11pmt.offset_x = atoi(argv[3]);
+    x11pmt.offset_y = atoi(argv[4]);
+    x11pmt.screen_number = atoi(argv[5]);
     //getCurrentVMemUsedByProc();
-    initScreenSource(x11pmt, true, 30);
+    initScreenSource(x11pmt, false, atoi(argv[6]), atof(argv[8]));
     //getCurrentVMemUsedByProc();
     //getCurrentVMemUsedByProc();
     mp4Fp = fopen("out.mp4", "wb");
 
-    thread capture_thread{getRawPackets, 30 * 60};
+    thread capture_thread{getRawPackets, atoi(argv[6]) * atoi(argv[7])};
     thread elaborate_thread{decodeAndEncode};
     capture_thread.join();
     elaborate_thread.join();
