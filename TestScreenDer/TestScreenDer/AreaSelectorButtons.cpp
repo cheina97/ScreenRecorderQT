@@ -9,7 +9,7 @@ AreaSelectorButtons::~AreaSelectorButtons()
 {
 }
 
-QPixmap AreaSelectorButtons::getButton( QColor color )
+QPixmap AreaSelectorButtons::getButton( )
 {
     QPixmap pixmap( diameter+penWidth, diameter+penWidth );
     pixmap.fill( Qt::transparent );
@@ -35,7 +35,7 @@ QPixmap AreaSelectorButtons::getButton( QColor color )
 }
 
 
-QPixmap AreaSelectorButtons::getArrow( degreeArrow degree, QColor colorSelected )
+QPixmap AreaSelectorButtons::getArrow( degreeArrow degree)
 {
     QPixmap pixmap( diameter+penWidth, diameter+penWidth );
     pixmap.fill( Qt::transparent );
@@ -68,16 +68,15 @@ QPixmap AreaSelectorButtons::getArrow( degreeArrow degree, QColor colorSelected 
 }
 
 
-QPixmap AreaSelectorButtons::getPixmapHandle( QColor color, QColor colorSelected ,degreeArrow degree )
+QPixmap AreaSelectorButtons::getPixmapHandle( degreeArrow degree )
 {
     QPixmap pixmap( diameter+penWidth, diameter+penWidth );
     pixmap.fill( Qt::transparent );
-
     QPainter painter;
     painter.begin( &pixmap );
       painter.setRenderHints( QPainter::Antialiasing, true );
-      painter.drawPixmap( 0, 0, getButton( color ) );
-      painter.drawPixmap( 0, 0, getArrow( degree , colorSelected ) );
+      painter.drawPixmap( 0, 0, getButton(  ) );
+      painter.drawPixmap( 0, 0, getArrow( degree ));
     painter.end();
 
     return pixmap;

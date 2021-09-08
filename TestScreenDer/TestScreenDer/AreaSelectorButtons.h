@@ -19,11 +19,13 @@ private:
   int penWidthHalf = penWidth/2;
   int radius = 20;
   int diameter = 2 * radius;
+  QColor color = Qt::yellow; //button background
+  QColor colorSelected = Qt::black; //arrow color
 
 public slots:
-  QPixmap getPixmapHandle(QColor color, QColor colorSelected, degreeArrow degree );
-  QPixmap getButton( QColor color );
-  QPixmap getArrow(degreeArrow degree , QColor colorSelected);
+  QPixmap getPixmapHandle(degreeArrow degree );
+  QPixmap getButton( );
+  QPixmap getArrow(degreeArrow degree);
   int getWithHalf();
 
 private slots:
