@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    areaSelector = new AreaSelector(ui);
+    areaSelector = new AreaSelector();
     //TODO:
     //setWindowTitle( global::name + " " + global::version );
     //QIcon icon( QString::fromUtf8( ":/pictures/logo/logo.png" ) );
@@ -45,8 +45,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->radioButton60->setToolTip("High performances required");
 
     //connect
-    connect(ui->pushButtonSelectArea, SIGNAL(clicked()), areaSelector, SLOT(slot_init()));
-    connect(ui->pushButtonSelectArea, SIGNAL( clicked(bool) ), areaSelector, SLOT( setVisible( bool ) ) );
+    connect(this                    , SIGNAL( signal_close() )    , areaSelector, SLOT( close() ) );
+    connect(this                    , SIGNAL( signal_selection() ), areaSelector, SLOT( slot_init() ) );
+    connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )     , areaSelector, SLOT( setVisible( bool ) ) );
 
 }
 
@@ -55,18 +56,28 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::closeEvent( QCloseEvent *event )
+{
+    Q_UNUSED(event);
+    emit signal_close();
+}
+
+
 void MainWindow::on_pushButtonSelectArea_clicked()
 {
+    bool state = ui->pushButtonSelectArea->isChecked();
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
-    // TODO: qui si deve inserire il codice per la selezione dell'area.
-
+    if(state){
+        emit signal_selection();
+    }
 }
 
 void MainWindow::on_pushButtonFullscreen_clicked()
 {
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
+    areaSelector->setVisible(false);
 }
 
 void MainWindow::on_toolButton_clicked()
