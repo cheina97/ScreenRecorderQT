@@ -17,11 +17,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     AreaSelector.cpp \
+    AreaSelectorButtons.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
     AreaSelector.h \
+    AreaSelectorButtons.h \
     mainwindow.h
 
 FORMS += \

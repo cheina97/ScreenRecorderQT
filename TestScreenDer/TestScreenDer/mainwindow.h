@@ -19,10 +19,15 @@ public:
 
 private slots:
     void on_pushButtonSelectArea_clicked();
-
     void on_pushButtonFullscreen_clicked();
-
     void on_toolButton_clicked();
+
+signals:
+    void signal_close();
+    void signal_selection();
+
+protected:
+    void closeEvent( QCloseEvent *event );
 
 private:
     Ui::MainWindow *ui;
