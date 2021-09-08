@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "*.js": "javascriptreact",
-        "iostream": "cpp",
-        "chrono": "cpp"
-    }
-}

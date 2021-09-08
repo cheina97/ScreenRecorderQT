@@ -83,15 +83,15 @@ int videoIndex = -1;
 AVFrame *avYUVFrame = nullptr;
 X11parameters x11pmt;
 bool stop;
-string out_file = "out.mp4";
+string out_file = "out.264";
 AVOutputFormat *fmt;
 AVStream *video_st;
-int64_t pts_multipliers=1731099511928129;
+int64_t pts_offset = 0;
 
 void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
     avdevice_register_all();
     avFmtCtx = avformat_alloc_context();
-    fmt = av_guess_format(NULL, ".h264", NULL);
+    fmt = av_guess_format(NULL, ".264", NULL);
     avFmtCtx->oformat = fmt;
     char *displayName = getenv("DISPLAY");
 
@@ -213,9 +213,9 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avEncoderCtx->qmin = 1;
     avEncoderCtx->qmax = 10;
 
-    /* avEncoderCtx->me_range = 16;
+    avEncoderCtx->me_range = 16;
     avEncoderCtx->max_qdiff = 4;
-    avEncoderCtx->qcompress = 0.6; */
+    avEncoderCtx->qcompress = 0.6;
 
     AVDictionary *param = 0;
     //H.264
@@ -289,9 +289,8 @@ void decodeAndEncode(void) {
 
     av_image_fill_arrays(avOutFrame->data, avOutFrame->linesize, (uint8_t *)outBuf, avEncoderCtx->pix_fmt, avEncoderCtx->width, avEncoderCtx->height, 1);
 
-    //TODO SERVE DAVVERO?
     AVPacket pkt;  // 用来存储编码后数据
-    memset(&pkt, 0, sizeof(AVPacket));
+    //memset(&pkt, 0, sizeof(AVPacket));
     av_init_packet(&pkt);
 
     AVPacket *avRawPkt;
@@ -339,12 +338,18 @@ void decodeAndEncode(void) {
 
                     if (flag >= 0) {
                         if (got_picture == 0) {
-                            //int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
-
-                            pkt.pts = i+pts_multipliers;
-                            pkt.dts = i+pts_multipliers;
+                            //cout << pts_offset << " += " << avRawPkt_dts << endl;
+                            //pts_offset += avRawPkt_dts;
+                            pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts+1;
+                            pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts+1;
+                            //pkt.pts = pts_offset;
+                            //pkt.dts = pts_offset;
+                            //cout << "pkt.pts =" << pts_offset << " + " << avFmtCtx->start_time << " + " << av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base) << endl;
+                            //pkt.pts = avFmtCtx->start_time + avFmtCtx->start_time + av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base);
+                            //pkt.dts = avFmtCtx->start_time + av_rescale_q(pkt.dts, video_st->codec->time_base, video_st->time_base);
                             pkt.duration = 1;
 
+                            //int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
                             if (av_interleaved_write_frame(avFmtCtx, &pkt) < 0) {
                                 cout << "Error in writing file" << endl;
                                 exit(-1);
