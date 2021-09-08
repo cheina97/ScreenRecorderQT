@@ -49,6 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this                    , SIGNAL( signal_selection() ), areaSelector, SLOT( slot_init() ) );
     connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )     , areaSelector, SLOT( setVisible( bool ) ) );
 
+    connect(ui->pushButtonStart, SIGNAL(clicked(bool)), areaSelector, SLOT(slot_recordMode(bool)));
 }
 
 MainWindow::~MainWindow()

@@ -20,25 +20,24 @@ public:
 //    qreal getXRecordArea();
 //    qreal getYRecordArea();
 
-//    void recordMode(bool value);
 //    void setX( int x );
 //    void setY( int y );
 //    void setWidth( int width );
 //    void setHeight( int height );
 
-    void setFrameColor( QColor color );
-
+    QColor getFrameColor();
+    QColor getColorSelectedArrow();
 
 
   public slots:
 //    void slot_areaReset();
-    void slot_init();
-
+    void slot_init(); //executed when it's time to initialise the window
+    void slot_recordMode(bool value);
 
   private slots:
 
 
-//  protected:
+  protected:
     void paintEvent( QPaintEvent *event );
     void mouseMoveEvent( QMouseEvent *event );
     void mousePressEvent( QMouseEvent *event );
@@ -49,8 +48,9 @@ public:
   private:
 //    Ui::MainWindow *ui;
     QScreen *screen;
-    int screenWidth;
+    int screenWidth; //screen dimension
     int screenHeight;
+
     enum Handle { NoHandle, TopLeft, TopMiddle, TopRight, RightMiddle, BottomRight, BottomMiddle, BottomLeft, LeftMiddle, Middle };
     Handle handlePressed;
     Handle handleUnderMouse;
@@ -59,7 +59,6 @@ public:
 //    QColor HandleColorBackground;
 //    QColor HandleColorBackgroundSize;
 //    QColor HandleColorByMousePressed;
-//    QColor colorSelectedArrow;
 //    void setHandleColorBackground( QColor color );
 //    void setHandleColorByMousePressed( QColor color );
 //    void setHandleColorBackgroundSize( QColor color );
@@ -75,11 +74,8 @@ public:
     int old_Frame_Y2;
 
     int framePenWidth;
-    int framePenHalf;
-//    int radius;
-//    int diameter;
-//    int penWidth;
-//    int penHalf;
+    int radius;
+    int penWidth;
 
     int frame_X;
     int frame_Y;
@@ -91,22 +87,28 @@ public:
 //    int pixelWidth;
 //    int pixelHeight;
 
+    QColor frameColor;
+    QColor colorSelectedArrow;
+
+    void setFrameColor( QColor color ); //this frame is all around the selected area
+    void setColorSelectedArrow (QColor color);
+
     void drawFrame( QPainter &painter );
 //    void printSize(QPainter &painter);
-//    void HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle );
-//    void HandleTopLeft(QPainter &painter );
+    void HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle );
+    void HandleTopLeft(QPainter &painter );
 //    void HandleTopLeftSize(QPainter &painter);
 //    void HandleTopMiddle(QPainter &painter);
 //    void HandleTopMiddleSize(QPainter &painter);
-//    void HandleTopRight( QPainter &painter );
+    void HandleTopRight( QPainter &painter );
 //    void HandleTopRightSize(QPainter &painter);
 //    void HandleRightMiddle(QPainter &painter);
 //    void HandleRightMiddleSize(QPainter &painter);
-//    void HandleBottomRight(QPainter &painter);
+    void HandleBottomRight(QPainter &painter);
 //    void HandleBottomRightSize(QPainter &painter);
 //    void HandleBottomMiddle(QPainter &painter);
 //    void HandleBottomMiddleSize( QPainter &painter );
-//    void HandleBottomLeft(QPainter &painter);
+    void HandleBottomLeft(QPainter &painter);
 //    void HandleBottomLeftSize( QPainter &painter );
 //    void HandleLeftMiddle(QPainter &painter);
 //    void HandleLeftMiddleSize( QPainter &painter );
@@ -117,10 +119,7 @@ public:
 //    enum vk_platform { x11, wayland, windows };
 //    vk_platform platform;
 
-//    bool recordemode = false;
-
-    QColor getFrameColor();
-    QColor frameColor;
+    bool recordemode = false;
 
   };
   #endif
