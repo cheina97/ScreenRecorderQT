@@ -82,13 +82,17 @@ mutex avRawPkt_queue_mutex;
 int videoIndex = -1;
 AVFrame *avYUVFrame = nullptr;
 X11parameters x11pmt;
-FILE *mp4Fp;
 bool stop;
+string out_file = "out.mp4";
+AVOutputFormat *fmt;
+AVStream *video_st;
+int64_t pts_multipliers=1731099511928129;
 
 void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
     avdevice_register_all();
-
     avFmtCtx = avformat_alloc_context();
+    fmt = av_guess_format(NULL, ".h264", NULL);
+    avFmtCtx->oformat = fmt;
     char *displayName = getenv("DISPLAY");
 
     if (fullscreen) {
@@ -160,6 +164,12 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
         exit(-1);
     }
 
+    //Open output URL
+    if (avio_open(&avFmtCtx->pb, out_file.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
+        printf("Failed to open output file! \n");
+        exit(-1);
+    }
+
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
                             avRawCodecCtx->pix_fmt,
@@ -180,16 +190,18 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avYUVFrame->height = avRawCodecCtx->height;
     avYUVFrame->format = AV_PIX_FMT_YUV420P;
 
-    avEncodec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+    avEncodec = avcodec_find_encoder(fmt->video_codec);
     if (!avEncodec) {
-        cout << "MP4 codec not found"
+        cout << "Encoder codec not found"
              << endl;
         exit(-1);
     }
 
+    video_st = avFmtCtx->streams[videoIndex];
+
     avEncoderCtx = avcodec_alloc_context3(avEncodec);
 
-    avEncoderCtx->codec_id = AV_CODEC_ID_MPEG4;
+    avEncoderCtx->codec_id = AV_CODEC_ID_H264;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
     avEncoderCtx->width = x11pmt.width * scaling_factor;
@@ -200,6 +212,10 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avEncoderCtx->gop_size = 250;
     avEncoderCtx->qmin = 1;
     avEncoderCtx->qmax = 10;
+
+    /* avEncoderCtx->me_range = 16;
+    avEncoderCtx->max_qdiff = 4;
+    avEncoderCtx->qcompress = 0.6; */
 
     AVDictionary *param = 0;
     //H.264
@@ -212,6 +228,8 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
              << endl;
         exit(-1);
     }
+
+    av_dump_format(avFmtCtx, 0, out_file.c_str(), 1);
 }
 
 void getRawPackets(int frameNumber) {
@@ -255,6 +273,12 @@ void decodeAndEncode(void) {
     int flag = 0;
     int bufLen = 0;
     uint8_t *outBuf = nullptr;
+
+    flag = avformat_write_header(avFmtCtx, NULL);
+    if (flag < 0) {
+        cout << "Error in writing header" << endl;
+        exit(-1);
+    }
 
     bufLen = x11pmt.width * x11pmt.height * 3;
     outBuf = (uint8_t *)malloc(bufLen);
@@ -306,7 +330,7 @@ void decodeAndEncode(void) {
                     //Inizio ENCODING
                     //deprecato: flag = avcodec_encode_video2(avEncoderCtx, &pkt, avYUVFrame, &got_picture);
                     encode_clock_start = clock();
-                    //avYUVFrame->pts = i;
+
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
                     got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                     encode_clock_end = clock();
@@ -315,15 +339,20 @@ void decodeAndEncode(void) {
 
                     if (flag >= 0) {
                         if (got_picture == 0) {
-                            int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
-                            if (w != pkt.size) {
+                            //int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
+
+                            pkt.pts = i+pts_multipliers;
+                            pkt.dts = i+pts_multipliers;
+                            pkt.duration = 1;
+
+                            if (av_interleaved_write_frame(avFmtCtx, &pkt) < 0) {
                                 cout << "Error in writing file" << endl;
+                                exit(-1);
                             }
                             //cout << "Elaborated " << i << " frames" << endl;
                         }
                     }
-                    av_packet_unref(&pkt);
-                    ;
+
                 } else {
                     cout << "Errore Decoding: receiving packet " << got_picture << endl;
                 }
@@ -334,6 +363,19 @@ void decodeAndEncode(void) {
         }
         avRawPkt_queue_mutex.lock();
     }
+
+    /* int ret = flush_encoder(avFmtCtx, 0);
+    if (ret < 0) {
+        printf("Flushing encoder failed\n");
+        return -1;
+    } */
+    av_packet_unref(&pkt);
+    av_write_trailer(avFmtCtx);
+    avio_close(avFmtCtx->pb);
+
+    avformat_free_context(avFmtCtx);
+    //avcodec_close(video_st->codec);
+
     cout << "Decoded and Encoded successfully" << endl
          << endl;
 }
@@ -354,13 +396,11 @@ int main(int argc, char const *argv[]) {
     initScreenSource(x11pmt, false, atoi(argv[6]), atof(argv[8]));
     //getCurrentVMemUsedByProc();
     //getCurrentVMemUsedByProc();
-    mp4Fp = fopen("out.mp4", "wb");
 
     thread capture_thread{getRawPackets, atoi(argv[6]) * atoi(argv[7])};
     thread elaborate_thread{decodeAndEncode};
     capture_thread.join();
     elaborate_thread.join();
-    fclose(mp4Fp);
     //getCurrentVMemUsedByProc();
 
     cout << "Finished" << endl
