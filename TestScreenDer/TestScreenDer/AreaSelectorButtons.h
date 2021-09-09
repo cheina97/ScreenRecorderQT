@@ -10,9 +10,7 @@ public:
     AreaSelectorButtons();
     virtual ~AreaSelectorButtons();
     enum degreeArrow { topMiddle=0, topRight=45, rightMiddle=90, bottomRight=135,
-                       bottomMiddel=180, bottomLeft=225, leftMiddel=270, topLeft=315 };
-
-//TODO:: rimuovere le freccie dei latini
+                       bottomMiddle=180, bottomLeft=225, leftMiddle=270, topLeft=315 };
 
 private:
   int penWidth = 2;
@@ -23,9 +21,9 @@ private:
   QColor colorSelected = Qt::black; //arrow color
 
 public slots:
-  QPixmap getPixmapHandle(degreeArrow degree );
-  QPixmap getButton( );
-  QPixmap getArrow(degreeArrow degree);
+  QPixmap getPixmapHandle(degreeArrow degree ); //creates a pixmap to use somewhere else
+  QPixmap getButton( );                         //draws the ellipse
+  QPixmap getArrow(degreeArrow degree);         //draws the arrow in the button
   int getWithHalf();
 
 private slots:
