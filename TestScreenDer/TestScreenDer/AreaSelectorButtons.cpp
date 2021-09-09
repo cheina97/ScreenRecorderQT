@@ -2,7 +2,6 @@
 
 AreaSelectorButtons::AreaSelectorButtons()
 {
-
 }
 
 AreaSelectorButtons::~AreaSelectorButtons()

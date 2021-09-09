@@ -14,6 +14,7 @@ AreaSelector::AreaSelector()
       handleUnderMouse(NoHandle),
       framePenWidth(4), // framePenWidth must be an even number
       radius(20),
+      penWidth(2),
       frame_Width(320 + framePenWidth), //default dimension
       frame_height(200 + framePenWidth),
       frame_min_width(320 + framePenWidth),
@@ -41,63 +42,6 @@ void AreaSelector::slot_init()
     //positioning the rectange in the middle of the screen:
     frame_X = (screenWidth/2 - frame_Width/2)-framePenWidth/2;
     frame_Y = (screenHeight/2 - frame_height/2)-framePenWidth/2;
-}
-
-void AreaSelector::paintEvent( QPaintEvent *event ){
-    Q_UNUSED(event);
-    QPixmap pixmap( screenWidth, screenHeight);
-    pixmap.fill(Qt::transparent);
-    QPainter painterPixmap;
-    painterPixmap.begin(&pixmap);
-    painterPixmap.setRenderHints( QPainter::Antialiasing, true );
-
-    if(!recordemode){
-        //drawing buttons and frame
-        HandleTopLeft( painterPixmap );
-        HandleTopRight( painterPixmap );
-        HandleBottomLeft( painterPixmap );
-        HandleBottomRight( painterPixmap );
-        HandleMiddle( painterPixmap ); //central button
-        drawFrame( painterPixmap );
-        painterPixmap.end();
-    }else{
-        HandleRecord( painterPixmap,
-                      frame_X - radius + penWidth/2,
-                      frame_Y - radius + penWidth/2,
-                        0 * 16,
-                      270 * 16 );
-        HandleRecord( painterPixmap,
-                      frame_X + frame_Width - radius + penWidth/2,
-                      frame_Y - radius + penWidth/2,
-                      -90 * 16,
-                      270 * 16 );
-        HandleRecord( painterPixmap,
-                      frame_X + frame_Width - radius + penWidth/2,
-                      frame_Y + frame_height - radius + penWidth/2,
-                      -180 * 16,
-                       270 * 16 );
-        HandleRecord( painterPixmap,
-                      frame_X - radius + penWidth/2,
-                      frame_Y + frame_height - radius + penWidth/2,
-                         0 * 16,
-                      -270 * 16 );
-        drawFrame( painterPixmap );
-
-        // setMask(pixmap.mask()) is not working if enlarge the Area over the full screen.
-        // Remedy: We draw a black pixel with a width=1 on the left top corner and setMask(pixmap.mask()) works.
-        QPen pen;
-          pen.setColor( Qt::black );
-          pen.setWidth( 1 );
-        painterPixmap.setPen( pen );
-        painterPixmap.drawPoint( 0, 0 );
-    }
-
-    QPainter painter;
-    painter.begin( this );
-    painter.drawPixmap( QPoint( 0, 0 ), pixmap );
-    painter.end();
-
-    setMask( pixmap.mask() );
 }
 
 void AreaSelector::drawFrame(QPainter &painter)
@@ -131,11 +75,11 @@ void AreaSelector::HandleMiddle( QPainter &painter )
 
     painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
-                        buttonArrow.getArrow( buttonArrow.degreeArrow::bottomMiddel) );
+                        buttonArrow.getArrow( buttonArrow.degreeArrow::bottomMiddle) );
 
     painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
-                        buttonArrow.getArrow( buttonArrow.degreeArrow::leftMiddel) );
+                        buttonArrow.getArrow( buttonArrow.degreeArrow::leftMiddle) );
 }
 
 void AreaSelector::HandleTopLeft( QPainter &painter )
@@ -172,7 +116,6 @@ void AreaSelector::HandleBottomRight( QPainter &painter )
 
 void AreaSelector::HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle )
 {
-    qDebug()<<x<<"-"<<y;
     QBrush brush;
       brush.setColor( Qt::darkGray );
       brush.setStyle( Qt::SolidPattern );
@@ -186,6 +129,9 @@ void AreaSelector::HandleRecord( QPainter &painter, int x, int y, int startAngle
     painter.drawPie( rectangle, startAngle, spanAngle );
 }
 
+/*////////////////////////////
+// reacting to events
+////////////////////////////*/
 
 void AreaSelector::mousePressEvent(QMouseEvent *event)
 {
@@ -238,9 +184,10 @@ void AreaSelector::mouseReleaseEvent( QMouseEvent * event )
 
 void AreaSelector::mouseMoveEvent( QMouseEvent *event )
 {
-    if ( recordemode == true )
+    if ( recordemode == true ){
+        unsetCursor();
         return;
-
+    }
     switch ( handlePressed )
     {
       case NoHandle    : break;
@@ -575,10 +522,60 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
     handleUnderMouse = NoHandle;
 }
 
+void AreaSelector::paintEvent( QPaintEvent *event ){
+    Q_UNUSED(event);
+    QPixmap pixmap( screenWidth, screenHeight);
+    pixmap.fill(Qt::transparent);
+    QPainter painterPixmap;
+    painterPixmap.begin(&pixmap);
+    painterPixmap.setRenderHints( QPainter::Antialiasing, true );
+
+    if(!recordemode){
+        //drawing buttons and frame
+        HandleTopLeft( painterPixmap );
+        HandleTopRight( painterPixmap );
+        HandleBottomLeft( painterPixmap );
+        HandleBottomRight( painterPixmap );
+        HandleMiddle( painterPixmap ); //central button
+    }else{
+        HandleRecord( painterPixmap,
+                      frame_X - radius + penWidth/2,
+                      frame_Y - radius + penWidth/2,
+                        0 * 16,
+                      270 * 16 );
+        HandleRecord( painterPixmap,
+                      frame_X + frame_Width - radius + penWidth/2,
+                      frame_Y - radius + penWidth/2,
+                      -90 * 16,
+                      270 * 16 );
+        HandleRecord( painterPixmap,
+                      frame_X + frame_Width - radius + penWidth/2,
+                      frame_Y + frame_height - radius + penWidth/2,
+                      -180 * 16,
+                       270 * 16 );
+        HandleRecord( painterPixmap,
+                      frame_X - radius + penWidth/2,
+                      frame_Y + frame_height - radius + penWidth/2,
+                         0 * 16,
+                      -270 * 16 );        
+    }
+    drawFrame( painterPixmap );
+    painterPixmap.end();
+    QPainter painter;
+    painter.begin( this );
+    painter.drawPixmap( QPoint( 0, 0 ), pixmap );
+    painter.end();
+
+    setMask( pixmap.mask() );
+}
+
+/*////////////////////////////
+// slots
+////////////////////////////*/
+
 void AreaSelector::slot_recordMode( bool value )
 {
-    qDebug()<<"slot chiamato " <<value;
-   recordemode = !value;
+   recordemode = value;
    repaint();
    update();
 }
