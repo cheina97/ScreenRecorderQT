@@ -52,7 +52,7 @@ int getCurrentVMemUsedByProc() {  //Note: this value is in KB!
         }
     }
     fclose(file);
-    cout << "CurrMemUsedByProc: " << (double)result / 1024 / 1024 << "GB" << endl;
+    //cout << "CurrMemUsedByProc: " << (double)result / 1024 / 1024 << "GB" << endl;
     return result;
 }
 
@@ -89,6 +89,20 @@ AVStream *video_st;
 int64_t pts_offset = 0;
 
 FILE *debug;
+int memory_limit;
+bool memory_error=false;
+
+void memoryCheck_init() {
+    memory_limit = getCurrentVMemUsedByProc() + (1024 * 1024);
+}
+
+bool memoryCheck_limitSurpassed(){
+    if(getCurrentVMemUsedByProc()>memory_limit){
+        return true;
+    }else{
+        return false;
+    }
+}
 
 void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
     avdevice_register_all();
@@ -204,9 +218,9 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avEncoderCtx = avcodec_alloc_context3(avEncodec);
 
     avEncoderCtx->codec_id = fmt->video_codec;
-    cout<<fmt->video_codec<<endl;
-    cout<<AV_CODEC_ID_MPEG4<<endl;
-    cout<<AV_CODEC_ID_H264<<endl;
+    cout << fmt->video_codec << endl;
+    cout << AV_CODEC_ID_MPEG4 << endl;
+    cout << AV_CODEC_ID_H264 << endl;
 
     //avEncoderCtx->codec_id =AV_CODEC_ID_HEVC;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -244,7 +258,7 @@ void getRawPackets(int frameNumber) {
     readframe_clock_start = clock();
     auto begin = std::chrono::high_resolution_clock::now();
     AVPacket *avRawPkt;
-    int allocatedspace = 0;
+    
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
@@ -256,7 +270,10 @@ void getRawPackets(int frameNumber) {
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
-        allocatedspace += avRawPkt->size;
+        if(memoryCheck_limitSurpassed()){
+            memory_error=true;
+            break;
+        }
         // test for memory av_packet_unref(avRawPkt);
         //if (i == frameNumber / 2 && i % 2 == 0) usleep(5 * 1000 * 1000);
     }
@@ -406,10 +423,8 @@ int main(int argc, char const *argv[]) {
     x11pmt.offset_x = atoi(argv[3]);
     x11pmt.offset_y = atoi(argv[4]);
     x11pmt.screen_number = atoi(argv[5]);
-    //getCurrentVMemUsedByProc();
     initScreenSource(x11pmt, false, atoi(argv[6]), atof(argv[8]));
-    //getCurrentVMemUsedByProc();
-    //getCurrentVMemUsedByProc();
+    memoryCheck_init();
 
     thread capture_thread{getRawPackets, atoi(argv[6]) * atoi(argv[7])};
     thread elaborate_thread{decodeAndEncode};
@@ -424,9 +439,9 @@ int main(int argc, char const *argv[]) {
     cout << "Decode clock: " << decode_clock << " " << (float)100 * decode_clock / total_clock << "%" << endl;
     cout << "Scaling clock: " << scaling_clock << " " << (float)100 * scaling_clock / total_clock << "%" << endl;
     cout << "Encode clock: " << encode_clock << " " << (float)100 * encode_clock / total_clock << "%" << endl;
-    /* while (true) {
-        usleep(500000000);
+    
+    if(memory_error){
+        cerr<<"Process ended because memory limit have been surpassed"<<endl;
     }
- */
     return 0;
 }
