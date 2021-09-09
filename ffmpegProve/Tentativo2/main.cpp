@@ -83,15 +83,17 @@ int videoIndex = -1;
 AVFrame *avYUVFrame = nullptr;
 X11parameters x11pmt;
 bool stop;
-string out_file = "out.264";
+string out_file = "out.mp4";
 AVOutputFormat *fmt;
 AVStream *video_st;
 int64_t pts_offset = 0;
 
+FILE *debug;
+
 void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
     avdevice_register_all();
     avFmtCtx = avformat_alloc_context();
-    fmt = av_guess_format(NULL, ".264", NULL);
+    fmt = av_guess_format("mpeg1video", NULL, NULL);
     avFmtCtx->oformat = fmt;
     char *displayName = getenv("DISPLAY");
 
@@ -201,7 +203,12 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
 
     avEncoderCtx = avcodec_alloc_context3(avEncodec);
 
-    avEncoderCtx->codec_id = AV_CODEC_ID_H264;
+    avEncoderCtx->codec_id = fmt->video_codec;
+    cout<<fmt->video_codec<<endl;
+    cout<<AV_CODEC_ID_MPEG4<<endl;
+    cout<<AV_CODEC_ID_H264<<endl;
+
+    //avEncoderCtx->codec_id =AV_CODEC_ID_HEVC;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
     avEncoderCtx->width = x11pmt.width * scaling_factor;
@@ -340,14 +347,15 @@ void decodeAndEncode(void) {
                         if (got_picture == 0) {
                             //cout << pts_offset << " += " << avRawPkt_dts << endl;
                             //pts_offset += avRawPkt_dts;
-                            pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts+1;
-                            pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts+1;
+                            pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
+                            pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
+                            fprintf(debug, "%ld\n", pkt.pts);
                             //pkt.pts = pts_offset;
                             //pkt.dts = pts_offset;
                             //cout << "pkt.pts =" << pts_offset << " + " << avFmtCtx->start_time << " + " << av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base) << endl;
                             //pkt.pts = avFmtCtx->start_time + avFmtCtx->start_time + av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base);
                             //pkt.dts = avFmtCtx->start_time + av_rescale_q(pkt.dts, video_st->codec->time_base, video_st->time_base);
-                            pkt.duration = 1;
+                            //pkt.duration = 1;
 
                             //int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
                             if (av_interleaved_write_frame(avFmtCtx, &pkt) < 0) {
@@ -386,6 +394,7 @@ void decodeAndEncode(void) {
 }
 
 int main(int argc, char const *argv[]) {
+    debug = fopen("debug.out", "w");
     if (argc < 9) {
         cout << "Errore: parametri mancanti" << endl
              << "Utilizzo: ./main width height offset_x offset_y screen_num fps capturetime_seconds quality" << endl;
