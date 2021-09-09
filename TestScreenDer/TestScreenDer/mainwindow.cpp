@@ -48,9 +48,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this                    , SIGNAL( signal_close() )    , areaSelector, SLOT( close() ) );
     connect(this                    , SIGNAL( signal_selection() ), areaSelector, SLOT( slot_init() ) );
     connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )     , areaSelector, SLOT( setVisible( bool ) ) );
-
+    connect(ui->pushButtonSelectArea, SIGNAL( clicked() )     , areaSelector, SLOT( update() ) );
     connect(this                    , SIGNAL(signal_recording(bool)), areaSelector, SLOT( slot_recordMode(bool) ) );
-    connect(ui->pushButtonStop      , SIGNAL(clicked(bool))         , areaSelector, SLOT( setVisible(bool) ) );
+//    connect(ui->pushButtonStop      , SIGNAL(clicked(bool))         , areaSelector, SLOT( setVisible(bool) ) );
+    connect(this                    , SIGNAL( signal_reset_areaSelector()), areaSelector, SLOT (slot_areaReset()));
 }
 
 MainWindow::~MainWindow()
@@ -75,10 +76,10 @@ void MainWindow::enable_or_disable_tabs(bool val){
 
 void MainWindow::on_pushButtonSelectArea_clicked()
 {
-    bool state = ui->pushButtonSelectArea->isChecked();
+    bool prevstate = ui->pushButtonSelectArea->isChecked();
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
-    if(state){
+    if(prevstate){
         emit signal_selection();
     }
 }
@@ -103,7 +104,7 @@ void MainWindow::on_pushButtonStart_clicked()
         ui->pushButtonPause->setEnabled(true);
         ui->pushButtonStart->setDisabled(true);
       enable_or_disable_tabs(false);
-      emit signal_recording(true);
+     if(ui->pushButtonSelectArea->isChecked()) emit signal_recording(true);
     }else{
         return;
     }
@@ -125,10 +126,10 @@ void MainWindow::on_pushButtonStop_clicked()
 {
     enable_or_disable_tabs(true);
     ui->pushButtonStart->setEnabled(true);
-
-    ui->pushButtonFullscreen->setChecked(false);
-    ui->pushButtonSelectArea->setChecked(false);
-    emit signal_recording(false);
+    if(ui->pushButtonSelectArea->isChecked()){
+        emit signal_recording(false);
+        emit signal_reset_areaSelector();
+    }
 
     ui->pushButtonPause->setDisabled(true);
     ui->pushButtonResume->setDisabled(true);
@@ -136,4 +137,5 @@ void MainWindow::on_pushButtonStop_clicked()
     ui->lineEditPath->setText(QDir::homePath());
     ui->checkBoxStereo->setChecked(true);
     ui->radioButton24->setChecked(true);
+
 }

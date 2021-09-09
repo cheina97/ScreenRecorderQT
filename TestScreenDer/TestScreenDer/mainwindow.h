@@ -34,7 +34,7 @@ signals:
     void signal_close();
     void signal_selection();
     void signal_recording(bool);
-
+    void signal_reset_areaSelector();
 protected:
     void closeEvent( QCloseEvent *event );
 
