@@ -116,6 +116,7 @@ void AreaSelector::HandleBottomRight( QPainter &painter )
 
 void AreaSelector::HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle )
 {
+    //this draws on top of the previous buttons
     QBrush brush;
       brush.setColor( Qt::darkGray );
       brush.setStyle( Qt::SolidPattern );
@@ -580,6 +581,27 @@ void AreaSelector::slot_recordMode( bool value )
    update();
 }
 
+void AreaSelector::slot_areaReset()
+{
+    frame_Width = frame_min_width;
+    frame_height = frame_min_height;
+    frame_X = (screenWidth/2 - frame_Width/2)-framePenWidth/2;
+    frame_Y = (screenHeight/2 - frame_height/2)-framePenWidth/2;
+    repaint();
+    update();
+}
+
+/*////////////////////////////
+// utilities
+////////////////////////////*/
+void AreaSelector::setGeometry( int x, int y, int with, int height  )
+{
+  frame_X = x;
+  frame_Y = y;
+  frame_Width = with;
+  frame_height = height;
+  update();
+}
 
 /*////////////////////////////
 // getter and setter
@@ -601,4 +623,17 @@ QColor AreaSelector::getColorSelectedArrow()
 void AreaSelector::setColorSelectedArrow(QColor color)
 {
     colorSelectedArrow = color;
+}
+
+void AreaSelector::setWidth( int width )
+{
+    frame_Width = width + framePenWidth;
+    repaint();
+    update();
+}
+void AreaSelector::setHeight( int height )
+{
+    frame_height = height + framePenWidth;
+    repaint();
+    update();
 }

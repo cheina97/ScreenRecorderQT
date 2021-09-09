@@ -22,15 +22,15 @@ public:
 
 //    void setX( int x );
 //    void setY( int y );
-//    void setWidth( int width );
-//    void setHeight( int height );
+    void setWidth( int width );
+    void setHeight( int height );
 
     QColor getFrameColor();
     QColor getColorSelectedArrow();
 
 
   public slots:
-//    void slot_areaReset();
+    void slot_areaReset();
     void slot_init(); //executed when it's time to initialise the window
     void slot_recordMode(bool value);
 
@@ -114,7 +114,7 @@ public:
 //    void HandleLeftMiddleSize( QPainter &painter );
     void HandleMiddle(QPainter &painter);
 
-//    void vk_setGeometry( int x, int y, int with, int height );
+    void setGeometry( int x, int y, int with, int height );
 
 //    enum vk_platform { x11, wayland, windows };
 //    vk_platform platform;
