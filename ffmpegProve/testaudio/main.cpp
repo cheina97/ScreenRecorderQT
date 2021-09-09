@@ -21,7 +21,6 @@ extern "C"
 
 //#include "SoundRecordImpl.h"
 
-
 using namespace std;
 
 AVFormatContext *FormatContext = nullptr;
@@ -53,11 +52,13 @@ int initAudio()
 {
 
   //string audioSpeaker = "audio=" + GetSpeakerDeviceName();
-
   avdevice_register_all();
   FormatContext = avformat_alloc_context();
-  FormatContext->oformat=av_guess_format("video1mpeg","NULL","NULL");
-
+  AVOutputFormat *fmt = av_guess_format("mpeg1video", "NULL", "NULL");
+  FormatContext->oformat = fmt;
+  cout << fmt->flags << endl;
+  cout << FormatContext->oformat->flags << endl;
+  //exit(5);
   return 1;
 }
 
@@ -121,12 +122,12 @@ int decodeAudio()
   AudioCodec = avcodec_find_decoder(AudioStream->codecpar->codec_id);
   cout << "[ DEBUG ] DECODE: Find decoder: OK - CODEC ID: " << AudioCodec << endl;
   AudioCodecContext = avcodec_alloc_context3(AudioCodec);
-  if (avcodec_parameters_to_context(AudioCodecContext, AudioStream->codecpar) < 0)
+  if (avcodec_parameters_to_context(AudioCodecContext, FormatContext->streams[audioIndex]->codecpar) < 0)
   {
     cout << "Audio avcodec_parameters_to_context failed" << endl;
     exit(-1);
   }
-  
+
   cout << "[ DEBUG ] DECODE: Parameters to context: OK" << endl;
   if (avcodec_open2(AudioCodecContext, AudioCodec, nullptr) < 0)
   {
@@ -142,7 +143,7 @@ int encodeAudio()
 {
   /* if (AudioStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
   { */
-  AudioEncoder = avcodec_find_encoder(AV_CODEC_ID_AAC);
+  AudioEncoder = avcodec_find_encoder(AV_CODEC_ID_AC3);
   if (!AudioEncoder)
   {
     cout << "Can not find audio encoder" << endl;
@@ -159,7 +160,7 @@ int encodeAudio()
     exit(-1);
   }
   cout << "[ DEBUG ] ENCODE: Encoder new stream: OK" << endl;
-  
+
   audioIndexOut = AudioStreamOut->index;
 
   AudioEncoderContext = avcodec_alloc_context3(AudioEncoder);
@@ -170,16 +171,15 @@ int encodeAudio()
   }
 
   cout << "[ DEBUG ] ENCODE: Alloc context: OK" << endl;
-  
+
   AudioEncoderContext->sample_fmt = AudioEncoder->sample_fmts ? AudioEncoder->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
   cout << "[ DEBUG ] ENCODE: Context sample fmt: " << AudioEncoderContext->sample_fmt << endl;
   AudioEncoderContext->bit_rate = 128000;
-  cout << "[ DEBUG ] ENCODE: Context Bit Rate: "<< AudioEncoderContext->bit_rate << endl;
+  cout << "[ DEBUG ] ENCODE: Context Bit Rate: " << AudioEncoderContext->bit_rate << endl;
   AudioEncoderContext->sample_rate = 48000;
   cout << "[ DEBUG ] ENCODE: Context Sample Rate: " << AudioEncoderContext->sample_rate << endl;
 
   //cout << "[ DEBUG ] ENCODE: Context sample fmt: " << AudioEncoderContext->sample_fmt << "\n[ DEBUG ] ENCODE: Bit Rate: "<< AudioEncoderContext->bit_rate << "\n[ DEBUG ] ENCODE: Sample Rate: " << AudioEncoderContext->sample_rate << endl;
-  
 
   /* if (AudioEncoder->supported_samplerates)
   {
@@ -217,7 +217,7 @@ int encodeAudio()
   AudioStreamOut->time_base = av_make_q(1, AudioEncoderContext->sample_rate);
   cout << "[ DEBUG ] ENCODE: Stream time base: OK" << endl;
   AudioEncoderContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-  cout << "[ DEBUG ] ENCODE: Context Flags: " <<  AudioEncoderContext->flags << endl;
+  cout << "[ DEBUG ] ENCODE: Context Flags: " << AudioEncoderContext->flags << endl;
   AudioEncoderContext->codec_tag = 0;
 
   if (!check_sample_fmt(AudioEncoder, AudioEncoderContext->sample_fmt))
@@ -267,14 +267,17 @@ int encodeAudio()
   //}
   cout << "[ DEBUG ] ENCODE: SWR Init: OK " << endl;
 
-  if (!(FormatContext->oformat->flags & AVFMT_NOFILE))
+  //av_dump_format(FormatContext, 0, "out.mp4", 1);
+
+  /* if (!(FormatContext->oformat->flags & AVFMT_NOFILE))
+  
+    
+    
+  } */
+  if (avio_open(&FormatContext->pb, "out.mp4", AVIO_FLAG_WRITE) < 0)
   {
-    cout << "[ DEBUG ] ENCODE: SWR Alloc: OK " << endl;
-    if (avio_open(&FormatContext->pb, "out.mp4", AVIO_FLAG_WRITE) < 0)
-    {
-      printf("can not open output file handle!\n");
-      exit(-1);
-    }
+    printf("can not open output file handle!\n");
+    exit(-1);
   }
 
   cout << "[ DEBUG ] ENCODE: IO Open: OK " << endl;
@@ -290,7 +293,8 @@ int encodeAudio()
   return 1;
 }
 
-AVFrame* AllocAudioFrame(AVCodecContext* c, int samples){
+AVFrame *AllocAudioFrame(AVCodecContext *c, int samples)
+{
 
   AVFrame *frame = av_frame_alloc();
 
@@ -299,8 +303,10 @@ AVFrame* AllocAudioFrame(AVCodecContext* c, int samples){
   frame->sample_rate = c->sample_rate;
   frame->nb_samples = samples;
 
-  if(samples){
-    if(av_frame_get_buffer(frame, 0) <0){
+  if (samples)
+  {
+    if (av_frame_get_buffer(frame, 0) < 0)
+    {
       cout << "av_frame_get_buffer failed" << endl;
       return nullptr;
     }
@@ -529,7 +535,7 @@ void recordAudio()
 }
 
 int main(int argc, char const *argv[])
-{ 
+{
   cout << "[DEBUG] Init devices" << endl;
   initAudio();
   cout << "------------------------------" << endl;
