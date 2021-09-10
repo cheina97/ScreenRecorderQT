@@ -22,6 +22,10 @@ AreaSelector::AreaSelector()
       frameColor(Qt::black),
       colorSelectedArrow(Qt::yellow)
 {
+    setWindowTitle( "ScreenCapture");
+    QIcon icon( QString::fromUtf8( ":/icons/mainIcon.jpg" ) );
+    setWindowIcon( icon );
+
     //window settings
     setWindowFlags( Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip);
     setAttribute( Qt::WA_TranslucentBackground, true);
@@ -128,6 +132,32 @@ void AreaSelector::HandleRecord( QPainter &painter, int x, int y, int startAngle
     QRectF rectangle = QRectF( x,y,radius*2,radius*2);
 
     painter.drawPie( rectangle, startAngle, spanAngle );
+}
+
+void AreaSelector::printSize( QPainter &painter )
+{
+  QString widthHeigtSize = QString::number( static_cast<int>( getWidth()/screen->devicePixelRatio() ) ) +
+                           " x " +
+                           QString::number( static_cast<int>( getHeight()/screen->devicePixelRatio() ) );
+
+  QFont font;
+  font.setPointSize( 14 );
+  painter.setFont( font );
+
+  QFontMetrics fontMetrics( font );
+  pixelWidth = fontMetrics.horizontalAdvance( widthHeigtSize );
+  pixelHeight = fontMetrics.height();
+  QRect rect( frame_X + frame_Width/2 - pixelWidth/2 - 5,
+              frame_Y + frame_height/2 - pixelHeight/2 - 50,
+              pixelWidth + 10,
+              pixelHeight );
+
+  painter.setBrush( QBrush( Qt::yellow, Qt::SolidPattern ) );
+  painter.setPen( QPen( Qt::black, 2 ) );
+
+  painter.drawRoundedRect( rect, 7, 7 );
+
+  painter.drawText( rect, Qt::AlignCenter, widthHeigtSize );
 }
 
 /*////////////////////////////
@@ -538,6 +568,7 @@ void AreaSelector::paintEvent( QPaintEvent *event ){
         HandleBottomLeft( painterPixmap );
         HandleBottomRight( painterPixmap );
         HandleMiddle( painterPixmap ); //central button
+        printSize( painterPixmap);
     }else{
         HandleRecord( painterPixmap,
                       frame_X - radius + penWidth/2,
@@ -637,3 +668,35 @@ void AreaSelector::setHeight( int height )
     repaint();
     update();
 }
+
+qreal AreaSelector::getHeight()
+{
+    qreal xReal =   ( ( frame_Y + framePenWidth/2 ) + ( frame_height - framePenWidth ) ) * screen->devicePixelRatio();
+    int xInt = static_cast<int>( ( ( frame_Y + framePenWidth/2 ) + ( frame_height - framePenWidth ) ) * screen->devicePixelRatio() );
+
+    if ( xReal > xInt )
+    {
+        xReal = static_cast<int>( ( frame_height - framePenWidth ) * screen->devicePixelRatio() ) - 1;
+    }
+    else
+    {
+        xReal = static_cast<int>( ( frame_height - framePenWidth ) * screen->devicePixelRatio() );
+    }
+    return xReal;
+}
+qreal AreaSelector::getWidth()
+{
+    qreal xReal = ( ( frame_X + framePenWidth/2 ) + ( frame_Width - framePenWidth ) ) * screen->devicePixelRatio();
+    int xInt = static_cast<int>( ( ( frame_X + framePenWidth/2 ) + ( frame_Width - framePenWidth ) ) * screen->devicePixelRatio() );
+
+    if ( xReal > xInt )
+    {
+        xReal = static_cast<int>( ( frame_Width - framePenWidth ) * screen->devicePixelRatio() ) - 1;
+    }
+    else
+    {
+        xReal = static_cast<int>( ( frame_Width - framePenWidth ) * screen->devicePixelRatio() );
+    }
+    return xReal;
+}
+

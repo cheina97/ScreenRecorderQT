@@ -1,2 +1,8 @@
-<!DOCTYPE RCC>
-<RCC version="1.0"/>
+<RCC>
+    <qresource prefix="/">
+        <file>icons/area.png</file>
+        <file>icons/danger.png</file>
+        <file>icons/fullscreen.png</file>
+        <file>icons/mainIcon.jpg</file>
+    </qresource>
+</RCC>

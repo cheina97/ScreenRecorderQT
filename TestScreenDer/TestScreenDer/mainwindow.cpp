@@ -14,20 +14,20 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     areaSelector = new AreaSelector();
-    //TODO:
-    //setWindowTitle( global::name + " " + global::version );
-    //QIcon icon( QString::fromUtf8( ":/pictures/logo/logo.png" ) );
-    //setWindowIcon( icon );
+
+    setWindowTitle( "ScreenCapture");
+    QIcon icon( QString::fromUtf8( ":/icons/mainIcon.jpg" ) );
+    setWindowIcon( icon );
 
     //tab widget
     ui->tabWidget->setCurrentIndex(0); //always open on first tab
 
     //button properties
     ui->pushButtonFullscreen->setCheckable(true);
-    ui->pushButtonFullscreen->setIcon(QIcon("../Icons/fullscreen.png"));
+    ui->pushButtonFullscreen->setIcon(QIcon(":/icons/fullscreen.png"));
 
     ui->pushButtonSelectArea->setCheckable(true);
-    ui->pushButtonSelectArea->setIcon(QIcon("../Icons/area.png"));
+    ui->pushButtonSelectArea->setIcon(QIcon(":/icons/area.png"));
 
     ui->pushButtonPause->setDisabled(true);
     ui->pushButtonResume->setDisabled(true);
