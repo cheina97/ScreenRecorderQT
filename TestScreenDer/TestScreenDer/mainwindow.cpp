@@ -36,8 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
     //line edit default text
     ui->lineEditPath->setText(QDir::homePath());
 
-    //checkboxes
-    ui->checkBoxStereo->setChecked(true);
+    //audio default selection
+    ui->radioButtonYes->setChecked(true);
 
     //radio buttons
     ui->radioButton24->setChecked(true);
@@ -45,12 +45,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->radioButton60->setToolTip("High performances required");
 
     //connect
-    connect(this                    , SIGNAL( signal_close() )    , areaSelector, SLOT( close() ) );
-    connect(this                    , SIGNAL( signal_selection() ), areaSelector, SLOT( slot_init() ) );
-    connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )     , areaSelector, SLOT( setVisible( bool ) ) );
-    connect(ui->pushButtonSelectArea, SIGNAL( clicked() )     , areaSelector, SLOT( update() ) );
+    connect(this                    , SIGNAL( signal_close() )      , areaSelector, SLOT( close() ) );
+    connect(this                    , SIGNAL( signal_selection() )  , areaSelector, SLOT( slot_init() ) );
+    connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )       , areaSelector, SLOT( setVisible( bool ) ) );
+    connect(ui->pushButtonSelectArea, SIGNAL( clicked() )           , areaSelector, SLOT( update() ) );
     connect(this                    , SIGNAL(signal_recording(bool)), areaSelector, SLOT( slot_recordMode(bool) ) );
-//    connect(ui->pushButtonStop      , SIGNAL(clicked(bool))         , areaSelector, SLOT( setVisible(bool) ) );
     connect(this                    , SIGNAL( signal_reset_areaSelector()), areaSelector, SLOT (slot_areaReset()));
 }
 
@@ -106,6 +105,7 @@ void MainWindow::on_pushButtonStart_clicked()
       enable_or_disable_tabs(false);
      if(ui->pushButtonSelectArea->isChecked()) emit signal_recording(true);
     }else{
+        //TODO minimize!
         return;
     }
 }
@@ -135,7 +135,7 @@ void MainWindow::on_pushButtonStop_clicked()
     ui->pushButtonResume->setDisabled(true);
     ui->pushButtonStop->setDisabled(true);
     ui->lineEditPath->setText(QDir::homePath());
-    ui->checkBoxStereo->setChecked(true);
+    ui->radioButtonYes->setChecked(true);
     ui->radioButton24->setChecked(true);
 
 }
