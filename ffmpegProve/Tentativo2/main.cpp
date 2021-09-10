@@ -90,16 +90,16 @@ int64_t pts_offset = 0;
 
 FILE *debug;
 int memory_limit;
-bool memory_error=false;
+bool memory_error = false;
 
 void memoryCheck_init() {
     memory_limit = getCurrentVMemUsedByProc() + (1024 * 1024);
 }
 
-bool memoryCheck_limitSurpassed(){
-    if(getCurrentVMemUsedByProc()>memory_limit){
+bool memoryCheck_limitSurpassed() {
+    if (getCurrentVMemUsedByProc() > memory_limit) {
         return true;
-    }else{
+    } else {
         return false;
     }
 }
@@ -107,8 +107,13 @@ bool memoryCheck_limitSurpassed(){
 void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
     avdevice_register_all();
     avFmtCtx = avformat_alloc_context();
+
+    //aggiunto da me
+    //avFmtCtx->flags |= AVFMT_FLAG_FLUSH_PACKETS;
+
     fmt = av_guess_format("mpeg1video", NULL, NULL);
     avFmtCtx->oformat = fmt;
+
     char *displayName = getenv("DISPLAY");
 
     if (fullscreen) {
@@ -130,7 +135,9 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
 
     av_dict_set(&avRawOptions, "video_size", (to_string(x11pmt.width) + "*" + to_string(x11pmt.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(fps).c_str(), 0);
+    av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
+
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
     if (avInputFmt == nullptr) {
@@ -218,9 +225,9 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avEncoderCtx = avcodec_alloc_context3(avEncodec);
 
     avEncoderCtx->codec_id = fmt->video_codec;
-    cout << fmt->video_codec << endl;
-    cout << AV_CODEC_ID_MPEG4 << endl;
-    cout << AV_CODEC_ID_H264 << endl;
+    //cout << fmt->video_codec << endl;
+    //cout << AV_CODEC_ID_MPEG4 << endl;
+    //cout << AV_CODEC_ID_H264 << endl;
 
     //avEncoderCtx->codec_id =AV_CODEC_ID_HEVC;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -230,18 +237,19 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avEncoderCtx->time_base.num = 1;
     avEncoderCtx->time_base.den = fps;
     avEncoderCtx->bit_rate = 128 * 1024 * 8;
-    avEncoderCtx->gop_size = 250;
+    avEncoderCtx->gop_size = 0;
     avEncoderCtx->qmin = 1;
     avEncoderCtx->qmax = 10;
+    avEncoderCtx->max_b_frames = 0;
 
-    avEncoderCtx->me_range = 16;
-    avEncoderCtx->max_qdiff = 4;
-    avEncoderCtx->qcompress = 0.6;
+    //avEncoderCtx->me_range = 16;
+    //avEncoderCtx->max_qdiff = 4;
+    //avEncoderCtx->qcompress = 0.6;
 
     AVDictionary *param = 0;
     //H.264
     //av_dict_set(&param, "preset", "slow", 0);
-    av_dict_set(&param, "preset", "superfast", 0);
+    av_dict_set(&param, "preset", "ultrafast", 0);
     av_dict_set(&param, "tune", "zerolatency", 0);  //实现实时编码
 
     if (avcodec_open2(avEncoderCtx, avEncodec, &param) < 0) {
@@ -258,7 +266,8 @@ void getRawPackets(int frameNumber) {
     readframe_clock_start = clock();
     auto begin = std::chrono::high_resolution_clock::now();
     AVPacket *avRawPkt;
-    
+    int64_t cur_pts = 0;
+
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
@@ -267,11 +276,29 @@ void getRawPackets(int frameNumber) {
             cout << "Captured " << i << " raw packets" << endl;
             //getCurrentVMemUsedByProc();
         }
+        //prove pts
+
+        cout << "avRawPkt->pts: " << avRawPkt->pts << endl;
+        cout << "avRawPkt->dts: " << avRawPkt->dts << endl;
+        cout << "avRawPkt->duration: " << avRawPkt->duration << endl;
+
+        cur_pts = avRawPkt->pts;
+        avRawPkt->pts = av_rescale_q_rnd(avRawPkt->pts, avFmtCtx->streams[videoIndex]->time_base, {1, 30}, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        avRawPkt->dts = av_rescale_q_rnd(avRawPkt->dts, avFmtCtx->streams[videoIndex]->time_base, {1, 30}, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        avRawPkt->duration = av_rescale_q(avRawPkt->duration, avFmtCtx->streams[videoIndex]->time_base, {1, 30});
+
+        cout << "avRawPkt->pts: " << avRawPkt->pts << endl;
+        cout << "avRawPkt->dts: " << avRawPkt->dts << endl;
+        cout << "avRawPkt->duration: " << avRawPkt->duration << endl;
+
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
-        if(memoryCheck_limitSurpassed()){
-            memory_error=true;
+
+        avRawPkt->stream_index = videoIndex;
+
+        if (memoryCheck_limitSurpassed()) {
+            memory_error = true;
             break;
         }
         // test for memory av_packet_unref(avRawPkt);
@@ -318,6 +345,7 @@ void decodeAndEncode(void) {
     av_init_packet(&pkt);
 
     AVPacket *avRawPkt;
+    int64_t avRawPkt_dts;
     int i = 0;
 
     avRawPkt_queue_mutex.lock();
@@ -333,6 +361,7 @@ void decodeAndEncode(void) {
                 //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
                 decode_clock_start = clock();
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
+                avRawPkt_dts = avRawPkt->dts;
                 av_packet_unref(avRawPkt);
                 av_packet_free(&avRawPkt);
 
@@ -364,8 +393,16 @@ void decodeAndEncode(void) {
                         if (got_picture == 0) {
                             //cout << pts_offset << " += " << avRawPkt_dts << endl;
                             //pts_offset += avRawPkt_dts;
-                            pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
-                            pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
+                            //cout << avRawPkt_dts << endl;
+                            //pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
+                            //pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
+                            //int64_t rescaled_dts = (int64_t)avRawPkt_dts / 1000 * 30;
+                            //cout << "PTS: " << rescaled_dts << endl;
+
+                            pkt.pts = avRawPkt_dts;
+                            pkt.dts = avRawPkt_dts;
+                            pkt.duration = 1 / 30;
+
                             fprintf(debug, "%ld\n", pkt.pts);
                             //pkt.pts = pts_offset;
                             //pkt.dts = pts_offset;
@@ -423,6 +460,7 @@ int main(int argc, char const *argv[]) {
     x11pmt.offset_x = atoi(argv[3]);
     x11pmt.offset_y = atoi(argv[4]);
     x11pmt.screen_number = atoi(argv[5]);
+
     initScreenSource(x11pmt, false, atoi(argv[6]), atof(argv[8]));
     memoryCheck_init();
 
@@ -439,9 +477,9 @@ int main(int argc, char const *argv[]) {
     cout << "Decode clock: " << decode_clock << " " << (float)100 * decode_clock / total_clock << "%" << endl;
     cout << "Scaling clock: " << scaling_clock << " " << (float)100 * scaling_clock / total_clock << "%" << endl;
     cout << "Encode clock: " << encode_clock << " " << (float)100 * encode_clock / total_clock << "%" << endl;
-    
-    if(memory_error){
-        cerr<<"Process ended because memory limit have been surpassed"<<endl;
+
+    if (memory_error) {
+        cerr << "Process ended because memory limit have been surpassed" << endl;
     }
     return 0;
 }

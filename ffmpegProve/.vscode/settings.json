@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.js": "javascriptreact",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "chrono": "cpp",
+        "random": "cpp"
     }
 }
