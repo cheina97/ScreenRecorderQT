@@ -1,8 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>icons/area.png</file>
-        <file>icons/danger.png</file>
         <file>icons/fullscreen.png</file>
-        <file>icons/mainIcon.jpg</file>
+        <file>icons/icon.svg</file>
+        <file>icons/trayicon_normal.png</file>
+        <file>icons/trayicon_recording.png</file>
     </qresource>
 </RCC>
