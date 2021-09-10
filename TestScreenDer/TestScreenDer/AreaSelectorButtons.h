@@ -2,6 +2,7 @@
 #define AREASELECTORBUTTONS_H
 
 #include <QPainter>
+#include <QPainterPath>
 
 class AreaSelectorButtons : public QObject
 {
