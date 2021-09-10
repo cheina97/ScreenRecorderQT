@@ -148,7 +148,7 @@ int encodeAudio()
       exit(-1);
     }
 
-    cout << "[ DEBUG ] OUTPUT AUDIO: Find Encoder: OK" << endl;
+    cout << "[ DEBUG ] OUTPUT AUDIO: Find Encoder: OK - CODEC ID"<< AudioCodecOut->id << endl;
 
     // NEW AUDIOSTREAM OUTPUT
     AudioStreamOut = avformat_new_stream(FormatContextOut, AudioCodecOut);
@@ -211,6 +211,16 @@ int encodeAudio()
   }
 
   cout << "[ DEBUG ] OUTPUT AUDIO: File header write: OK " << endl;
+
+  cout << "FORMAT CONTEXT OUTPUT PARAMETERS:\n" << FormatContextOut->streams[0]->codecpar->channel_layout
+  << "\n"<<FormatContextOut->streams[0]->codecpar->sample_rate
+  << "\n"<<FormatContextOut->streams[0]->codecpar->sample_rate
+  << "\n"<<FormatContextOut->streams[0]->codecpar->format
+  << "\n"<<FormatContextOut->streams[0]->codecpar->bit_rate
+  << "\n"<<FormatContextOut->streams[0]->codecpar->channels
+  << "\n"<<FormatContextOut->streams[0]->codecpar->codec_type
+  << "\n"<<FormatContextOut->streams[0]->codecpar->codec_id
+  << "\n"<<FormatContextOut->streams[0]->codecpar->codec_tag <<endl;
   return 1;
 };
 
