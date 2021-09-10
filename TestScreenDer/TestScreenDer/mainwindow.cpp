@@ -48,9 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this                    , SIGNAL( signal_close() )      , areaSelector, SLOT( close() ) );
     connect(this                    , SIGNAL( signal_selection() )  , areaSelector, SLOT( slot_init() ) );
     connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )       , areaSelector, SLOT( setVisible( bool ) ) );
-    connect(ui->pushButtonSelectArea, SIGNAL( clicked() )           , areaSelector, SLOT( update() ) );
     connect(this                    , SIGNAL(signal_recording(bool)), areaSelector, SLOT( slot_recordMode(bool) ) );
-    connect(this                    , SIGNAL( signal_reset_areaSelector()), areaSelector, SLOT (slot_areaReset()));
 }
 
 MainWindow::~MainWindow()
@@ -75,19 +73,23 @@ void MainWindow::enable_or_disable_tabs(bool val){
 
 void MainWindow::on_pushButtonSelectArea_clicked()
 {
-    bool prevstate = ui->pushButtonSelectArea->isChecked();
+    bool state = ui->pushButtonSelectArea->isChecked();
+    qDebug()<<"select area clicked. state: "<<state;
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
-    if(prevstate){
+    if(state){
+        qDebug()<<"Lanciato il segnale di selezione";
         emit signal_selection();
     }
 }
 
 void MainWindow::on_pushButtonFullscreen_clicked()
 {
+    qDebug()<<"fullscreen button clicked";
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
-    areaSelector->setVisible(false);
+    qDebug()<<"area selector is visible: "<<areaSelector->isVisible();
+    emit signal_reset_areaSelector();
 }
 
 void MainWindow::on_toolButton_clicked()
@@ -102,10 +104,10 @@ void MainWindow::on_pushButtonStart_clicked()
         ui->pushButtonStop->setEnabled(true);
         ui->pushButtonPause->setEnabled(true);
         ui->pushButtonStart->setDisabled(true);
-      enable_or_disable_tabs(false);
+        enable_or_disable_tabs(false);
+        QWidget::showMinimized();
      if(ui->pushButtonSelectArea->isChecked()) emit signal_recording(true);
     }else{
-        //TODO minimize!
         return;
     }
 }
@@ -128,7 +130,6 @@ void MainWindow::on_pushButtonStop_clicked()
     ui->pushButtonStart->setEnabled(true);
     if(ui->pushButtonSelectArea->isChecked()){
         emit signal_recording(false);
-        emit signal_reset_areaSelector();
     }
 
     ui->pushButtonPause->setDisabled(true);
