@@ -15,8 +15,8 @@ public:
 
 //    int getX();
 //    int getY();
-//    qreal getHeight();
-//    qreal getWidth();
+    qreal getHeight(); //of record area
+    qreal getWidth(); // of record area
 //    qreal getXRecordArea();
 //    qreal getYRecordArea();
 
@@ -84,8 +84,9 @@ public:
     int frame_min_width;
     int frame_min_height;
 
-//    int pixelWidth;
-//    int pixelHeight;
+    //needed to print frame size
+    int pixelWidth;
+    int pixelHeight;
 
     QColor frameColor;
     QColor colorSelectedArrow;
@@ -94,7 +95,7 @@ public:
     void setColorSelectedArrow (QColor color);
 
     void drawFrame( QPainter &painter );
-//    void printSize(QPainter &painter);
+    void printSize(QPainter &painter);
     void HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle );
     void HandleTopLeft(QPainter &painter );
 //    void HandleTopLeftSize(QPainter &painter);
