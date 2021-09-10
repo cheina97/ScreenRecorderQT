@@ -87,14 +87,26 @@ int decodeAudio()
   cout << "[ DEBUG ] DECODE: Find input format: OK" << endl;
 
   //command aplay -l -> hw:X,Y where X is card number and Y is device number
-  if (avformat_open_input(&FormatContext, "hw:0,0", AudioInputFormat, nullptr) != 0)
+  if (avformat_open_input(&FormatContext, "hw:0,0", AudioInputFormat, NULL) != 0)
   {
     cout << "Couldn't open audio input stream." << endl;
     exit(-1);
   }
   cout << "[ DEBUG ] DECODE: Open input: OK" << endl;
 
-  if (avformat_find_stream_info(FormatContext, nullptr) < 0)
+//////addedd
+  	AVInputFormat *ifmt=av_find_input_format("x11grab");
+if(avformat_open_input(&FormatContext,":0.0+10,20",ifmt,nullptr)!=0){
+		printf("Couldn't open input stream.\n");
+		return -1;
+	}
+  cout << "[ DEBUG ] NSTREAMS: "<<FormatContext->nb_streams << endl;
+  cout << "[ DEBUG ] NSTREAMS: "<<FormatContext->streams[0]->id << endl;
+  cout << "[ DEBUG ] NSTREAMS: "<<FormatContext->streams[1]->id << endl;
+///////
+
+
+  if (avformat_find_stream_info(FormatContext, NULL) < 0)
   {
     cout << "Couldn't find audio stream information." << endl;
     exit(-1);
