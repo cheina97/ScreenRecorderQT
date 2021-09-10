@@ -21,20 +21,15 @@ private slots:
     void on_pushButtonSelectArea_clicked();
     void on_pushButtonFullscreen_clicked();
     void on_toolButton_clicked();
-
     void on_pushButtonStart_clicked();
-
     void on_pushButtonPause_clicked();
-
     void on_pushButtonResume_clicked();
-
     void on_pushButtonStop_clicked();
 
 signals:
     void signal_close();
-    void signal_selection();
+    void signal_show(bool);
     void signal_recording(bool);
-    void signal_reset_areaSelector();
 protected:
     void closeEvent( QCloseEvent *event );
 
