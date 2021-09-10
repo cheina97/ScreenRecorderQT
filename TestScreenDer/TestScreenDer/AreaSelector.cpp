@@ -34,19 +34,6 @@ AreaSelector::AreaSelector()
 
 AreaSelector::~AreaSelector(){}
 
-void AreaSelector::slot_init()
-{
-    screen = QGuiApplication::primaryScreen();
-    resize( screen->size().width(), screen->size().height() );
-    screenWidth = screen->size().width();
-    screenHeight = screen->size().height();
-    move( screen->geometry().x(), screen->geometry().y() );
-
-    //positioning the rectange in the middle of the screen:
-    frame_X = (screenWidth/2 - frame_width/2)-framePenWidth/2;
-    frame_Y = (screenHeight/2 - frame_height/2)-framePenWidth/2;
-}
-
 /*////////////////////////////
 // handling the things to be drawn
 ////////////////////////////*/
@@ -589,6 +576,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
 }
 
 void AreaSelector::paintEvent( QPaintEvent *event ){
+    qDebug()<<"chiamato un paintevent";
     Q_UNUSED(event);
     QPixmap pixmap( screenWidth, screenHeight);
     pixmap.fill(Qt::transparent);
@@ -660,9 +648,26 @@ void AreaSelector::paintEvent( QPaintEvent *event ){
     setMask( pixmap.mask() );
 }
 
+
 /*////////////////////////////
 // slots
 ////////////////////////////*/
+void AreaSelector::slot_init()
+{
+    qDebug()<<"Eseguo slot init";
+    screen = QGuiApplication::primaryScreen();
+    resize( screen->size().width(), screen->size().height() );
+    screenWidth = screen->size().width();
+    screenHeight = screen->size().height();
+    move( screen->geometry().x(), screen->geometry().y() );
+    qDebug()<<"screen: "<<screenWidth<<"x"<<screenHeight;
+    //positioning the rectange in the middle of the screen:
+    frame_width = frame_min_width;
+    frame_height = frame_min_height;
+    frame_X = (screenWidth/2 - frame_width/2)-framePenWidth/2;
+    frame_Y = (screenHeight/2 - frame_height/2)-framePenWidth/2;
+    qDebug()<<"frame coordinates: "<<frame_X<<","<<frame_Y;
+}
 
 void AreaSelector::slot_recordMode( bool value )
 {
