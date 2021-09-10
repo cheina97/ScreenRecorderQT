@@ -141,7 +141,7 @@ int encodeAudio()
   if (AudioStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
   {
     // FIND CODEC OUTPUT
-    AVCodec *AudioCodecOut = avcodec_find_encoder(/* AV_CODEC_ID_AC3 */FormatContextOut->oformat->audio_codec);
+    AVCodec *AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC/* AV_CODEC_ID_AC3 *//* FormatContextOut->oformat->audio_codec */);
     if (!AudioCodecOut)
     {
       cout << "Can not find audio encoder" << endl;
