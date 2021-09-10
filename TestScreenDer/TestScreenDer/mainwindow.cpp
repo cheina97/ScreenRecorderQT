@@ -46,8 +46,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     //connect
     connect(this                    , SIGNAL( signal_close() )      , areaSelector, SLOT( close() ) );
-    connect(this                    , SIGNAL( signal_selection() )  , areaSelector, SLOT( slot_init() ) );
-    connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )       , areaSelector, SLOT( setVisible( bool ) ) );
+    //connect(this                    , SIGNAL( signal_selection() )  , areaSelector, SLOT( slot_init() ) );
+    //connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )       , areaSelector, SLOT( setVisible( bool ) ) );
     connect(this                    , SIGNAL(signal_recording(bool)), areaSelector, SLOT( slot_recordMode(bool) ) );
 }
 
@@ -73,13 +73,19 @@ void MainWindow::enable_or_disable_tabs(bool val){
 
 void MainWindow::on_pushButtonSelectArea_clicked()
 {
+    static bool first_call=true;
     bool state = ui->pushButtonSelectArea->isChecked();
     qDebug()<<"select area clicked. state: "<<state;
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
     if(state){
+        if(first_call){
+            first_call=false;
+            areaSelector->slot_init();
+        }
         qDebug()<<"Lanciato il segnale di selezione";
-        emit signal_selection();
+        //emit signal_selection();
+        areaSelector->setVisible(true);
     }
 }
 
@@ -89,7 +95,8 @@ void MainWindow::on_pushButtonFullscreen_clicked()
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
     qDebug()<<"area selector is visible: "<<areaSelector->isVisible();
-    emit signal_reset_areaSelector();
+    //emit signal_reset_areaSelector();
+    areaSelector->setVisible(false);
 }
 
 void MainWindow::on_toolButton_clicked()
