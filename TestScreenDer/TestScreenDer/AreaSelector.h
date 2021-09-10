@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QScreen>
 
-#include "ui_mainwindow.h"
+//#include "ui_mainwindow.h"
 
 class AreaSelector: public QWidget
 {
@@ -13,20 +13,21 @@ public:
     AreaSelector();
     virtual ~AreaSelector();
 
-//    int getX();
-//    int getY();
-    qreal getHeight(); //of record area
-    qreal getWidth(); // of record area
-//    qreal getXRecordArea();
-//    qreal getYRecordArea();
+    //getter/setter for frame coordinates
+    int getX();
+    int getY();
+    void setX( int x );
+    void setY( int y );
 
-//    void setX( int x );
-//    void setY( int y );
+    //getter for recorded area properties
+    qreal getHeight();
+    qreal getWidth();
+    qreal getXRecordArea();
+    qreal getYRecordArea();
     void setWidth( int width );
     void setHeight( int height );
 
     QColor getFrameColor();
-    QColor getColorSelectedArrow();
 
 
   public slots:
@@ -42,44 +43,36 @@ public:
     void mouseMoveEvent( QMouseEvent *event );
     void mousePressEvent( QMouseEvent *event );
     void mouseReleaseEvent( QMouseEvent * event );
-//    void leaveEvent( QEvent *event );
-//    void keyPressEvent( QKeyEvent * event );
 
   private:
 //    Ui::MainWindow *ui;
     QScreen *screen;
-    int screenWidth; //screen dimension
+    int screenWidth; //current screen dimension
     int screenHeight;
 
     enum Handle { NoHandle, TopLeft, TopMiddle, TopRight, RightMiddle, BottomRight, BottomMiddle, BottomLeft, LeftMiddle, Middle };
     Handle handlePressed;
     Handle handleUnderMouse;
-    Handle HandleSelected;
 
-//    QColor HandleColorBackground;
-//    QColor HandleColorBackgroundSize;
-//    QColor HandleColorByMousePressed;
-//    void setHandleColorBackground( QColor color );
-//    void setHandleColorByMousePressed( QColor color );
-//    void setHandleColorBackgroundSize( QColor color );
+    //parameters needed to resize properly
+    int mouse_delta_X; //click coordinates with respect to the frame
+    int mouse_delta_Y;
+    int old_mouse_X;
+    int old_mouse_Y;
+    int old_frame_width;
+    int old_frame_height;
+    int old_frame_X2; //bottom right corner
+    int old_frame_Y2;
 
-    int mous_delta_X_to_blueline;
-    int mous_delta_Y_to_blueline;
-
-    int old_Mouse_X;
-    int old_Mouse_Y;
-    int old_Frame_Width;
-    int old_Frame_Height;
-    int old_Frame_X2;
-    int old_Frame_Y2;
-
+    //buttons parameters
     int framePenWidth;
     int radius;
     int penWidth;
 
+    //frame properties
     int frame_X;
     int frame_Y;
-    int frame_Width;
+    int frame_width;
     int frame_height;
     int frame_min_width;
     int frame_min_height;
@@ -89,30 +82,20 @@ public:
     int pixelHeight;
 
     QColor frameColor;
-    QColor colorSelectedArrow;
 
-    void setFrameColor( QColor color ); //this frame is all around the selected area
-    void setColorSelectedArrow (QColor color);
+    void setFrameColor( QColor color );
 
     void drawFrame( QPainter &painter );
     void printSize(QPainter &painter);
     void HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle );
     void HandleTopLeft(QPainter &painter );
-//    void HandleTopLeftSize(QPainter &painter);
-//    void HandleTopMiddle(QPainter &painter);
-//    void HandleTopMiddleSize(QPainter &painter);
+    void HandleTopMiddle(QPainter &painter);
     void HandleTopRight( QPainter &painter );
-//    void HandleTopRightSize(QPainter &painter);
-//    void HandleRightMiddle(QPainter &painter);
-//    void HandleRightMiddleSize(QPainter &painter);
+    void HandleRightMiddle(QPainter &painter);
     void HandleBottomRight(QPainter &painter);
-//    void HandleBottomRightSize(QPainter &painter);
-//    void HandleBottomMiddle(QPainter &painter);
-//    void HandleBottomMiddleSize( QPainter &painter );
+    void HandleBottomMiddle(QPainter &painter);
     void HandleBottomLeft(QPainter &painter);
-//    void HandleBottomLeftSize( QPainter &painter );
-//    void HandleLeftMiddle(QPainter &painter);
-//    void HandleLeftMiddleSize( QPainter &painter );
+    void HandleLeftMiddle(QPainter &painter);
     void HandleMiddle(QPainter &painter);
 
     void setGeometry( int x, int y, int with, int height );

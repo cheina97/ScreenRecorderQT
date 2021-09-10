@@ -15,12 +15,11 @@ AreaSelector::AreaSelector()
       framePenWidth(4), // framePenWidth must be an even number
       radius(20),
       penWidth(2),
-      frame_Width(320 + framePenWidth), //default dimension
+      frame_width(320 + framePenWidth), //default dimension
       frame_height(200 + framePenWidth),
       frame_min_width(320 + framePenWidth),
       frame_min_height(200 + framePenWidth),
-      frameColor(Qt::black),
-      colorSelectedArrow(Qt::yellow)
+      frameColor(Qt::black)
 {
     setWindowTitle( "ScreenCapture");
     QIcon icon( QString::fromUtf8( ":/icons/mainIcon.jpg" ) );
@@ -44,9 +43,13 @@ void AreaSelector::slot_init()
     move( screen->geometry().x(), screen->geometry().y() );
 
     //positioning the rectange in the middle of the screen:
-    frame_X = (screenWidth/2 - frame_Width/2)-framePenWidth/2;
+    frame_X = (screenWidth/2 - frame_width/2)-framePenWidth/2;
     frame_Y = (screenHeight/2 - frame_height/2)-framePenWidth/2;
 }
+
+/*////////////////////////////
+// handling the things to be drawn
+////////////////////////////*/
 
 void AreaSelector::drawFrame(QPainter &painter)
 {
@@ -57,7 +60,7 @@ void AreaSelector::drawFrame(QPainter &painter)
     painter.setBrush( brush );
     painter.drawRect( frame_X,
                       frame_Y,
-                      frame_Width,
+                      frame_width,
                       frame_height);
 }
 
@@ -65,23 +68,23 @@ void AreaSelector::HandleMiddle( QPainter &painter )
 {
     AreaSelectorButtons buttonArrow;
 
-    painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
                         buttonArrow.getButton() );
 
-    painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
                         buttonArrow.getArrow( buttonArrow.degreeArrow::topMiddle) );
 
-    painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
                         buttonArrow.getArrow( buttonArrow.degreeArrow::rightMiddle) );
 
-    painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
                         buttonArrow.getArrow( buttonArrow.degreeArrow::bottomMiddle) );
 
-    painter.drawPixmap( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
                         frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
                         buttonArrow.getArrow( buttonArrow.degreeArrow::leftMiddle) );
 }
@@ -94,12 +97,28 @@ void AreaSelector::HandleTopLeft( QPainter &painter )
                         buttonArrow.getPixmapHandle(buttonArrow.topLeft ) );
 }
 
+void AreaSelector::HandleTopMiddle( QPainter &painter)
+{
+    AreaSelectorButtons buttonArrow;
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
+                        frame_Y - buttonArrow.getWithHalf(),
+                        buttonArrow.getPixmapHandle(buttonArrow.topMiddle ) );
+}
+
 void AreaSelector::HandleTopRight(QPainter &painter)
 {
     AreaSelectorButtons buttonArrow;
-    painter.drawPixmap( frame_X + frame_Width - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width - buttonArrow.getWithHalf(),
                         frame_Y - buttonArrow.getWithHalf(),
                         buttonArrow.getPixmapHandle( buttonArrow.topRight ) );
+}
+
+void AreaSelector::HandleRightMiddle( QPainter &painter )
+{
+    AreaSelectorButtons buttonArrow;
+    painter.drawPixmap( frame_X + frame_width - buttonArrow.getWithHalf(),
+                        frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
+                        buttonArrow.getPixmapHandle(buttonArrow.rightMiddle ) );
 }
 
 void AreaSelector::HandleBottomLeft( QPainter &painter )
@@ -110,12 +129,28 @@ void AreaSelector::HandleBottomLeft( QPainter &painter )
                         buttonArrow.getPixmapHandle( buttonArrow.bottomLeft ) );
 }
 
+void AreaSelector::HandleBottomMiddle( QPainter &painter )
+{
+    AreaSelectorButtons buttonArrow;
+    painter.drawPixmap( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
+                        frame_Y + frame_height - buttonArrow.getWithHalf(),
+                        buttonArrow.getPixmapHandle(buttonArrow.bottomMiddle ) );
+}
+
 void AreaSelector::HandleBottomRight( QPainter &painter )
 {
     AreaSelectorButtons buttonArrow;
-    painter.drawPixmap( frame_X + frame_Width - buttonArrow.getWithHalf(),
+    painter.drawPixmap( frame_X + frame_width - buttonArrow.getWithHalf(),
                         frame_Y + frame_height - buttonArrow.getWithHalf(),
                         buttonArrow.getPixmapHandle( buttonArrow.bottomRight ) );
+}
+
+void AreaSelector::HandleLeftMiddle( QPainter &painter )
+{
+    AreaSelectorButtons buttonArrow;
+    painter.drawPixmap( frame_X - buttonArrow.getWithHalf(),
+                        frame_Y + frame_height/2 - buttonArrow.getWithHalf(),
+                        buttonArrow.getPixmapHandle(buttonArrow.leftMiddle ) );
 }
 
 void AreaSelector::HandleRecord( QPainter &painter, int x, int y, int startAngle, int spanAngle )
@@ -147,7 +182,7 @@ void AreaSelector::printSize( QPainter &painter )
   QFontMetrics fontMetrics( font );
   pixelWidth = fontMetrics.horizontalAdvance( widthHeigtSize );
   pixelHeight = fontMetrics.height();
-  QRect rect( frame_X + frame_Width/2 - pixelWidth/2 - 5,
+  QRect rect( frame_X + frame_width/2 - pixelWidth/2 - 5,
               frame_Y + frame_height/2 - pixelHeight/2 - 50,
               pixelWidth + 10,
               pixelHeight );
@@ -173,28 +208,28 @@ void AreaSelector::mousePressEvent(QMouseEvent *event)
 
     switch ( handleUnderMouse )
     {
-      case NoHandle    : handlePressed = NoHandle;     break;
-      case TopLeft     : { handlePressed = TopLeft;      HandleSelected = TopLeft;      break; }
-      case TopMiddle   : { handlePressed = TopMiddle;    HandleSelected = TopMiddle;    break; }
-      case TopRight    : { handlePressed = TopRight;     HandleSelected = TopRight;     break; }
-      case RightMiddle : { handlePressed = RightMiddle;  HandleSelected = RightMiddle;  break; }
-      case BottomRight : { handlePressed = BottomRight;  HandleSelected = BottomRight;  break; }
-      case BottomMiddle: { handlePressed = BottomMiddle; HandleSelected = BottomMiddle; break; }
-      case BottomLeft  : { handlePressed = BottomLeft;   HandleSelected = BottomLeft;   break; }
-      case LeftMiddle  : { handlePressed = LeftMiddle;   HandleSelected = LeftMiddle;   break; }
-      case Middle      : { handlePressed = Middle;       HandleSelected = Middle;       break; }
+      case NoHandle    : handlePressed = NoHandle;          break;
+      case TopLeft     : { handlePressed = TopLeft;         break; }
+      case TopMiddle   : { handlePressed = TopMiddle;       break; }
+      case TopRight    : { handlePressed = TopRight;        break; }
+      case RightMiddle : { handlePressed = RightMiddle;     break; }
+      case BottomRight : { handlePressed = BottomRight;     break; }
+      case BottomMiddle: { handlePressed = BottomMiddle;    break; }
+      case BottomLeft  : { handlePressed = BottomLeft;      break; }
+      case LeftMiddle  : { handlePressed = LeftMiddle;      break; }
+      case Middle      : { handlePressed = Middle;          break; }
     }
 
-    mous_delta_X_to_blueline = event->x() - frame_X;
-    mous_delta_Y_to_blueline = event->y() - frame_Y;
+    mouse_delta_X = event->x() - frame_X;
+    mouse_delta_Y = event->y() - frame_Y;
 
-    old_Mouse_X = event->x();
-    old_Mouse_Y = event->y();
-    old_Frame_Width = frame_Width;
-    old_Frame_Height = frame_height;
+    old_mouse_X = event->x();
+    old_mouse_Y = event->y();
+    old_frame_width = frame_width;
+    old_frame_height = frame_height;
 
-    old_Frame_X2 = frame_X + frame_Width;
-    old_Frame_Y2 = frame_Y + frame_height;
+    old_frame_X2 = frame_X + frame_width;
+    old_frame_Y2 = frame_Y + frame_height;
 
     repaint();
     update();
@@ -223,21 +258,21 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
     {
       case NoHandle    : break;
       case TopLeft     : { // Move
-                           frame_X = event->x() - mous_delta_X_to_blueline;
-                           frame_Y = event->y() - mous_delta_Y_to_blueline;
-                           frame_Width = old_Mouse_X - event->x() + old_Frame_Width;
-                           frame_height = old_Mouse_Y - event->y() + old_Frame_Height;
+                           frame_X = event->x() - mouse_delta_X;
+                           frame_Y = event->y() - mouse_delta_Y;
+                           frame_width = old_mouse_X - event->x() + old_frame_width;
+                           frame_height = old_mouse_Y - event->y() + old_frame_height;
 
                            // Limit min
-                           if ( frame_Width < frame_min_width )
+                           if ( frame_width < frame_min_width )
                            {
-                             frame_X = old_Frame_X2 - frame_min_width;
-                             frame_Width = frame_min_width;
+                             frame_X = old_frame_X2 - frame_min_width;
+                             frame_width = frame_min_width;
                            }
 
                            if ( frame_height < frame_min_height )
                            {
-                             frame_Y = old_Frame_Y2 - frame_min_height;
+                             frame_Y = old_frame_Y2 - frame_min_height;
                              frame_height = frame_min_height;
                            }
 
@@ -245,25 +280,25 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            if ( frame_Y <= 0 - framePenWidth/2 )
                            {
                              frame_Y = 0 - framePenWidth/2;
-                             frame_height = old_Frame_Y2 + framePenWidth/2;
+                             frame_height = old_frame_Y2 + framePenWidth/2;
                            }
 
                            if ( frame_X <= 0 - framePenWidth/2 )
                            {
                               frame_X = 0 - framePenWidth/2;
-                              frame_Width = old_Frame_X2 + framePenWidth/2;
+                              frame_width = old_frame_X2 + framePenWidth/2;
                            }
 
                            break;
                          }
       case TopMiddle   : { // Move
-                           frame_Y = event->y() - mous_delta_Y_to_blueline;
-                           frame_height = old_Mouse_Y - event->y() + old_Frame_Height;
+                           frame_Y = event->y() - mouse_delta_Y;
+                           frame_height = old_mouse_Y - event->y() + old_frame_height;
 
                            // Limit min
                            if ( frame_height < frame_min_height )
                            {
-                             frame_Y = old_Frame_Y2 - frame_min_height;
+                             frame_Y = old_frame_Y2 - frame_min_height;
                              frame_height = frame_min_height;
                            }
 
@@ -271,25 +306,25 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            if ( frame_Y <= 0 - framePenWidth/2 )
                            {
                              frame_Y = 0 - framePenWidth/2;
-                             frame_height = old_Frame_Y2 + framePenWidth/2;
+                             frame_height = old_frame_Y2 + framePenWidth/2;
                            }
 
                            break;
                          }
       case TopRight    : { // Move
-                           frame_Y = event->y() - mous_delta_Y_to_blueline;
-                           frame_Width = event->x() - old_Mouse_X + old_Frame_Width;
-                           frame_height = old_Mouse_Y - event->y() + old_Frame_Height;;
+                           frame_Y = event->y() - mouse_delta_Y;
+                           frame_width = event->x() - old_mouse_X + old_frame_width;
+                           frame_height = old_mouse_Y - event->y() + old_frame_height;;
 
                            // Limit min
-                           if ( frame_Width < frame_min_width )
+                           if ( frame_width < frame_min_width )
                            {
-                             frame_Width = frame_min_width;
+                             frame_width = frame_min_width;
                            }
 
                            if ( frame_height < frame_min_height )
                            {
-                             frame_Y = old_Frame_Y2 - frame_min_height;
+                             frame_Y = old_frame_Y2 - frame_min_height;
                              frame_height = frame_min_height;
                            }
 
@@ -297,41 +332,41 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            if ( frame_Y <= 0 - framePenWidth/2 )
                            {
                              frame_Y = 0 - framePenWidth/2;
-                             frame_height = old_Frame_Y2 + framePenWidth/2;
+                             frame_height = old_frame_Y2 + framePenWidth/2;
                            }
 
-                           if( ( frame_X + frame_Width - framePenWidth/2 ) > screenWidth )
+                           if( ( frame_X + frame_width - framePenWidth/2 ) > screenWidth )
                            {
-                             frame_Width = screenWidth + framePenWidth/2 - frame_X;
+                             frame_width = screenWidth + framePenWidth/2 - frame_X;
                            }
 
                            break;
                          }
       case RightMiddle : { // Move
-                           frame_Width = event->x() - old_Mouse_X + old_Frame_Width;
+                           frame_width = event->x() - old_mouse_X + old_frame_width;
 
                            // Limit min
-                           if ( frame_Width < frame_min_width )
+                           if ( frame_width < frame_min_width )
                            {
-                             frame_Width = frame_min_width;
+                             frame_width = frame_min_width;
                            }
 
                            // Limit max
-                           if( ( frame_X + frame_Width - framePenWidth/2 ) > screenWidth )
+                           if( ( frame_X + frame_width - framePenWidth/2 ) > screenWidth )
                            {
-                             frame_Width = screenWidth + framePenWidth/2 - frame_X;
+                             frame_width = screenWidth + framePenWidth/2 - frame_X;
                            }
 
                            break;
                          }
       case BottomRight : { // Move
-                           frame_Width = event->x() - old_Mouse_X + old_Frame_Width;
-                           frame_height = event->y() - old_Mouse_Y + old_Frame_Height;
+                           frame_width = event->x() - old_mouse_X + old_frame_width;
+                           frame_height = event->y() - old_mouse_Y + old_frame_height;
 
                            // Limit min
-                           if ( frame_Width < frame_min_width )
+                           if ( frame_width < frame_min_width )
                            {
-                             frame_Width = frame_min_width;
+                             frame_width = frame_min_width;
                            }
 
                            if ( frame_height < frame_min_height )
@@ -340,9 +375,9 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            }
 
                            //Limit max
-                           if( ( frame_X + frame_Width - framePenWidth/2 ) > screenWidth )
+                           if( ( frame_X + frame_width - framePenWidth/2 ) > screenWidth )
                            {
-                             frame_Width = screenWidth + framePenWidth/2 - frame_X;
+                             frame_width = screenWidth + framePenWidth/2 - frame_X;
                            }
 
                            if( ( frame_Y + frame_height - framePenWidth/2 ) > screenHeight )
@@ -353,7 +388,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            break;
                          }
       case BottomMiddle: { // Move
-                           frame_height = event->y() - old_Mouse_Y + old_Frame_Height;
+                           frame_height = event->y() - old_mouse_Y + old_frame_height;
 
                            // Limit min
                            if ( frame_height < frame_min_height )
@@ -370,15 +405,15 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            break;
                          }
       case BottomLeft  : { // Move
-                           frame_X = event->x() - mous_delta_X_to_blueline;
-                           frame_height = event->y() - old_Mouse_Y + old_Frame_Height;
-                           frame_Width = old_Mouse_X - event->x() + old_Frame_Width;
+                           frame_X = event->x() - mouse_delta_X;
+                           frame_height = event->y() - old_mouse_Y + old_frame_height;
+                           frame_width = old_mouse_X - event->x() + old_frame_width;
 
                            // Limit min
-                           if ( frame_Width < frame_min_width )
+                           if ( frame_width < frame_min_width )
                            {
-                             frame_X = old_Frame_X2 - frame_min_width;
-                             frame_Width = frame_min_width;
+                             frame_X = old_frame_X2 - frame_min_width;
+                             frame_width = frame_min_width;
                            }
 
                            if ( frame_height < frame_min_height )
@@ -390,7 +425,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            if ( frame_X <= 0 - framePenWidth/2 )
                            {
                               frame_X = 0 - framePenWidth/2;
-                              frame_Width = old_Frame_X2 + framePenWidth/2;
+                              frame_width = old_frame_X2 + framePenWidth/2;
                            }
 
                            if( ( frame_Y + frame_height - framePenWidth/2 ) > screenHeight )
@@ -401,29 +436,29 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            break;
                          }
       case LeftMiddle  : { // Move
-                           frame_X = event->x() - mous_delta_X_to_blueline;
-                           frame_Width = old_Mouse_X - event->x() + old_Frame_Width;
+                           frame_X = event->x() - mouse_delta_X;
+                           frame_width = old_mouse_X - event->x() + old_frame_width;
 
                            // Limit min
-                           if ( frame_Width < frame_min_width )
+                           if ( frame_width < frame_min_width )
                            {
-                             frame_X = old_Frame_X2 - frame_min_width;
-                             frame_Width = frame_min_width;
+                             frame_X = old_frame_X2 - frame_min_width;
+                             frame_width = frame_min_width;
                            }
 
                            // Limit max
                            if ( frame_X <= 0 - framePenWidth/2 )
                            {
                               frame_X = 0 - framePenWidth/2;
-                              frame_Width = old_Frame_X2 + framePenWidth/2;
+                              frame_width = old_frame_X2 + framePenWidth/2;
                            }
 
                            break;
                          }
       case Middle      : { // Move
-                           int deltaX = ( old_Frame_X2 - framePenWidth/2 - frame_Width/2 ) - old_Mouse_X;
-                           int deltaY = ( old_Frame_Y2 - framePenWidth/2 - frame_height/2 ) - old_Mouse_Y;
-                           frame_X = event->x() - frame_Width/2 + framePenWidth/2 + deltaX;
+                           int deltaX = ( old_frame_X2 - framePenWidth/2 - frame_width/2 ) - old_mouse_X;
+                           int deltaY = ( old_frame_Y2 - framePenWidth/2 - frame_height/2 ) - old_mouse_Y;
+                           frame_X = event->x() - frame_width/2 + framePenWidth/2 + deltaX;
                            frame_Y = event->y() - frame_height/2 + framePenWidth/2 + deltaY;
 
                            // Limit Top
@@ -439,9 +474,9 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
                            }
 
                            // Limit Right
-                           if( ( frame_X + frame_Width - framePenWidth/2 ) > screenWidth )
+                           if( ( frame_X + frame_width - framePenWidth/2 ) > screenWidth )
                            {
-                               frame_X = screenWidth - frame_Width + framePenWidth/2;
+                               frame_X = screenWidth - frame_width + framePenWidth/2;
                            }
 
                            // Limit Bottom
@@ -468,7 +503,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
         return;
     }
 
-    QRect regionTopMiddle( frame_X + frame_Width/2 - radius - 1, frame_Y - radius - 1, radius*2 + 2, radius*2 + 2 );
+    QRect regionTopMiddle( frame_X + frame_width/2 - radius - 1, frame_Y - radius - 1, radius*2 + 2, radius*2 + 2 );
     if ( regionTopMiddle.contains( event->pos() )  )
     {
         setCursor( Qt::ClosedHandCursor);
@@ -476,7 +511,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
         return;
     }
 
-    QRect regionTopRight( frame_X + frame_Width - radius - 1, frame_Y - radius - 1, radius*2 + 2, radius*2 + 2 );
+    QRect regionTopRight( frame_X + frame_width - radius - 1, frame_Y - radius - 1, radius*2 + 2, radius*2 + 2 );
     if ( regionTopRight.contains( event->pos() )  )
     {
        setCursor( Qt::ClosedHandCursor);
@@ -484,7 +519,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
         return;
     }
 
-    QRect regionRightMiddle( frame_X + frame_Width - radius - 1, frame_Y + frame_height/2 - radius - 1, radius*2 + 2, radius*2 + 2 );
+    QRect regionRightMiddle( frame_X + frame_width - radius - 1, frame_Y + frame_height/2 - radius - 1, radius*2 + 2, radius*2 + 2 );
     if ( regionRightMiddle.contains( event->pos() )  )
     {
         setCursor( Qt::ClosedHandCursor);
@@ -492,7 +527,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
         return;
     }
 
-    QRect regionMiddle( frame_X + frame_Width/2 - radius - penWidth/2, frame_Y + frame_height/2 - radius - penWidth/2, 2 * radius + penWidth, 2 * radius + penWidth);
+    QRect regionMiddle( frame_X + frame_width/2 - radius - penWidth/2, frame_Y + frame_height/2 - radius - penWidth/2, 2 * radius + penWidth, 2 * radius + penWidth);
     if ( regionMiddle.contains( event->pos() )  )
     {
         setCursor( Qt::ClosedHandCursor);
@@ -501,7 +536,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
     }
 
     AreaSelectorButtons buttonArrow;
-    QRect regionBottomRight( frame_X + frame_Width - buttonArrow.getWithHalf(),
+    QRect regionBottomRight( frame_X + frame_width - buttonArrow.getWithHalf(),
                                frame_Y + frame_height - buttonArrow.getWithHalf(),
                                buttonArrow.getWithHalf()*2,
                                buttonArrow.getWithHalf()*2
@@ -513,7 +548,7 @@ void AreaSelector::mouseMoveEvent( QMouseEvent *event )
         return;
     }
 
-    QRect regionBottomMiddle( frame_X + frame_Width/2 - buttonArrow.getWithHalf(),
+    QRect regionBottomMiddle( frame_X + frame_width/2 - buttonArrow.getWithHalf(),
                                 frame_Y + frame_height - buttonArrow.getWithHalf(),
                                 buttonArrow.getWithHalf()*2,
                                 buttonArrow.getWithHalf()*2
@@ -564,9 +599,13 @@ void AreaSelector::paintEvent( QPaintEvent *event ){
     if(!recordemode){
         //drawing buttons and frame
         HandleTopLeft( painterPixmap );
+        HandleTopMiddle( painterPixmap );
         HandleTopRight( painterPixmap );
+        HandleRightMiddle(painterPixmap);
         HandleBottomLeft( painterPixmap );
+        HandleBottomMiddle(painterPixmap );
         HandleBottomRight( painterPixmap );
+        HandleLeftMiddle(painterPixmap);
         HandleMiddle( painterPixmap ); //central button
         printSize( painterPixmap);
     }else{
@@ -576,20 +615,40 @@ void AreaSelector::paintEvent( QPaintEvent *event ){
                         0 * 16,
                       270 * 16 );
         HandleRecord( painterPixmap,
-                      frame_X + frame_Width - radius + penWidth/2,
+                      frame_X + frame_width/2 - radius + penWidth/2,
+                      frame_Y - radius + penWidth/2,
+                        0 * 16,
+                      180 * 16 );
+        HandleRecord( painterPixmap,
+                      frame_X + frame_width - radius + penWidth/2,
                       frame_Y - radius + penWidth/2,
                       -90 * 16,
                       270 * 16 );
         HandleRecord( painterPixmap,
-                      frame_X + frame_Width - radius + penWidth/2,
+                      frame_X + frame_width - radius + penWidth/2,
+                      frame_Y + frame_height/2 - radius + penWidth/2,
+                      -90 * 16,
+                      180 * 16 );
+        HandleRecord( painterPixmap,
+                      frame_X + frame_width - radius + penWidth/2,
                       frame_Y + frame_height - radius + penWidth/2,
                       -180 * 16,
                        270 * 16 );
         HandleRecord( painterPixmap,
+                      frame_X + frame_width/2 - radius + penWidth/2,
+                      frame_Y + frame_height - radius + penWidth/2,
+                         0 * 16,
+                      -180 * 16 );
+        HandleRecord( painterPixmap,
                       frame_X - radius + penWidth/2,
                       frame_Y + frame_height - radius + penWidth/2,
                          0 * 16,
-                      -270 * 16 );        
+                      -270 * 16 );
+        HandleRecord( painterPixmap,
+                      frame_X - radius + penWidth/2,
+                      frame_Y + frame_height/2 - radius + penWidth/2,
+                      -90 * 16,
+                      -180 * 16 );
     }
     drawFrame( painterPixmap );
     painterPixmap.end();
@@ -614,24 +673,12 @@ void AreaSelector::slot_recordMode( bool value )
 
 void AreaSelector::slot_areaReset()
 {
-    frame_Width = frame_min_width;
+    frame_width = frame_min_width;
     frame_height = frame_min_height;
-    frame_X = (screenWidth/2 - frame_Width/2)-framePenWidth/2;
+    frame_X = (screenWidth/2 - frame_width/2)-framePenWidth/2;
     frame_Y = (screenHeight/2 - frame_height/2)-framePenWidth/2;
     repaint();
     update();
-}
-
-/*////////////////////////////
-// utilities
-////////////////////////////*/
-void AreaSelector::setGeometry( int x, int y, int with, int height  )
-{
-  frame_X = x;
-  frame_Y = y;
-  frame_Width = with;
-  frame_height = height;
-  update();
 }
 
 /*////////////////////////////
@@ -647,24 +694,23 @@ void AreaSelector::setFrameColor( QColor color )
     frameColor = color;
 }
 
-QColor AreaSelector::getColorSelectedArrow()
+int AreaSelector::getX()
 {
-    return colorSelectedArrow;
+  return frame_X;
 }
-void AreaSelector::setColorSelectedArrow(QColor color)
+void AreaSelector::setX( int x )
 {
-    colorSelectedArrow = color;
-}
-
-void AreaSelector::setWidth( int width )
-{
-    frame_Width = width + framePenWidth;
+    frame_X = x - framePenWidth/2;
     repaint();
     update();
 }
-void AreaSelector::setHeight( int height )
+int AreaSelector::getY()
 {
-    frame_height = height + framePenWidth;
+  return  frame_Y;
+}
+void AreaSelector::setY( int y )
+{
+    frame_Y = y - framePenWidth/2;
     repaint();
     update();
 }
@@ -684,19 +730,67 @@ qreal AreaSelector::getHeight()
     }
     return xReal;
 }
+void AreaSelector::setHeight( int height )
+{
+    frame_height = height + framePenWidth;
+    repaint();
+    update();
+}
 qreal AreaSelector::getWidth()
 {
-    qreal xReal = ( ( frame_X + framePenWidth/2 ) + ( frame_Width - framePenWidth ) ) * screen->devicePixelRatio();
-    int xInt = static_cast<int>( ( ( frame_X + framePenWidth/2 ) + ( frame_Width - framePenWidth ) ) * screen->devicePixelRatio() );
+    qreal xReal = ( ( frame_X + framePenWidth/2 ) + ( frame_width - framePenWidth ) ) * screen->devicePixelRatio();
+    int xInt = static_cast<int>( ( ( frame_X + framePenWidth/2 ) + ( frame_width - framePenWidth ) ) * screen->devicePixelRatio() );
 
     if ( xReal > xInt )
     {
-        xReal = static_cast<int>( ( frame_Width - framePenWidth ) * screen->devicePixelRatio() ) - 1;
+        xReal = static_cast<int>( ( frame_width - framePenWidth ) * screen->devicePixelRatio() ) - 1;
     }
     else
     {
-        xReal = static_cast<int>( ( frame_Width - framePenWidth ) * screen->devicePixelRatio() );
+        xReal = static_cast<int>( ( frame_width - framePenWidth ) * screen->devicePixelRatio() );
     }
     return xReal;
 }
+void AreaSelector::setWidth( int width )
+{
+    frame_width = width + framePenWidth;
+    repaint();
+    update();
+}
+qreal AreaSelector::getXRecordArea()
+{
+    qreal xReal = ( frame_X + framePenWidth/2 ) * screen->devicePixelRatio();
+    int xInt = static_cast<int>( ( frame_X + framePenWidth/2 ) * screen->devicePixelRatio() );
 
+    if ( xReal > xInt )
+    {
+        xReal = xInt + 1;
+    }
+
+    return xReal;
+}
+qreal AreaSelector::getYRecordArea()
+{
+   qreal xReal = ( frame_Y + framePenWidth/2 ) * screen->devicePixelRatio();
+   int xInt = static_cast<int>( ( frame_Y + framePenWidth/2 ) * screen->devicePixelRatio() );
+
+   if ( xReal > xInt )
+   {
+       xReal = xInt + 1;
+   }
+
+   return xReal;
+}
+
+/*////////////////////////////
+// utilities
+////////////////////////////*/
+void AreaSelector::setGeometry( int x, int y, int width, int height  )
+{
+  setX(x);
+  setY(y);
+  setWidth(width);
+  setHeight(height);
+  repaint();
+  update();
+}

@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_1">
        <attribute name="title">
@@ -151,23 +151,23 @@
            <item>
             <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>You wish to include audio from:</string>
+              <string>Do you wish to include the audio?</string>
              </property>
             </widget>
            </item>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QCheckBox" name="checkBoxStereo">
+              <widget class="QRadioButton" name="radioButtonYes">
                <property name="text">
-                <string>Stereo</string>
+                <string>Yes</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBoxMicrophone">
+              <widget class="QRadioButton" name="radioButtonNo">
                <property name="text">
-                <string>Microphone</string>
+                <string>No</string>
                </property>
               </widget>
              </item>
