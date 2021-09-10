@@ -44,11 +44,19 @@ MainWindow::MainWindow(QWidget *parent)
     ui->radioButton60->setMouseTracking(true);
     ui->radioButton60->setToolTip("High performances required");
 
+    //checkbox properties
+    ui->checkBoxMinimize->setChecked(true);
+
+    //slider properties
+    ui->horizontalSlider->setTracking( true );
+    ui->horizontalSlider->setMinimum( 1 );
+    ui->horizontalSlider->setMaximum( 3 );
+    ui->horizontalSlider->setValue( 2 );
+
     //connect
-    connect(this                    , SIGNAL( signal_close() )      , areaSelector, SLOT( close() ) );
-    //connect(this                    , SIGNAL( signal_selection() )  , areaSelector, SLOT( slot_init() ) );
-    //connect(ui->pushButtonSelectArea, SIGNAL( toggled(bool) )       , areaSelector, SLOT( setVisible( bool ) ) );
-    connect(this                    , SIGNAL(signal_recording(bool)), areaSelector, SLOT( slot_recordMode(bool) ) );
+    connect(this , SIGNAL( signal_close() )        , areaSelector, SLOT( close() ) );
+    connect(this , SIGNAL( signal_show(bool) )     , areaSelector, SLOT( setVisible( bool ) ) );
+    connect(this , SIGNAL( signal_recording(bool) ), areaSelector, SLOT( slot_recordMode(bool) ) );
 }
 
 MainWindow::~MainWindow()
@@ -84,8 +92,7 @@ void MainWindow::on_pushButtonSelectArea_clicked()
             areaSelector->slot_init();
         }
         qDebug()<<"Lanciato il segnale di selezione";
-        //emit signal_selection();
-        areaSelector->setVisible(true);
+        emit signal_show(true);
     }
 }
 
@@ -95,8 +102,7 @@ void MainWindow::on_pushButtonFullscreen_clicked()
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
     qDebug()<<"area selector is visible: "<<areaSelector->isVisible();
-    //emit signal_reset_areaSelector();
-    areaSelector->setVisible(false);
+    emit signal_show(false);
 }
 
 void MainWindow::on_toolButton_clicked()
@@ -112,7 +118,7 @@ void MainWindow::on_pushButtonStart_clicked()
         ui->pushButtonPause->setEnabled(true);
         ui->pushButtonStart->setDisabled(true);
         enable_or_disable_tabs(false);
-        QWidget::showMinimized();
+        if(ui->checkBoxMinimize->isChecked()) QWidget::showMinimized();
      if(ui->pushButtonSelectArea->isChecked()) emit signal_recording(true);
     }else{
         return;
