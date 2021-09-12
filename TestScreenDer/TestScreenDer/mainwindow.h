@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QShortcut>
 #include "AreaSelector.h"
 
 QT_BEGIN_NAMESPACE
@@ -55,8 +56,8 @@ private:
     QAction *pauseAction;
     QAction *stopAction;
     QAction *quitAction;
+    QShortcut *startstop_shortcut;
     bool minimizeInSysTray;
-
 
     void enable_or_disable_tabs(bool);
 };
