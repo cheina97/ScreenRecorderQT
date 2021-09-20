@@ -1,27 +1,28 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QSystemTrayIcon>
-#include <QMenu>
-#include <QAction>
-#include <QShortcut>
 #include "AreaSelector.h"
+#include <QAction>
+#include <QMainWindow>
+#include <QMenu>
+#include <QShortcut>
+#include <QSystemTrayIcon>
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
+namespace Ui {
+class MainWindow;
+}
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
-public:
+  public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     AreaSelector *areaSelector;
 
-private slots:
+  private slots:
     void on_pushButtonSelectArea_clicked();
     void on_pushButtonFullscreen_clicked();
     void on_toolButton_clicked();
@@ -29,17 +30,17 @@ private slots:
     void on_pushButtonPause_clicked();
     void on_pushButtonResume_clicked();
     void on_pushButtonStop_clicked();
+    void on_checkBoxMinimize_toggled(bool);
 
-    void on_minimize_toggled(bool checked);
-
-signals:
+  signals:
     void signal_close();
     void signal_show(bool);
     void signal_recording(bool);
-protected:
-    void closeEvent( QCloseEvent *event );
 
-private:
+  protected:
+    void closeEvent(QCloseEvent *event);
+
+  private:
     Ui::MainWindow *ui;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
