@@ -2,6 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
+#include <QShortcut>
 #include "AreaSelector.h"
 
 QT_BEGIN_NAMESPACE
@@ -26,6 +30,8 @@ private slots:
     void on_pushButtonResume_clicked();
     void on_pushButtonStop_clicked();
 
+    void on_minimize_toggled(bool checked);
+
 signals:
     void signal_close();
     void signal_show(bool);
@@ -35,6 +41,19 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+    QSystemTrayIcon *trayIcon;
+    QMenu *trayIconMenu;
+    void createActions();
+    void createTrayIcon();
+    QAction *showhideAction;
+    QAction *startAction;
+    QAction *resumeAction;
+    QAction *pauseAction;
+    QAction *stopAction;
+    QAction *quitAction;
+    QShortcut *startstop_shortcut;
+    bool minimizeInSysTray;
+
     void enable_or_disable_tabs(bool);
 };
 #endif // MAINWINDOW_H
