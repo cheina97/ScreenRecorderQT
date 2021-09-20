@@ -242,6 +242,6 @@ void MainWindow::on_pushButtonStop_clicked() {
     trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
 }
 
-void MainWindow::on_minimize_toggled(bool checked) {
+void MainWindow::on_checkBoxMinimize_toggled(bool checked) {
     minimizeInSysTray = checked;
 }
