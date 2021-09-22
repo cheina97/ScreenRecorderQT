@@ -70,7 +70,7 @@ int encode_clock = 0;
 int encode_clock_start = 0;
 int encode_clock_end = 0;
 
-AVFormatContext *avFmtCtx = nullptr;
+AVFormatContext *avFmtCtx = nullptr, *avFmtCtxOut = nullptr;
 AVCodecContext *avRawCodecCtx = nullptr;
 AVCodecContext *avEncoderCtx;
 AVDictionary *avRawOptions = nullptr;
@@ -87,6 +87,7 @@ string out_file = "out.mp4";
 AVOutputFormat *fmt;
 AVStream *video_st;
 int64_t pts_offset = 0;
+int fps;
 
 FILE *debug;
 int memory_limit;
@@ -104,15 +105,14 @@ bool memoryCheck_limitSurpassed() {
     }
 }
 
-void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scaling_factor) {
+void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps_arg, float scaling_factor) {
+    fps = fps_arg;
     avdevice_register_all();
+    //avcodec_register_all();
     avFmtCtx = avformat_alloc_context();
 
     //aggiunto da me
     //avFmtCtx->flags |= AVFMT_FLAG_FLUSH_PACKETS;
-
-    fmt = av_guess_format("mpeg1video", NULL, NULL);
-    avFmtCtx->oformat = fmt;
 
     char *displayName = getenv("DISPLAY");
 
@@ -181,14 +181,89 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
              << endl;
         exit(-1);
     }
-    if (avcodec_open2(avRawCodecCtx, avDecodec, nullptr) < 0) {
-        cout << "Could not open decodec . "
+
+    //NOTE: fine di start recording, inizio di init output file
+
+    fmt = av_guess_format(NULL, out_file.c_str(), NULL);
+    avformat_alloc_output_context2(&avFmtCtxOut, fmt, fmt->name, out_file.c_str());
+
+    avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
+    if (!avEncodec) {
+        cout << "Encoder codec not found"
              << endl;
         exit(-1);
     }
 
+    video_st = avformat_new_stream(avFmtCtxOut, avEncodec);
+    // av_dump_format(avFmtCtx, 0, out_file.c_str(), 1);
+
+    //avEncoderCtx = video_st->codec;
+    avEncoderCtx = avcodec_alloc_context3(NULL);
+    avcodec_parameters_to_context(avEncoderCtx, video_st->codecpar);  
+
+    avEncoderCtx->codec_id = AV_CODEC_ID_H264;
+    avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
+    avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    avEncoderCtx->bit_rate = 80000;
+    avEncoderCtx->width = x11pmt.width * scaling_factor;
+    avEncoderCtx->height = x11pmt.height * scaling_factor;
+    avEncoderCtx->time_base.num = 1;
+    avEncoderCtx->time_base.den = fps;
+    avEncoderCtx->gop_size = 50;
+    avEncoderCtx->qmin = 5;
+    avEncoderCtx->qmax = 10;
+    avEncoderCtx->max_b_frames = 2;
+
+    //TODO: analizzare se serve
+    if (avEncoderCtx->codec_id == AV_CODEC_ID_H264) {
+        av_opt_set(avEncoderCtx, "preset", "ultrafast", 0);
+        av_opt_set(avEncoderCtx, "tune", "zerolatency", 0);
+        av_opt_set(avEncoderCtx, "cabac", "1", 0);
+        av_opt_set(avEncoderCtx, "ref", "3", 0);
+        av_opt_set(avEncoderCtx, "deblock", "1:0:0", 0);
+        av_opt_set(avEncoderCtx, "analyse", "0x3:0x113", 0);
+        av_opt_set(avEncoderCtx, "subme", "7", 0);
+        av_opt_set(avEncoderCtx, "chroma_qp_offset", "4", 0);
+        av_opt_set(avEncoderCtx, "rc", "crf", 0);
+        av_opt_set(avEncoderCtx, "rc_lookahead", "40", 0);
+        av_opt_set(avEncoderCtx, "crf", "10.0", 0);
+    }
+
+    if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER) {
+        avEncoderCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    }
+
+    //NOTE Loro sta cosa non la fanno
+    if (avcodec_open2(avRawCodecCtx, avDecodec, nullptr) < 0) {
+        cout << "Could not open decodec. "
+             << endl;
+        exit(-1);
+    }
+
+    if (avcodec_open2(avEncoderCtx, avEncodec, NULL) < 0) {
+        cout << "Failed to open video encoder!"
+             << endl;
+        exit(-1);
+    }
+
+    //NOTE: Sfoltisci
+    //Sta roba non l'abbiamo aggiunta
+    int outVideoStreamIndex = -1;
+    for (int i = 0; (size_t)i < avFmtCtx->nb_streams; i++) {
+        if (avFmtCtxOut->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_UNKNOWN) {
+            outVideoStreamIndex = i;
+        }
+    }
+    if (outVideoStreamIndex < 0) {
+        //cerr << "Error: cannot find a free stream index for video output" << endl;
+        //exit(-1);
+        cout << "Error: cannot find a free stream index for video output" << endl;
+        exit(-1);
+    }
+    avcodec_parameters_from_context(avFmtCtxOut->streams[outVideoStreamIndex]->codecpar, avEncoderCtx);
+
     //Open output URL
-    if (avio_open(&avFmtCtx->pb, out_file.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
+    if (avio_open(&avFmtCtxOut->pb, out_file.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
         printf("Failed to open output file! \n");
         exit(-1);
     }
@@ -199,7 +274,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
                             (int)avRawCodecCtx->width * scaling_factor,
                             (int)avRawCodecCtx->height * scaling_factor,
                             AV_PIX_FMT_YUV420P,
-                            SWS_BICUBIC, nullptr, nullptr, nullptr);
+                            SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
     avYUVFrame = av_frame_alloc();
     //deprecata: int yuvLen = avpicture_get_size(AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height);
@@ -213,52 +288,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps, float scal
     avYUVFrame->height = avRawCodecCtx->height;
     avYUVFrame->format = AV_PIX_FMT_YUV420P;
 
-    avEncodec = avcodec_find_encoder(fmt->video_codec);
-    if (!avEncodec) {
-        cout << "Encoder codec not found"
-             << endl;
-        exit(-1);
-    }
-
-    video_st = avFmtCtx->streams[videoIndex];
-
-    avEncoderCtx = avcodec_alloc_context3(avEncodec);
-
-    avEncoderCtx->codec_id = fmt->video_codec;
-    //cout << fmt->video_codec << endl;
-    //cout << AV_CODEC_ID_MPEG4 << endl;
-    //cout << AV_CODEC_ID_H264 << endl;
-
-    //avEncoderCtx->codec_id =AV_CODEC_ID_HEVC;
-    avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
-    avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-    avEncoderCtx->width = x11pmt.width * scaling_factor;
-    avEncoderCtx->height = x11pmt.height * scaling_factor;
-    avEncoderCtx->time_base.num = 1;
-    avEncoderCtx->time_base.den = fps;
-    avEncoderCtx->bit_rate = 128 * 1024 * 8;
-    avEncoderCtx->gop_size = 0;
-    avEncoderCtx->qmin = 1;
-    avEncoderCtx->qmax = 10;
-    avEncoderCtx->max_b_frames = 0;
-
-    //avEncoderCtx->me_range = 16;
-    //avEncoderCtx->max_qdiff = 4;
-    //avEncoderCtx->qcompress = 0.6;
-
-    AVDictionary *param = 0;
-    //H.264
-    //av_dict_set(&param, "preset", "slow", 0);
-    av_dict_set(&param, "preset", "ultrafast", 0);
-    av_dict_set(&param, "tune", "zerolatency", 0);  //实现实时编码
-
-    if (avcodec_open2(avEncoderCtx, avEncodec, &param) < 0) {
-        cout << "Failed to open video encoder!"
-             << endl;
-        exit(-1);
-    }
-
-    av_dump_format(avFmtCtx, 0, out_file.c_str(), 1);
+    //av_dump_format(avFmtCtx, 0, out_file.c_str(), 1);
 }
 
 void getRawPackets(int frameNumber) {
@@ -266,7 +296,8 @@ void getRawPackets(int frameNumber) {
     readframe_clock_start = clock();
     auto begin = std::chrono::high_resolution_clock::now();
     AVPacket *avRawPkt;
-    int64_t cur_pts = 0;
+    //NOTE: unused
+    // int64_t cur_pts = 0;
 
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
@@ -278,24 +309,25 @@ void getRawPackets(int frameNumber) {
         }
         //prove pts
 
-        cout << "avRawPkt->pts: " << avRawPkt->pts << endl;
-        cout << "avRawPkt->dts: " << avRawPkt->dts << endl;
-        cout << "avRawPkt->duration: " << avRawPkt->duration << endl;
+        //cout << "avRawPkt->pts: " << avRawPkt->pts << endl;
+        //cout << "avRawPkt->dts: " << avRawPkt->dts << endl;
+        //cout << "avRawPkt->duration: " << avRawPkt->duration << endl;
 
-        cur_pts = avRawPkt->pts;
-        avRawPkt->pts = av_rescale_q_rnd(avRawPkt->pts, avFmtCtx->streams[videoIndex]->time_base, {1, 30}, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-        avRawPkt->dts = av_rescale_q_rnd(avRawPkt->dts, avFmtCtx->streams[videoIndex]->time_base, {1, 30}, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-        avRawPkt->duration = av_rescale_q(avRawPkt->duration, avFmtCtx->streams[videoIndex]->time_base, {1, 30});
+        //cur_pts = avRawPkt->pts;
+        //avRawPkt->pts = av_rescale_q_rnd(avRawPkt->pts, avFmtCtxOut->streams[videoIndex]->time_base, {1, 30}, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        //avRawPkt->dts = av_rescale_q_rnd(avRawPkt->dts, avFmtCtxOut->streams[videoIndex]->time_base, {1, 30}, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        //avRawPkt->duration = av_rescale_q(avRawPkt->duration, avFmtCtxOut->streams[videoIndex]->time_base, {1, 30});
+        //av_packet_rescale_ts()
 
-        cout << "avRawPkt->pts: " << avRawPkt->pts << endl;
-        cout << "avRawPkt->dts: " << avRawPkt->dts << endl;
-        cout << "avRawPkt->duration: " << avRawPkt->duration << endl;
+        //cout << "avRawPkt->pts: " << avRawPkt->pts << endl;
+        //cout << "avRawPkt->dts: " << avRawPkt->dts << endl;
+        //cout << "avRawPkt->duration: " << avRawPkt->duration << endl;
 
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
 
-        avRawPkt->stream_index = videoIndex;
+        //avRawPkt->stream_index = videoIndex;
 
         if (memoryCheck_limitSurpassed()) {
             memory_error = true;
@@ -325,7 +357,7 @@ void decodeAndEncode(void) {
     int bufLen = 0;
     uint8_t *outBuf = nullptr;
 
-    flag = avformat_write_header(avFmtCtx, NULL);
+    flag = avformat_write_header(avFmtCtxOut, NULL);
     if (flag < 0) {
         cout << "Error in writing header" << endl;
         exit(-1);
@@ -340,12 +372,13 @@ void decodeAndEncode(void) {
 
     av_image_fill_arrays(avOutFrame->data, avOutFrame->linesize, (uint8_t *)outBuf, avEncoderCtx->pix_fmt, avEncoderCtx->width, avEncoderCtx->height, 1);
 
-    AVPacket pkt;  // 用来存储编码后数据
+    AVPacket pkt;
     //memset(&pkt, 0, sizeof(AVPacket));
     av_init_packet(&pkt);
 
     AVPacket *avRawPkt;
-    int64_t avRawPkt_dts;
+    //NOTE: unused
+    // int64_t avRawPkt_dts;
     int i = 0;
 
     avRawPkt_queue_mutex.lock();
@@ -361,7 +394,7 @@ void decodeAndEncode(void) {
                 //deprecato: flag = avcodec_decode_video2(avRawCodecCtx, avOutFrame, &got_picture, avRawPkt);
                 decode_clock_start = clock();
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
-                avRawPkt_dts = avRawPkt->dts;
+                // avRawPkt_dts = avRawPkt->dts;
                 av_packet_unref(avRawPkt);
                 av_packet_free(&avRawPkt);
 
@@ -383,6 +416,7 @@ void decodeAndEncode(void) {
                     //deprecato: flag = avcodec_encode_video2(avEncoderCtx, &pkt, avYUVFrame, &got_picture);
                     encode_clock_start = clock();
 
+                    avYUVFrame->pts = i * 30 * 30 * 100 / fps;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
                     got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                     encode_clock_end = clock();
@@ -394,25 +428,31 @@ void decodeAndEncode(void) {
                             //cout << pts_offset << " += " << avRawPkt_dts << endl;
                             //pts_offset += avRawPkt_dts;
                             //cout << avRawPkt_dts << endl;
-                            //pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
-                            //pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts + 1;
+                            //pkt.pts = avFmtCtx->streams[videoIndex]->cur_dts+1;
+                            //pkt.dts = avFmtCtx->streams[videoIndex]->cur_dts+1;
                             //int64_t rescaled_dts = (int64_t)avRawPkt_dts / 1000 * 30;
                             //cout << "PTS: " << rescaled_dts << endl;
 
-                            pkt.pts = avRawPkt_dts;
-                            pkt.dts = avRawPkt_dts;
-                            pkt.duration = 1 / 30;
+                            pkt.pts = i * 30 * 30 * 100 / fps;;
+                            pkt.dts = i * 30 * 30 * 100 / fps;;
+
+                            //av_packet_rescale_ts(&pkt, avEncoderCtx->time_base, avFmtCtxOut->streams[videoIndex]->time_base);
+                            //pkt.pts=i*fps*100;
+                            //pkt.dts=i*fps*100;
+                            //pkt.duration=1;
+                            //pkt.pos=i;
 
                             fprintf(debug, "%ld\n", pkt.pts);
+
                             //pkt.pts = pts_offset;
                             //pkt.dts = pts_offset;
-                            //cout << "pkt.pts =" << pts_offset << " + " << avFmtCtx->start_time << " + " << av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base) << endl;
-                            //pkt.pts = avFmtCtx->start_time + avFmtCtx->start_time + av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base);
-                            //pkt.dts = avFmtCtx->start_time + av_rescale_q(pkt.dts, video_st->codec->time_base, video_st->time_base);
+                            //cout << "pkt.pts =" << pts_offset << " + " << avFmtCtxOut->start_time << " + " << av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base) << endl;
+                            //pkt.pts = avFmtCtxOut->start_time + avFmtCtxOut->start_time + av_rescale_q(pkt.pts, video_st->codec->time_base, video_st->time_base);
+                            //pkt.dts = avFmtCtxOut->start_time + av_rescale_q(pkt.dts, video_st->codec->time_base, video_st->time_base);
                             //pkt.duration = 1;
 
                             //int w = fwrite(pkt.data, 1, pkt.size, mp4Fp);
-                            if (av_interleaved_write_frame(avFmtCtx, &pkt) < 0) {
+                            if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
                                 cout << "Error in writing file" << endl;
                                 exit(-1);
                             }
@@ -431,15 +471,18 @@ void decodeAndEncode(void) {
         avRawPkt_queue_mutex.lock();
     }
 
-    /* int ret = flush_encoder(avFmtCtx, 0);
+    /* int ret = flush_encoder(avFmtCtxOut, 0);
     if (ret < 0) {
         printf("Flushing encoder failed\n");
         return -1;
     } */
     av_packet_unref(&pkt);
-    av_write_trailer(avFmtCtx);
-    avio_close(avFmtCtx->pb);
+    av_write_trailer(avFmtCtxOut);
 
+    //NOTE: aggiunto da rhami ///////////
+    avformat_close_input(&avFmtCtx);
+    /////////////////////////////////////
+    avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
     //avcodec_close(video_st->codec);
 
