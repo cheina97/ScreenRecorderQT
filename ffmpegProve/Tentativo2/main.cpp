@@ -199,7 +199,7 @@ void initScreenSource(X11parameters x11pmt, bool fullscreen, int fps_arg, float 
 
     //avEncoderCtx = video_st->codec;
     avEncoderCtx = avcodec_alloc_context3(NULL);
-    avcodec_parameters_to_context(avEncoderCtx, video_st->codecpar);  
+    avcodec_parameters_to_context(avEncoderCtx, video_st->codecpar);
 
     avEncoderCtx->codec_id = AV_CODEC_ID_H264;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -333,6 +333,8 @@ void getRawPackets(int frameNumber) {
             memory_error = true;
             break;
         }
+
+        if (i == frameNumber / 2) sleep(5);
         // test for memory av_packet_unref(avRawPkt);
         //if (i == frameNumber / 2 && i % 2 == 0) usleep(5 * 1000 * 1000);
     }
@@ -433,8 +435,10 @@ void decodeAndEncode(void) {
                             //int64_t rescaled_dts = (int64_t)avRawPkt_dts / 1000 * 30;
                             //cout << "PTS: " << rescaled_dts << endl;
 
-                            pkt.pts = i * 30 * 30 * 100 / fps;;
-                            pkt.dts = i * 30 * 30 * 100 / fps;;
+                            pkt.pts = i * 30 * 30 * 100 / fps;
+                            ;
+                            pkt.dts = i * 30 * 30 * 100 / fps;
+                            ;
 
                             //av_packet_rescale_ts(&pkt, avEncoderCtx->time_base, avFmtCtxOut->streams[videoIndex]->time_base);
                             //pkt.pts=i*fps*100;
