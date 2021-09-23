@@ -16,25 +16,29 @@ extern "C"
 #include "alsa/asoundlib.h"
 };
 
-using namespace std;
-
 //OUTPUT
 AVFormatContext *FormatContextOut = NULL;
+AVOutputFormat *AVOutFormat = NULL;
 AVCodecContext *CodecContextOut = NULL;
 AVStream *AudioStreamOut = NULL;
 AVStream *StreamOut = NULL;
+AVDictionary *AudioOptions = NULL;
 
 int audioIndexOut = 1;
 
 //AUDIO
 AVFormatContext *FormatContextAudio = NULL;
-AVCodecContext *AudioCodecContext = NULL;
+AVCodecContext *AudioCodecContextIn = NULL;
+AVCodecContext *AudioCodecContextOut = NULL;
 AVInputFormat *AudioInputFormat = NULL;
-const AVCodec *AudioCodec = NULL;
+const AVCodec *AudioCodecIn = NULL;
+const AVCodec *AudioCodecOut = NULL;
 AVAudioFifo *AudioFifoBuff = NULL;
 AVStream *AudioStream = NULL;
 
 int audioIndex = -1; // AUDIO STREAM INDEX
+
+char *outputFile;
 
 //VIDEO
 AVFormatContext *FormatContextVideo = NULL;
@@ -49,82 +53,40 @@ int targetSamplerate = 48000;
 
 int EncodeFrameCnt = 0;
 
+using namespace std;
+
 int decodeAudio()
 {
-  int StreamsNumber;
-  // GET INPUT FORMAT ALSA
-  AudioInputFormat = av_find_input_format("alsa");
-  if (AudioInputFormat == NULL)
-  {
-    cout << "av_find_input_format not found......" << endl;
-    exit(-1);
-  }
-  cout << "[ DEBUG ] INPUT AUDIO: Find input format: OK" << endl;
+  // FIND DECODER PARAMS
 
-  // OPEN INPUT FORMAT FROM AUDIO INPUT FORMAT
-  if (avformat_open_input(&FormatContextAudio, "hw:0,0", AudioInputFormat, NULL) < 0)
-  {
-    cout << "Couldn't open audio input stream." << endl;
-    exit(-1);
-  }
-  cout << "[ DEBUG ] INPUT AUDIO: Open input: OK" << endl;
-
-  // CHECK STREAM INFO
-  if (avformat_find_stream_info(FormatContextAudio, NULL) < 0)
-  {
-    cout << "Couldn't find audio stream information." << endl;
-    exit(-1);
-  }
-  cout << "[ DEBUG ] INPUT AUDIO: Find audio stream info: OK" << endl;
-
-  // FIND AUDIO STREAM INDEX
-  StreamsNumber = (int)FormatContextAudio->nb_streams;
-  for (int i = 0; i < StreamsNumber; ++i)
-  {
-    if (FormatContextAudio->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-    {
-      audioIndex = i;
-      // SAVE AUDIO STREAM FROM AUDIO CONTEXT
-      AudioStream = FormatContextAudio->streams[i];
-      break;
-    }
-  }
-
-  // CHECK AUDIO STREAM INDEX
-  if (audioIndex == -1 || audioIndex >= StreamsNumber)
-  {
-    cout << "Didn't find a audio stream." << endl;
-    exit(-1);
-  }
-
-  cout << "[ DEBUG ] INPUT AUDIO: Find audio stream index: OK - INDEX: " << audioIndex << endl;
+  AVCodecParameters *AudioParams = AudioStream->codecpar;
 
   // FIND DECODER CODEC
-  AudioCodec = avcodec_find_decoder(AudioStream->codecpar->codec_id);
-  if (AudioCodec == NULL)
+  AudioCodecIn = avcodec_find_decoder(AudioStream->codecpar->codec_id);
+  if (AudioCodecIn == NULL)
   {
-    cout << "Didn't find a codec audio." << endl;
+    cout << "[ ERROR ] Didn't find a codec audio." << endl;
     exit(-1);
   }
-  cout << "[ DEBUG ] INPUT AUDIO: Find decoder: OK - CODEC ID: " << AudioCodec << endl;
+  cout << "[ DEBUG ] INPUT AUDIO: Find decoder: OK - CODEC ID: " << AudioCodecIn << endl;
 
   // ALLOC AUDIO CODEC CONTEXT BY AUDIO CODEC
-  AudioCodecContext = avcodec_alloc_context3(AudioCodec);
-  if (avcodec_parameters_to_context(AudioCodecContext, AudioStream->codecpar) < 0)
+  AudioCodecContextIn = avcodec_alloc_context3(AudioCodecIn);
+  if (avcodec_parameters_to_context(AudioCodecContextIn, AudioParams) < 0)
   {
-    cout << "Audio avcodec_parameters_to_context failed" << endl;
+    cout << "[ ERROR ] Audio avcodec_parameters_to_context failed" << endl;
     exit(-1);
   }
 
+  cout << "[ DEBUG ] INPUT AUDIO: Audio context parameters from codec: OK " << endl;
+
   // OPEN CODEC
-  if (avcodec_open2(AudioCodecContext, AudioCodec, NULL) < 0)
+  if (avcodec_open2(AudioCodecContextIn, AudioCodecIn, NULL) < 0)
   {
-    cout << "Could not open decodec . " << endl;
+    cout << "[ ERROR ] Could not open decodec . " << endl;
     exit(-1);
   }
   cout << "[ DEBUG ] INPUT AUDIO: Decoder open: OK" << endl;
-
-  return 1;
 }
 
 int encodeAudio()
@@ -132,23 +94,20 @@ int encodeAudio()
 
   const char *outputFilename = "test.mp4";
 
-  // ALLOC FORMAT CONTEXT OUTPUT
-  avformat_alloc_output_context2(&FormatContextOut, NULL, NULL, outputFilename);
-
   //PARTE VIDEO TODO
 
   //PARTE AUDIO
   if (AudioStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
   {
     // FIND CODEC OUTPUT
-    AVCodec *AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC/* AV_CODEC_ID_AC3 *//* FormatContextOut->oformat->audio_codec */);
+    AVCodec *AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC /* AV_CODEC_ID_AC3 */ /* FormatContextOut->oformat->audio_codec */);
     if (!AudioCodecOut)
     {
       cout << "Can not find audio encoder" << endl;
       exit(-1);
     }
 
-    cout << "[ DEBUG ] OUTPUT AUDIO: Find Encoder: OK - CODEC ID"<< AudioCodecOut->id << endl;
+    cout << "[ DEBUG ] OUTPUT AUDIO: Find Encoder: OK - CODEC ID" << AudioCodecOut->id << endl;
 
     // NEW AUDIOSTREAM OUTPUT
     AudioStreamOut = avformat_new_stream(FormatContextOut, AudioCodecOut);
@@ -212,22 +171,114 @@ int encodeAudio()
 
   cout << "[ DEBUG ] OUTPUT AUDIO: File header write: OK " << endl;
 
-  cout << "FORMAT CONTEXT OUTPUT PARAMETERS:\n" << FormatContextOut->streams[0]->codecpar->channel_layout
-  << "\n"<<FormatContextOut->streams[0]->codecpar->sample_rate
-  << "\n"<<FormatContextOut->streams[0]->codecpar->sample_rate
-  << "\n"<<FormatContextOut->streams[0]->codecpar->format
-  << "\n"<<FormatContextOut->streams[0]->codecpar->bit_rate
-  << "\n"<<FormatContextOut->streams[0]->codecpar->channels
-  << "\n"<<FormatContextOut->streams[0]->codecpar->codec_type
-  << "\n"<<FormatContextOut->streams[0]->codecpar->codec_id
-  << "\n"<<FormatContextOut->streams[0]->codecpar->codec_tag <<endl;
+  cout << "FORMAT CONTEXT OUTPUT PARAMETERS:\n"
+       << FormatContextOut->streams[0]->codecpar->channel_layout
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->sample_rate
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->sample_rate
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->format
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->bit_rate
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->channels
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->codec_type
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->codec_id
+       << "\n"
+       << FormatContextOut->streams[0]->codecpar->codec_tag << endl;
   return 1;
 };
 
 int initAudio()
 {
-  avdevice_register_all();
+  FormatContextAudio = avformat_alloc_context();
+
+  //DICTIONARY INIT
+  if (av_dict_set(&AudioOptions, "sample_rate", "44100", 0) < 0)
+  {
+    cout << "[ ERROR ] impossibile settare il sample rate";
+    exit(-1);
+  }
+  if (av_dict_set(&AudioOptions, "async", "25", 0) < 0)
+  {
+    cout << "[ ERROR ] Impossibile settare async" << endl;
+    exit(-1);
+  }
+
+#if defined linux
+  // GET INPUT FORMAT ALSA
+  AudioInputFormat = av_find_input_format("alsa");
+  if (AudioInputFormat == NULL)
+  {
+    cout << "[ ERROR ] av_find_input_format not found......" << endl;
+    exit(-1);
+  }
+  cout << "[ DEBUG ] INPUT AUDIO: Find input format: OK" << endl;
+
+  // OPEN INPUT FORMAT FROM AUDIO INPUT FORMAT
+  //NOTE: controllare: hw:0,0
+  if (avformat_open_input(&FormatContextAudio, "hw:0,0", AudioInputFormat, NULL) < 0)
+  {
+    cout << "[ ERROR ] Couldn't open audio input stream." << endl;
+    exit(-1);
+  }
+  cout << "[ DEBUG ] INPUT AUDIO: Open input: OK" << endl;
+
+#endif
+
+  // CHECK STREAM INFO
+  if (avformat_find_stream_info(FormatContextAudio, NULL) < 0)
+  {
+    cout << "[ ERROR ] Couldn't find audio stream information." << endl;
+    exit(-1);
+  }
+  cout << "[ DEBUG ] INPUT AUDIO: Find audio stream info: OK" << endl;
+
+  // FIND AUDIO STREAM INDEX
+  int StreamsNumber = (int)FormatContextAudio->nb_streams;
+  for (int i = 0; i < StreamsNumber; i++)
+  {
+    if (FormatContextAudio->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+    {
+      audioIndex = i;
+      // SAVE AUDIO STREAM FROM AUDIO CONTEXT
+      AudioStream = FormatContextAudio->streams[i];
+      break;
+    }
+  }
+  // CHECK AUDIO STREAM INDEX
+  if (audioIndex == -1 || audioIndex >= StreamsNumber)
+  {
+    cout << "[ ERROR ] Didn't find a audio stream." << endl;
+    exit(-1);
+  }
+
+  cout << "[ DEBUG ] INPUT AUDIO: Find audio stream index: OK - INDEX: " << audioIndex << endl;
+
+  //avdevice_register_all();
   return 1;
+}
+
+int initOutputFile()
+{
+  outputFile = const_cast<char *>("output.mp4");
+
+  AVOutFormat = av_guess_format(nullptr, outputFile, nullptr);
+  if (AVOutFormat == NULL)
+  {
+    cout << "[ ERROR ] Impossible to guess the format" << endl;
+    exit(-1);
+  }
+  // ALLOC FORMAT CONTEXT OUTPUT
+  avformat_alloc_output_context2(&FormatContextOut, AVOutFormat, AVOutFormat->name, outputFile);
+  if (FormatContextOut == NULL)
+  {
+    cout << "[ ERROR ] impossible to allocate FormatContextOut" << endl;
+    exit(-1);
+  }
 }
 
 int acquireAudio()
@@ -315,3 +366,13 @@ int main(int argc, char const *argv[])
 
   return 0;
 }
+cout << "------------------------------" << endl;
+//cocordAudio();
+
+reut << "------------------------------" << endl;
+//recordAudio();
+
+return 0;
+//recordAudio();
+
+return 0;
