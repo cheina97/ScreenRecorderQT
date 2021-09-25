@@ -31,8 +31,6 @@ const AVCodec *AudioCodecOut = NULL;
 AVAudioFifo *AudioFifoBuff = NULL;
 AVStream *AudioStream = NULL;
 
-AVStream *AudioStreamOut = NULL; //deriva da AudioFormatContextOut
-
 int audioIndex = -1; // AUDIO STREAM INDEX
 int audioIndexOut = -1;
 
@@ -40,7 +38,6 @@ char *outputFile;
 
 //VIDEO
 AVFormatContext *FormatContextVideo = NULL;
-
 AVFrame *AudioFrame = NULL;
 
 SwrContext *swrContext = NULL;
@@ -56,14 +53,14 @@ int counter = 0;
 
 using namespace std;
 
+//NOTE: generateAudioStream
 int decodeAudio()
 {
   // FIND DECODER PARAMS
-
   AVCodecParameters *AudioParams = AudioStream->codecpar;
 
   // FIND DECODER CODEC
-  AudioCodecIn = avcodec_find_decoder(AudioStream->codecpar->codec_id);
+  AudioCodecIn = avcodec_find_decoder(AudioParams->codec_id);
   if (AudioCodecIn == NULL)
   {
     cout << "[ ERROR ] Didn't find a codec audio." << endl;
@@ -92,10 +89,11 @@ int decodeAudio()
   return 1;
 }
 
+//NOTE: parte finale di generateAudioStream
 int encodeAudio()
 {
   // NEW AUDIOSTREAM OUTPUT
-  AudioStreamOut = avformat_new_stream(FormatContextOut, NULL);
+  AVStream *AudioStreamOut = avformat_new_stream(FormatContextOut, NULL);
   if (!AudioStreamOut)
   {
     printf("[ ERROR ] cannnot create new audio stream for output!\n");
@@ -105,7 +103,7 @@ int encodeAudio()
   cout << "[ DEBUG ] OUTPUT AUDIO: Encoder new stream: OK" << endl;
 
   // FIND CODEC OUTPUT
-  AVCodec *AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC);
+  AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC);
   if (!AudioCodecOut)
   {
     cout << "[ ERROR ] Can not find audio encoder" << endl;
@@ -180,44 +178,46 @@ int encodeAudio()
 
   avcodec_parameters_from_context(FormatContextOut->streams[audioIndexOut]->codecpar, AudioCodecContextOut);
   /* if (!(FormatContextOut->oformat->flags & AVFMT_NOFILE))
-  {
-    if (avio_open(&FormatContextOut->pb, outputFilename, AVIO_FLAG_WRITE) < 0)
     {
-      printf("can not open output file handle!\n");
+      if (avio_open(&FormatContextOut->pb, outputFilename, AVIO_FLAG_WRITE) < 0)
+      {
+        printf("can not open output file handle!\n");
+        exit(-1);
+      }
+    }
+    cout << "[ DEBUG ] OUTPUT AUDIO: Opening File: OK " << endl;
+
+    if (avformat_write_header(FormatContextOut, NULL) < 0)
+    {
+      printf("can not write the header of the output file!\n");
       exit(-1);
     }
-  }
-  cout << "[ DEBUG ] OUTPUT AUDIO: Opening File: OK " << endl;
 
-  if (avformat_write_header(FormatContextOut, NULL) < 0)
-  {
-    printf("can not write the header of the output file!\n");
-    exit(-1);
-  }
+    cout << "[ DEBUG ] OUTPUT AUDIO: File header write: OK " << endl;
 
-  cout << "[ DEBUG ] OUTPUT AUDIO: File header write: OK " << endl;
-
-  cout << "FORMAT CONTEXT OUTPUT PARAMETERS:\n"
-       << FormatContextOut->streams[0]->codecpar->channel_layout
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->sample_rate
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->sample_rate
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->format
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->bit_rate
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->channels
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->codec_type
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->codec_id
-       << "\n"
-       << FormatContextOut->streams[0]->codecpar->codec_tag << endl; */
+    cout << "FORMAT CONTEXT OUTPUT PARAMETERS:\n"
+        << FormatContextOut->streams[0]->codecpar->channel_layout
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->sample_rate
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->sample_rate
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->format
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->bit_rate
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->channels
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->codec_type
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->codec_id
+        << "\n"
+        << FormatContextOut->streams[0]->codecpar->codec_tag << endl; 
+  */
   return 1;
 };
 
+// NOTE : START RECORDING: OPEN AUDIO DEVICE
 int initAudio()
 {
   avdevice_register_all();
@@ -235,7 +235,7 @@ int initAudio()
     exit(-1);
   }
 
-#if defined linux
+  //#if defined linux
   // GET INPUT FORMAT ALSA
   AudioInputFormat = av_find_input_format("alsa");
   if (AudioInputFormat == NULL)
@@ -246,15 +246,15 @@ int initAudio()
   cout << "[ DEBUG ] INPUT AUDIO: Find input format: OK" << endl;
 
   // OPEN INPUT FORMAT FROM AUDIO INPUT FORMAT
-  //NOTE: controllare: hw:0,0
-  if (avformat_open_input(&FormatContextAudio, "hw:0,0", AudioInputFormat, NULL) < 0)
+  //TODO: capire come prendere il device! da ale viene hw:0,0
+  if (avformat_open_input(&FormatContextAudio, "hw:1,0", AudioInputFormat, NULL) < 0)
   {
     cout << "[ ERROR ] Couldn't open audio input stream." << endl;
     exit(-1);
   }
   cout << "[ DEBUG ] INPUT AUDIO: Open input: OK" << endl;
 
-#endif
+  //#endif
 
   // CHECK STREAM INFO
   if (avformat_find_stream_info(FormatContextAudio, NULL) < 0)
@@ -307,9 +307,38 @@ int initOutputFile()
     cout << "[ ERROR ] impossible to allocate FormatContextOut" << endl;
     exit(-1);
   }
-
   cout << "[ DEBUG ] OPEN FILE: alloc output context: OK" << endl;
+  
+    //FIXME: questa cosa deve essere cambiata di posto ofc  
+      cout << "------------------------------" << endl;
+      cout << "[DEBUG] DECODING..." << endl;
+      cout << "------------------------------" << endl;
+      decodeAudio();
+      cout << "------------------------------" << endl;
+      cout << "[DEBUG] ENCODING..." << endl;
+      cout << "------------------------------" << endl;
+      encodeAudio();
+      cout << "------------------------------" << endl;
 
+    //NOTE: aggiunta
+
+    // create an empty video file
+    if (!(FormatContextOut->flags & AVFMT_NOFILE)) {
+        if (avio_open2(&FormatContextOut->pb, outputFile, AVIO_FLAG_WRITE, NULL, NULL) < 0) {
+            cerr << "Error in creating the video file" << endl;
+            exit(-10);
+        }
+    }
+
+    if (FormatContextOut->nb_streams == 0) {
+        cerr << "Output file does not contain any stream" << endl;
+        exit(-11);
+    }
+
+    if (avformat_write_header(FormatContextOut, NULL) < 0) {
+        cerr << "Error in writing the header context" << endl;
+        exit(-12);
+    }
   return 1;
 }
 
@@ -366,6 +395,7 @@ int initConvertedSamples(uint8_t ***converted_input_samples, AVCodecContext *out
   return 0;
 }
 
+//NOTE: capture audio
 int acquireAudio()
 {
   int ret;
@@ -444,9 +474,9 @@ int acquireAudio()
 
   cout << "[ DEBUG ] Resampler: OK" << endl;
 
-  while (counter < 10000)
+//ANCHOR: qui il while
+  while (counter < 100)
   {
-
     if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex)
     {
       //decode audio routing
@@ -467,30 +497,26 @@ int acquireAudio()
           exit(1);
           //throw error("Error during decoding");
         }
-
         if (FormatContextOut->streams[audioIndexOut]->start_time <= 0)
         {
           FormatContextOut->streams[audioIndexOut]->start_time = rawFrame->pts;
         }
         initConvertedSamples(&resampledData, AudioCodecContextOut, rawFrame->nb_samples);
-        
         swr_convert(swrContext,
                     resampledData, rawFrame->nb_samples,
                     (const uint8_t **)rawFrame->extended_data, rawFrame->nb_samples);
-
         add_samples_to_fifo(resampledData, rawFrame->nb_samples);
 
         //raw frame ready
         av_init_packet(outPacket);
         outPacket->data = nullptr; // packet data will be allocated by the encoder
         outPacket->size = 0;
-
         const int frame_size = FFMAX(av_audio_fifo_size(AudioFifoBuff), AudioCodecContextOut->frame_size);
 
         scaledFrame = av_frame_alloc();
         if (!scaledFrame)
         {
-          cerr << "Cannot allocate an AVPacket for encoded video" << endl;
+          cerr << "[ ERROR ] Cannot allocate an AVPacket for encoded video" << endl;
           exit(1);
           //throw error("Cannot allocate an AVPacket for encoded video");
         }
@@ -505,19 +531,19 @@ int acquireAudio()
 
         while (av_audio_fifo_size(AudioFifoBuff) >= AudioCodecContextOut->frame_size)
         {
-
           ret = av_audio_fifo_read(AudioFifoBuff, (void **)(scaledFrame->data), AudioCodecContextOut->frame_size);
           scaledFrame->pts = pts;
           pts += scaledFrame->nb_samples;
+
           if (avcodec_send_frame(AudioCodecContextOut, scaledFrame) < 0)
           {
             cerr << "Cannot encode current audio packet " << endl;
             exit(1);
             //throw error("Cannot encode current audio packet");
           }
+
           while (ret >= 0)
           {
-            
             ret = avcodec_receive_packet(AudioCodecContextOut, outPacket);
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
               break;
@@ -530,10 +556,9 @@ int acquireAudio()
             }
             //outPacket ready
             av_packet_rescale_ts(outPacket, AudioCodecContextOut->time_base, FormatContextOut->streams[audioIndexOut]->time_base);
-            
             outPacket->stream_index = audioIndexOut;
-            // write_lock.lock();
 
+            // write_lock.lock();
             if (av_write_frame(FormatContextOut, outPacket) != 0)
             {
               cerr << "Error in writing audio frame" << endl;
@@ -579,15 +604,6 @@ int main(int argc, char const *argv[])
   cout << "[DEBUG] Init Output File" << endl;
   cout << "------------------------------" << endl;
   initOutputFile();
-  cout << "------------------------------" << endl;
-  cout << "[DEBUG] DECODING..." << endl;
-  cout << "------------------------------" << endl;
-  decodeAudio();
-  cout << "------------------------------" << endl;
-  cout << "[DEBUG] ENCODING..." << endl;
-  cout << "------------------------------" << endl;
-  encodeAudio();
-  cout << "------------------------------" << endl;
   cout << "[DEBUG] RECORDING..." << endl;
   cout << "------------------------------" << endl;
   acquireAudio();

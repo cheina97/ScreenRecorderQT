@@ -4,6 +4,7 @@
         "avcodec.h": "c",
         "codec.h": "c",
         "codec_id.h": "c",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "iostream": "cpp"
     }
 }
