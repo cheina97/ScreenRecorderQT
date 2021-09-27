@@ -442,6 +442,8 @@ int acquireAudio()
     //throw error("Could not open resample context");
   }
 
+  int gotFrame;
+
   // cout << "[ DEBUG ] Resampler: OK" << endl;
   //ANCHOR: qui il while
   while (counter < 30304) //10 secondi
@@ -455,7 +457,52 @@ int acquireAudio()
         cout << "Cannot decode current audio packet " << ret << endl;
         continue;
       }
-      while (ret >= 0)
+
+    /*/FIXME: aggiunto questo
+      //ret = avcodec_decode_audio4(AudioCodecContextIn, rawFrame, &frameFinished, inPacket);
+      ret = avcodec_send_packet(AudioCodecContextIn, inPacket);
+      ret = avcodec_receive_frame(AudioCodecContextIn, rawFrame);
+      if (ret < 0)
+      {
+        cout << "Error: unable to decode audio" << endl;
+      }
+      //if (frameFinished)
+      else
+      {
+        //av_packet_rescale_ts(outPacket,  inAudioFormatContext->streams[audioStreamIndx]->time_base, AudioCodecContextIn->time_base);
+        av_init_packet(outPacket);
+        outPacket->data = nullptr;
+        outPacket->size = 0;
+        scaledFrame->nb_samples = AudioCodecContextOut->frame_size;
+        scaledFrame->channel_layout = AudioCodecContextOut->channel_layout;
+        scaledFrame->format = AudioCodecContextOut->sample_fmt;
+        scaledFrame->sample_rate = AudioCodecContextOut->sample_rate;
+        //avcodec_encode_audio2(AudioCodecContextOut, outPacket, scaledFrame, &gotFrame);
+        gotFrame = avcodec_send_frame(AudioCodecContextOut, scaledFrame);
+        gotFrame = avcodec_receive_packet(AudioCodecContextOut, outPacket);
+
+        if (gotFrame)
+        {
+          if (outPacket->pts != AV_NOPTS_VALUE)
+          {
+            outPacket->pts = av_rescale_q(outPacket->pts, AudioStream->time_base, AudioStream->time_base);
+          }
+          if (outPacket->dts != AV_NOPTS_VALUE)
+          {
+            outPacket->dts = av_rescale_q(outPacket->dts, AudioStream->time_base, AudioStream->time_base);
+          }
+          if (av_write_frame(FormatContextOut, outPacket) != 0)
+          {
+            cerr << "Error in writing audio frame" << endl;
+          }
+          //av_packet_unref(outPacket)
+        }
+        av_packet_unref(outPacket);
+        av_packet_unref(inPacket);
+      }
+    */////
+
+    while (ret >= 0)
       {
         ret = avcodec_receive_frame(AudioCodecContextIn, rawFrame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
@@ -538,6 +585,7 @@ int acquireAudio()
           ret = 0;
 
         } // got_picture
+        
         av_frame_free(&scaledFrame);
         av_packet_unref(outPacket);
         //av_freep(&resampledData[0]);
