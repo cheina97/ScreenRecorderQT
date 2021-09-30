@@ -5,6 +5,8 @@
         "codec.h": "c",
         "codec_id.h": "c",
         "ostream": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "chrono": "cpp",
+        "*.tcc": "cpp"
     }
 }
