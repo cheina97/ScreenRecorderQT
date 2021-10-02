@@ -2,7 +2,7 @@
     "files.associations": {
         "ostream": "cpp",
         "chrono": "cpp",
-        "random": "cpp"
+        "random": "cpp",
         "avcodec.h": "c",
         "codec.h": "c",
         "codec_id.h": "c",

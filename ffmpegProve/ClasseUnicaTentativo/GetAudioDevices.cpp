@@ -2,14 +2,18 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <regex>
+#include <string>
+#include <vector>
 
 using namespace filesystem;
 using namespace std;
 
-getAudioDevices::getAudioDevices() {
+vector<string> getAudioDevices() {
+    vector<string> devices;
     cout << "Starting" << endl;
-    directory_iterator alsaDir{this->alsaPath};
+    directory_iterator alsaDir{"/proc/asound"};
     regex findCard{".*card(0|[1-9]?[0-9]*)"};
     regex findPcm{".*pcm.*"};
     string value, field, card, device, streamType;
@@ -42,12 +46,5 @@ getAudioDevices::getAudioDevices() {
             }
         }
     }
-}
-
-vector<string> getAudioDevices::getDevices() {
-    return this->devices;
-}
-
-getAudioDevices::~getAudioDevices() {
-    
+    return devices;
 }
