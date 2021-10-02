@@ -1,0 +1,25 @@
+AVInputFormat* pAVInputFormat;
+AVFormatContext* pAVFormatContext;
+AVDictionary* videoOptions;
+AVCodecContext* pAVCodecContext;
+AVCodec* pAVCodec;
+AVFormatContext* outAVFormatContext; =>FormatContextOut
+char* outputFile;
+AVOutputFormat* outputAVFormat; => AVOutFormat
+AVStream* videoSt;
+AVCodecContext* outVideoCodecContext;
+AVCodec* outVideoCodec;
+AVPacket* pAVPacket;
+AVFrame* pAVFrame;
+AVFrame* outFrame;
+int outVideoStreamIndex;
+AVInputFormat* audioInputFormat; => AudioInputFormat
+AVFormatContext* inAudioFormatContext; => FormatContextAudio
+AVCodecContext* inAudioCodecContext; => AudioCodecContextIn
+AVStream* audioSt; => AudioStream
+AVCodecContext* outAudioCodecContext; => AudioCodecContextOut
+AVCodec* inAudioCodec; => AudioCodecIn
+AVCodec* outAudioCodec; => AudioCodecOut
+int outAudioStreamIndex; => audioIndexOut
+AVAudioFifo* fifo; => AudioFifoBuff
+AVDictionary* audioOptions; => AudioOptions
