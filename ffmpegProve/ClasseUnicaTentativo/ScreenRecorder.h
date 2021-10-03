@@ -55,6 +55,7 @@ class ScreenRecorder {
    public:
     ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, AudioSettings as);
     ~ScreenRecorder();
+    int record();
 
    private:
     //settings variables
@@ -68,7 +69,9 @@ class ScreenRecorder {
     bool stop;
 
     //common variables
-
+    thread capture_thread;
+    thread elaborate_thread;
+    
     //video variables
     AVFormatContext *avFmtCtx, *avFmtCtxOut;
     AVCodecContext *avRawCodecCtx;
@@ -99,6 +102,8 @@ class ScreenRecorder {
     void initAudioSource();
     void initVideoVariables();
     void getRawPackets();
+    void decodeAndEncode();
+   
 
    protected:
 };
