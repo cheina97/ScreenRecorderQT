@@ -44,7 +44,7 @@ void ScreenRecorder::initVideoSource() {
 
     avRawOptions = nullptr;
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
-    av_dict_set(&avRawOptions, "framerate", to_string(fps).c_str(), 0);
+    av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
@@ -114,7 +114,7 @@ void ScreenRecorder::initVideoVariables() {
     avEncoderCtx->width = rrs.width * vs.quality;
     avEncoderCtx->height = rrs.height * vs.quality;
     avEncoderCtx->time_base.num = 1;
-    avEncoderCtx->time_base.den = fps;
+    avEncoderCtx->time_base.den = vs.fps;
     avEncoderCtx->gop_size = 50;
     avEncoderCtx->qmin = 5;
     avEncoderCtx->qmax = 10;
@@ -269,15 +269,15 @@ void ScreenRecorder::decodeAndEncode() {
                 if (got_picture == 0) {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
                     //Inizio ENCODING
-                    avYUVFrame->pts = i * 30 * 30 * 100 / fps;
+                    avYUVFrame->pts = i * 30 * 30 * 100 / vs.fps;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
                     got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                     //Fine ENCODING
 
                     if (flag >= 0) {
                         if (got_picture == 0) {
-                            pkt.pts = i * 30 * 30 * 100 / fps;
-                            pkt.dts = i * 30 * 30 * 100 / fps;
+                            pkt.pts = i * 30 * 30 * 100 / vs.fps;
+                            pkt.dts = i * 30 * 30 * 100 / vs.fps;
 
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
                                 cout << "Error in writing file" << endl;
@@ -305,9 +305,9 @@ void ScreenRecorder::decodeAndEncode() {
 }
 
 int ScreenRecorder::record() {
-    capture_thread = move(thread{[this]() { this->getRawPackets(); }});
-    elaborate_thread = move(thread{[this]() { this->decodeAndEncode(); }});
-    capture_thread.join();
-    elaborate_thread.join();
+    capture_thread = make_unique<thread>([this]() { this->getRawPackets(); });
+    elaborate_thread = make_unique<thread>([this]() { this->decodeAndEncode(); });
+    capture_thread.get()->join();
+    elaborate_thread.get()->join();
     return 0;
 }

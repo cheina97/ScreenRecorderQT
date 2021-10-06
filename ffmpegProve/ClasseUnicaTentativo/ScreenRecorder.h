@@ -69,8 +69,8 @@ class ScreenRecorder {
     bool stop;
 
     //common variables
-    thread capture_thread;
-    thread elaborate_thread;
+    unique_ptr<thread> capture_thread;
+    unique_ptr<thread> elaborate_thread;
     
     //video variables
     AVFormatContext *avFmtCtx, *avFmtCtxOut;
@@ -87,7 +87,6 @@ class ScreenRecorder {
     AVOutputFormat *fmt;
     AVStream *video_st;
     int64_t pts_offset;
-    int fps;
 
     //char* output.mp4?
     string out_file = "out.mp4";

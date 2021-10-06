@@ -1,5 +1,5 @@
-#include <iostream>
 #include <future>
+#include <iostream>
 
 #include "GetAudioDevices.h"
 #include "MemoryCheckLinux.h"
@@ -24,17 +24,18 @@ int main(int argc, char const* argv[]) {
     vs.fps = atoi(argv[6]);
     vs.capturetime_seconds = atoi(argv[7]);
     vs.quality = atof(argv[8]);
-    
+
     ScreenRecorder sr{rrs, vs, as};
     cout << "-> Costruito oggetto Screen Recorder" << endl;
     cout << "-> RECORDING..." << endl;
-        
-    std::future<int> handle = std::async(std::launch::async, [&sr]()->int{return sr.record();});
-    if(handle.get() == 0){
-        cout << "-> Fine Programma"<<endl;
-    }else{
-        cerr << "-> Errore nella registrazione"<<endl;
-    }
+
+    //std::future<int> handle = std::async(std::launch::async, [&sr]()->int{return sr.record();});
+    sr.record();
+    /* if (handle.get() == 0) {
+        cout << "-> Fine Programma" << endl;
+    } else {
+        cerr << "-> Errore nella registrazione" << endl;
+    } */
 
     /*auto dev = getAudioDevices();
         for (auto const& d : dev) {
