@@ -18,8 +18,8 @@ extern "C" {
 };
 
 //OUTPUT
-AVFormatContext *FormatContextOut = NULL;
-AVOutputFormat *AVOutFormat = NULL;
+AVFormatContext *FormatContextOut = NULL; //avFmtCtxOut
+AVOutputFormat *AVOutFormat = NULL; //fmt
 AVDictionary *AudioOptions = NULL;
 
 //AUDIO
@@ -39,9 +39,9 @@ char *outputFile;
 
 //VIDEO
 AVFormatContext *FormatContextVideo = NULL;
-AVFrame *AudioFrame = NULL;
+AVFrame *AudioFrame = NULL; //avYUVFrame?
 
-SwrContext *swrContext = NULL;
+SwrContext *swrContext = NULL; //swrCtx
 int64_t NextAudioPts = 0;
 int AudioSamplesCount = 0;
 int AudioSamples = 0;

@@ -6,28 +6,32 @@
 #include <queue>
 #include <thread>
 
-extern "C" {
+extern "C"
+{
 #if defined _WIN32
 #include <windows.h>
 #else
 #include <X11/Xlib.h>
+#include "alsa/asoundlib.h"
 #endif
 
 #include <stdlib.h>
-
+#include "libavformat/avio.h"
+#include "libavutil/audio_fifo.h"
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libswresample/swresample.h"
 #include "libswscale/swscale.h"
 #include "unistd.h"
 }
 
 using namespace std;
 
-//TODO: CAMBIARE NOME
-typedef struct {
+typedef struct
+{
     int width;
     int height;
     int offset_x;
@@ -37,41 +41,47 @@ typedef struct {
 } RecordingRegionSettings;
 
 //NOTE: audio e video settings, riempiti con i parametri settati
-typedef struct {
+typedef struct
+{
     int fps;
     int capturetime_seconds;
-    float quality;  //value between 0.1 and 1
+    float quality; //value between 0.1 and 1
 } VideoSettings;
 
-typedef struct {
+typedef struct
+{
     //TODO
 } AudioSettings;
 
-enum class RecordingStatus { recording,
-                    paused,
-                    stopped };
+enum class RecordingStatus
+{
+    recording,
+    paused,
+    stopped
+};
 
-class ScreenRecorder {
-   public:
+class ScreenRecorder
+{
+public:
     ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, AudioSettings as);
     ~ScreenRecorder();
     int record();
 
-   private:
+private:
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
     AudioSettings as;
     //status variables
     RecordingStatus status;
-    
+
     //NOTE: vedere se serve
     bool stop;
 
     //common variables
     unique_ptr<thread> capture_thread;
     unique_ptr<thread> elaborate_thread;
-    
+
     //video variables
     AVFormatContext *avFmtCtx, *avFmtCtxOut;
     AVCodecContext *avRawCodecCtx;
@@ -94,6 +104,28 @@ class ScreenRecorder {
     FILE *debug;
 
     //audio variables
+    AVDictionary *AudioOptions;
+    AVFormatContext *FormatContextAudio;
+    AVCodecContext *AudioCodecContextIn;
+    AVCodecContext *AudioCodecContextOut;
+    AVInputFormat *AudioInputFormat;
+    const AVCodec *AudioCodecIn;
+    const AVCodec *AudioCodecOut;
+    AVAudioFifo *AudioFifoBuff;
+    AVStream *AudioStream;
+
+    int audioIndex; // AUDIO STREAM INDEX
+    int audioIndexOut;
+
+    ///????????????????
+        int64_t NextAudioPts = 0;
+        int AudioSamplesCount = 0;
+        int AudioSamples = 0;
+        int targetSamplerate = 48000;
+
+        int EncodeFrameCnt = 0;
+        int64_t pts = 0;
+    //???????????????????????
 
     //functions
     void initCommon();
@@ -102,7 +134,14 @@ class ScreenRecorder {
     void initVideoVariables();
     void getRawPackets();
     void decodeAndEncode();
-   
+    
+    void initAudio();
+    void decodeAudio();
+    void encodeAudio();
+    void acquireAudio();
+    int init_fifo();
+    int add_samples_to_fifo(uint8_t **, const int);
+    int initConvertedSamples(uint8_t ***, AVCodecContext *, int);
 
-   protected:
+protected:
 };
