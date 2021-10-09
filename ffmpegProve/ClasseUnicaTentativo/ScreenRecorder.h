@@ -132,6 +132,7 @@ private:
     void initVideoVariables();
     void initAudioSource();
     void initAudioVariables();
+    void initOutputFile();
     void getRawPackets();
     void decodeAndEncode();
     
