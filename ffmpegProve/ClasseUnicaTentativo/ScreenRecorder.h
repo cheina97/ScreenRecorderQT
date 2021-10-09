@@ -48,11 +48,6 @@ typedef struct
     float quality; //value between 0.1 and 1
 } VideoSettings;
 
-typedef struct
-{
-    //TODO
-} AudioSettings;
-
 enum class RecordingStatus
 {
     recording,
@@ -63,7 +58,7 @@ enum class RecordingStatus
 class ScreenRecorder
 {
 public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, AudioSettings as);
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn);
     ~ScreenRecorder();
     int record();
 
@@ -71,16 +66,18 @@ private:
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
-    AudioSettings as;
+    bool audioOn;
+    mutex write_lock;
     //status variables
     RecordingStatus status;
 
     //NOTE: vedere se serve
-    bool stop;
 
     //common variables
-    unique_ptr<thread> capture_thread;
+    unique_ptr<thread> captureVideo_thread;
+    unique_ptr<thread> captureAudio_thread;
     unique_ptr<thread> elaborate_thread;
+    bool stop;
 
     //video variables
     AVFormatContext *avFmtCtx, *avFmtCtxOut;
@@ -113,6 +110,8 @@ private:
     const AVCodec *AudioCodecOut;
     AVAudioFifo *AudioFifoBuff;
     AVStream *AudioStream;
+    mutex audio_stop_mutex;
+    bool audio_stop;
 
     int audioIndex; // AUDIO STREAM INDEX
     int audioIndexOut;
@@ -130,18 +129,15 @@ private:
     //functions
     void initCommon();
     void initVideoSource();
-    void initAudioSource();
     void initVideoVariables();
+    void initAudioSource();
+    void initAudioVariables();
     void getRawPackets();
     void decodeAndEncode();
     
-    void initAudio();
-    void decodeAudio();
-    void encodeAudio();
     void acquireAudio();
     int init_fifo();
     int add_samples_to_fifo(uint8_t **, const int);
     int initConvertedSamples(uint8_t ***, AVCodecContext *, int);
 
-protected:
 };

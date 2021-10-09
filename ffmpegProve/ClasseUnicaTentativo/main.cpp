@@ -13,7 +13,6 @@ int main(int argc, char const* argv[]) {
              << "Utilizzo: ./main width height offset_x offset_y screen_num fps capturetime_seconds quality" << endl;
     }
     VideoSettings vs;
-    AudioSettings as;
     RecordingRegionSettings rrs;
     rrs.width = atoi(argv[1]);
     rrs.height = atoi(argv[2]);
@@ -25,7 +24,7 @@ int main(int argc, char const* argv[]) {
     vs.capturetime_seconds = atoi(argv[7]);
     vs.quality = atof(argv[8]);
 
-    ScreenRecorder sr{rrs, vs, as};
+    ScreenRecorder sr{rrs, vs, true};
     cout << "-> Costruito oggetto Screen Recorder" << endl;
     cout << "-> RECORDING..." << endl;
 

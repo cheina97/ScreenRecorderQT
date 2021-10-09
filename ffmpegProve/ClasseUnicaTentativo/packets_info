@@ -10,4 +10,5 @@ ffprobe version 4.3.2-0+deb11u1ubuntu1 Copyright (c) 2007-2021 the FFmpeg develo
   libswscale      5.  7.100 /  5.  7.100
   libswresample   3.  7.100 /  3.  7.100
   libpostproc    55.  7.100 / 55.  7.100
-output.mp4: No such file or directory
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x5585336cfac0] moov atom not found
+out.mp4: Invalid data found when processing input
