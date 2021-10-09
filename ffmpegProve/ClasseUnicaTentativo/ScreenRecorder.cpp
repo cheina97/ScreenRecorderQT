@@ -19,6 +19,26 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
         initAudioVariables();
         cout << "-> Finita initAudioSource" << endl;
     }
+     // create an empty video file
+    if (!(avFmtCtxOut->flags & AVFMT_NOFILE))
+    {
+        if (avio_open2(&avFmtCtxOut->pb, out_file.c_str(), AVIO_FLAG_WRITE, NULL, NULL) < 0)
+        {
+            cerr << "Error in creating the video file" << endl;
+            exit(-1);
+        }
+    }
+
+    if (avFmtCtxOut->nb_streams == 0)
+    {
+        cerr << "Output file does not contain any stream" << endl;
+        exit(-1);
+    }
+    if (avformat_write_header(avFmtCtxOut, NULL) < 0)
+    {
+        cerr << "Error in writing the header context" << endl;
+        exit(-1);
+    }
 }
 
 ScreenRecorder::~ScreenRecorder()
@@ -37,13 +57,13 @@ int ScreenRecorder::record()
     stop = false;
     audio_stop = false;
     captureVideo_thread = make_unique<thread>([this](){ this->getRawPackets(); });
-    //elaborate_thread = make_unique<thread>([this](){ this->decodeAndEncode(); });
+    elaborate_thread = make_unique<thread>([this](){ this->decodeAndEncode(); });
     if (audioOn)
         captureAudio_thread = make_unique<thread>([this]()
                                                   { this->acquireAudio(); });
 
-    //captureVideo_thread.get()->join();
-    //elaborate_thread.get()->join();
+    captureVideo_thread.get()->join();
+    elaborate_thread.get()->join();
     if (audioOn)
         captureAudio_thread.get()->join();
 
@@ -70,6 +90,9 @@ void ScreenRecorder::initCommon()
              << endl;
         exit(-1);
     }
+
+    
+    
 }
 
 void ScreenRecorder::initVideoSource()
@@ -321,8 +344,6 @@ void ScreenRecorder::getRawPackets()
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
 
-        av_packet_free(&avRawPkt);
-
     }
 
     /*
@@ -350,13 +371,6 @@ void ScreenRecorder::decodeAndEncode()
     int flag = 0;
     int bufLen = 0;
     uint8_t *outBuf = nullptr;
-
-    flag = avformat_write_header(avFmtCtxOut, NULL);
-    if (flag < 0)
-    {
-        cout << "Error in writing header" << endl;
-        exit(-1);
-    }
 
     bufLen = rrs.width * rrs.height * 3;
     outBuf = (uint8_t *)malloc(bufLen);
@@ -539,28 +553,6 @@ void ScreenRecorder::initAudioVariables()
     }
 
     avcodec_parameters_from_context(avFmtCtxOut->streams[audioIndexOut]->codecpar, AudioCodecContextOut);
-
-    // create an empty video file
-    if (!(avFmtCtxOut->flags & AVFMT_NOFILE))
-    {
-        if (avio_open2(&avFmtCtxOut->pb, out_file.c_str(), AVIO_FLAG_WRITE, NULL, NULL) < 0)
-        {
-            cerr << "Error in creating the video file" << endl;
-            exit(-1);
-        }
-    }
-
-    if (avFmtCtxOut->nb_streams == 0)
-    {
-        cerr << "Output file does not contain any stream" << endl;
-        exit(-1);
-    }
-
-    if (avformat_write_header(avFmtCtxOut, NULL) < 0)
-    {
-        cerr << "Error in writing the header context" << endl;
-        exit(-1);
-    }
 }
 
 void ScreenRecorder::acquireAudio()
@@ -624,7 +616,6 @@ void ScreenRecorder::acquireAudio()
         exit(-1);
     }
 
-    //FIXME: how?
     int contatoreDaEliminare = 0;
     cout << "Audio Prova a Bloccare" << endl;
     audio_stop_mutex.lock();
@@ -714,7 +705,7 @@ void ScreenRecorder::acquireAudio()
 
                         write_lock.lock();
                         
-                        if (av_write_frame(avFmtCtxOut, outPacket) != 0)
+                         if (av_write_frame(avFmtCtxOut, outPacket) != 0)
                         {
                             cerr << "Error in writing audio frame" << endl;
                         }
