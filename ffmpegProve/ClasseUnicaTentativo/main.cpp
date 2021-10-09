@@ -24,7 +24,9 @@ int main(int argc, char const* argv[]) {
     vs.capturetime_seconds = atoi(argv[7]);
     vs.quality = atof(argv[8]);
 
-    ScreenRecorder sr{rrs, vs, true};
+    bool audioOn=atoi(argv[9])==1?true:false;
+
+    ScreenRecorder sr{rrs, vs, audioOn };
     cout << "-> Costruito oggetto Screen Recorder" << endl;
     cout << "-> RECORDING..." << endl;
 
