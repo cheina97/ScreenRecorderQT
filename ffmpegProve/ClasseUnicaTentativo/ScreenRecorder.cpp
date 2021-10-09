@@ -358,7 +358,6 @@ void ScreenRecorder::decodeAndEncode() {
                             pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                             pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                             write_lock.lock();
-                            cout << "Scritto pacchetto video " << i << endl;
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
                                 cout << "Error in writing file" << endl;
                                 exit(-1);
@@ -541,11 +540,8 @@ void ScreenRecorder::acquireAudio() {
     }
 
     int contatoreDaEliminare = 0;
-    cout << "Audio Prova a Bloccare" << endl;
     audio_stop_mutex.lock();
-    cout << "Audio Bloccato" << endl;
     while (!stop) {
-        cout << "Audio Sbloccato" << endl;
         audio_stop_mutex.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex) {
             //decode audio routing
@@ -594,7 +590,6 @@ void ScreenRecorder::acquireAudio() {
                 av_frame_get_buffer(scaledFrame, 0);
                 while (av_audio_fifo_size(AudioFifoBuff) >= AudioCodecContextOut->frame_size) {
                     ret = av_audio_fifo_read(AudioFifoBuff, (void **)(scaledFrame->data), AudioCodecContextOut->frame_size);
-                    cout << "Ho catturato il pacchetto audio " << contatoreDaEliminare << endl;
                     contatoreDaEliminare++;
                     scaledFrame->pts = pts;
                     pts += scaledFrame->nb_samples;
@@ -633,11 +628,8 @@ void ScreenRecorder::acquireAudio() {
                 // free(resampledData);
             }
         }
-        cout << "Audio Prova a Bloccare" << endl;
         audio_stop_mutex.lock();
-        cout << "Audio Bloccato" << endl;
     }
-    cout << "Audio Sbloccato" << endl;
     audio_stop_mutex.unlock();
 
     //av_free(AudioFifoBuff);
