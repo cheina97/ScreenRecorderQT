@@ -348,15 +348,15 @@ void ScreenRecorder::decodeAndEncode() {
                 if (got_picture == 0) {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
                     //Inizio ENCODING
-                    avYUVFrame->pts = i * 30 * 30 * 100 / vs.fps;
+                    avYUVFrame->pts = (int64_t) i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
                     got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                     //Fine ENCODING
 
                     if (flag >= 0) {
                         if (got_picture == 0) {
-                            pkt.pts = i * 30 * 30 * 100 / vs.fps;
-                            pkt.dts = i * 30 * 30 * 100 / vs.fps;
+                            pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
+                            pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                             write_lock.lock();
                             cout << "Scritto pacchetto video " << i << endl;
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
