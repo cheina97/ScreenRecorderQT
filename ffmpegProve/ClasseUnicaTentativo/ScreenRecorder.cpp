@@ -80,7 +80,7 @@ void ScreenRecorder::initVideoSource() {
         XCloseDisplay(display);
     }
 
-    if (rrs.width % 2 != 0) {
+    if (rrs.width % 32 != 0) {
         rrs.width = rrs.width / 32 * 32;
     }
     if (rrs.height % 2 != 0) {
@@ -147,8 +147,8 @@ void ScreenRecorder::initVideoVariables() {
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
     avEncoderCtx->bit_rate = 80000;
-    avEncoderCtx->width = rrs.width * vs.quality;
-    avEncoderCtx->height = rrs.height * vs.quality;
+    avEncoderCtx->width =  (int)(rrs.width * vs.quality) / 32 * 32;
+    avEncoderCtx->height = (int)(rrs.height * vs.quality) / 2 * 2;
     avEncoderCtx->time_base.num = 1;
     avEncoderCtx->time_base.den = vs.fps;
     avEncoderCtx->gop_size = 50;
@@ -180,6 +180,7 @@ void ScreenRecorder::initVideoVariables() {
         exit(-1);
     }
 
+
     if (avcodec_open2(avEncoderCtx, avEncodec, NULL) < 0) {
         cout << "Failed to open video encoder!"
              << endl;
@@ -208,8 +209,8 @@ void ScreenRecorder::initVideoVariables() {
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
                             avRawCodecCtx->pix_fmt,
-                            (int)avRawCodecCtx->width * vs.quality,
-                            (int)avRawCodecCtx->height * vs.quality,
+                            (int)(avRawCodecCtx->width * vs.quality) / 32 * 32,
+                            (int)(avRawCodecCtx->height * vs.quality) / 2 * 2,
                             AV_PIX_FMT_YUV420P,
                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
@@ -293,7 +294,7 @@ void ScreenRecorder::getRawPackets() {
     stop = true;
     avRawPkt_queue_mutex.unlock();
     audio_stop_mutex.lock();
-    stop = true;
+    audio_stop = true;
     audio_stop_mutex.unlock();
 }
 
@@ -333,7 +334,6 @@ void ScreenRecorder::decodeAndEncode() {
                 }
                 got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
                 //Fine DECODING
-
                 if (got_picture == 0) {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
                     //Inizio ENCODING
@@ -521,7 +521,7 @@ void ScreenRecorder::acquireAudio() {
 
     int contatoreDaEliminare = 0;
     audio_stop_mutex.lock();
-    while (!stop) {
+    while (!audio_stop) {
         audio_stop_mutex.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex) {
             //decode audio routing
