@@ -6,21 +6,22 @@
 #include <queue>
 #include <thread>
 
-extern "C"
-{
+extern "C" {
 #if defined _WIN32
 #include <windows.h>
 #else
 #include <X11/Xlib.h>
+
 #include "alsa/asoundlib.h"
 #endif
 
 #include <stdlib.h>
-#include "libavformat/avio.h"
-#include "libavutil/audio_fifo.h"
+
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
 #include "libavformat/avformat.h"
+#include "libavformat/avio.h"
+#include "libavutil/audio_fifo.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h"
@@ -45,33 +46,29 @@ typedef struct
 {
     int fps;
     int capturetime_seconds;
-    float quality; //value between 0.1 and 1
+    float quality;  //value between 0.1 and 1
 } VideoSettings;
 
-enum class RecordingStatus
-{
+enum class RecordingStatus {
     recording,
     paused,
     stopped
 };
 
-class ScreenRecorder
-{
-public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn);
+class ScreenRecorder {
+   public:
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath);
     ~ScreenRecorder();
     int record();
 
-private:
+   private:
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
     bool audioOn;
-    mutex write_lock;
-    //status variables
     RecordingStatus status;
-
-    //NOTE: vedere se serve
+    string outFilePath;
+    mutex write_lock;
 
     //common variables
     unique_ptr<thread> captureVideo_thread;
@@ -95,11 +92,6 @@ private:
     AVStream *video_st;
     int64_t pts_offset;
 
-    //char* output.mp4?
-    string out_file = "out.mp4";
-    //TODO: cambiare nome
-    FILE *debug;
-
     //audio variables
     AVDictionary *AudioOptions;
     AVFormatContext *FormatContextAudio;
@@ -113,17 +105,17 @@ private:
     mutex audio_stop_mutex;
     bool audio_stop;
 
-    int audioIndex; // AUDIO STREAM INDEX
+    int audioIndex;  // AUDIO STREAM INDEX
     int audioIndexOut;
 
     ///????????????????
-        int64_t NextAudioPts = 0;
-        int AudioSamplesCount = 0;
-        int AudioSamples = 0;
-        int targetSamplerate = 48000;
+    int64_t NextAudioPts = 0;
+    int AudioSamplesCount = 0;
+    int AudioSamples = 0;
+    int targetSamplerate = 48000;
 
-        int EncodeFrameCnt = 0;
-        int64_t pts = 0;
+    int EncodeFrameCnt = 0;
+    int64_t pts = 0;
     //???????????????????????
 
     //functions
@@ -135,10 +127,9 @@ private:
     void initOutputFile();
     void getRawPackets();
     void decodeAndEncode();
-    
+
     void acquireAudio();
     int init_fifo();
     int add_samples_to_fifo(uint8_t **, const int);
     int initConvertedSamples(uint8_t ***, AVCodecContext *, int);
-
 };

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped) {
+ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped), outFilePath(outFilePath) {
     initCommon();
     cout << "-> Finita initCommon" << endl;
     initVideoSource();
@@ -52,12 +52,12 @@ void ScreenRecorder::initCommon() {
     avdevice_register_all();
     avFmtCtx = avformat_alloc_context();
 
-    fmt = av_guess_format(NULL, out_file.c_str(), NULL);
+    fmt = av_guess_format(NULL, outFilePath.c_str(), NULL);
     if (fmt == NULL) {
         cout << "Error: cannot guess format" << endl;
         exit(-1);
     }
-    avformat_alloc_output_context2(&avFmtCtxOut, fmt, fmt->name, out_file.c_str());
+    avformat_alloc_output_context2(&avFmtCtxOut, fmt, fmt->name, outFilePath.c_str());
 
     avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
     if (!avEncodec) {
@@ -80,7 +80,7 @@ void ScreenRecorder::initVideoSource() {
         XCloseDisplay(display);
     }
 
-    if (rrs.width % 32 != 0) {
+    if (rrs.width % 2 != 0) {
         rrs.width = rrs.width / 32 * 32;
     }
     if (rrs.height % 2 != 0) {
@@ -200,7 +200,7 @@ void ScreenRecorder::initVideoVariables() {
     avcodec_parameters_from_context(avFmtCtxOut->streams[outVideoStreamIndex]->codecpar, avEncoderCtx);
 
     //Open output URL
-    if (avio_open(&avFmtCtxOut->pb, out_file.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
+    if (avio_open(&avFmtCtxOut->pb, outFilePath.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
         printf("Failed to open output file! \n");
         exit(-1);
     }
@@ -277,7 +277,7 @@ void ScreenRecorder::getRawPackets() {
         avRawPkt = av_packet_alloc();
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
             cout << "Error in getting RawPacket from x11" << endl;
-        } 
+        }
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
@@ -449,7 +449,7 @@ void ScreenRecorder::initAudioVariables() {
 void ScreenRecorder::initOutputFile() {
     // create an empty video file
     if (!(avFmtCtxOut->flags & AVFMT_NOFILE)) {
-        if (avio_open2(&avFmtCtxOut->pb, out_file.c_str(), AVIO_FLAG_WRITE, NULL, NULL) < 0) {
+        if (avio_open2(&avFmtCtxOut->pb, outFilePath.c_str(), AVIO_FLAG_WRITE, NULL, NULL) < 0) {
             cerr << "Error in creating the video file" << endl;
             exit(-1);
         }
