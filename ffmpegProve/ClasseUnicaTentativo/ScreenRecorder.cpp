@@ -207,6 +207,17 @@ void ScreenRecorder::initAudioSource() {
     av_dict_set(&AudioOptions, "sample_rate", "44100", 0);
     av_dict_set(&AudioOptions, "async", "25", 0);
 
+#if defined __APPLE__
+    AudioInputFormat = av_find_input_format("avfoundation");
+    if (AudioInputFormat == NULL) {
+        throw runtime_error{"Cannot open AVFoundation driver"};
+    }
+    if (avformat_open_input(&FormatContextAudio, "none:0", AudioInputFormat, &AudioOptions) < 0) {
+        throw runtime_error("Couldn't open audio input stream.");
+    }
+#endif
+
+#if defined linux
     // GET INPUT FORMAT ALSA
     AudioInputFormat = av_find_input_format("alsa");
     if (AudioInputFormat == NULL) {
@@ -216,6 +227,11 @@ void ScreenRecorder::initAudioSource() {
     if (avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, NULL) < 0) {
         throw runtime_error("Couldn't open audio input stream.");
     }
+#endif
+
+#if defined _WIN32
+    // WINDOWS OPEN INPUT
+#endif
     // CHECK STREAM INFO
     if (avformat_find_stream_info(FormatContextAudio, NULL) < 0) {
         throw runtime_error("Couldn't find audio stream information.");
