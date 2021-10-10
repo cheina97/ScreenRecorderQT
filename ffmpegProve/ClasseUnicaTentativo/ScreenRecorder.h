@@ -59,16 +59,16 @@ class ScreenRecorder {
    public:
     ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice="noDevice");
     ~ScreenRecorder();
-    int record();
+    void record();
 
    private:
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
     bool audioOn;
-    string audioDevice;
     RecordingStatus status;
     string outFilePath;
+    string audioDevice;
     mutex write_lock;
 
     //common variables
@@ -130,7 +130,7 @@ class ScreenRecorder {
     void decodeAndEncode();
 
     void acquireAudio();
-    int init_fifo();
-    int add_samples_to_fifo(uint8_t **, const int);
-    int initConvertedSamples(uint8_t ***, AVCodecContext *, int);
+    void init_fifo();
+    void add_samples_to_fifo(uint8_t **, const int);
+    void initConvertedSamples(uint8_t ***, AVCodecContext *, int);
 };
