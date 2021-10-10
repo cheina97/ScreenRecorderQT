@@ -27,7 +27,7 @@ int main(int argc, char const* argv[]) {
     bool audioOn = atoi(argv[9]) == 1 ? true : false;
     string outFilePath = argv[10];
 
-    ScreenRecorder sr{rrs, vs, audioOn, outFilePath};
+    ScreenRecorder sr{rrs, vs, audioOn, outFilePath, getAudioDevices()[0].c_str()};
     cout << "-> Costruito oggetto Screen Recorder" << endl;
     cout << "-> RECORDING..." << endl;
 

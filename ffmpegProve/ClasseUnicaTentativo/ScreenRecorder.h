@@ -57,7 +57,7 @@ enum class RecordingStatus {
 
 class ScreenRecorder {
    public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath);
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice="noDevice");
     ~ScreenRecorder();
     int record();
 
@@ -66,6 +66,7 @@ class ScreenRecorder {
     RecordingRegionSettings rrs;
     VideoSettings vs;
     bool audioOn;
+    string audioDevice;
     RecordingStatus status;
     string outFilePath;
     mutex write_lock;

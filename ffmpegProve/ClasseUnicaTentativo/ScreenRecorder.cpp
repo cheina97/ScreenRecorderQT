@@ -7,7 +7,7 @@
 
 using namespace std;
 
-ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped), outFilePath(outFilePath) {
+ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
     initCommon();
     cout << "-> Finita initCommon" << endl;
     initVideoSource();
@@ -147,7 +147,7 @@ void ScreenRecorder::initVideoVariables() {
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
     avEncoderCtx->bit_rate = 80000;
-    avEncoderCtx->width =  (int)(rrs.width * vs.quality) / 32 * 32;
+    avEncoderCtx->width = (int)(rrs.width * vs.quality) / 32 * 32;
     avEncoderCtx->height = (int)(rrs.height * vs.quality) / 2 * 2;
     avEncoderCtx->time_base.num = 1;
     avEncoderCtx->time_base.den = vs.fps;
@@ -179,7 +179,6 @@ void ScreenRecorder::initVideoVariables() {
              << endl;
         exit(-1);
     }
-
 
     if (avcodec_open2(avEncoderCtx, avEncodec, NULL) < 0) {
         cout << "Failed to open video encoder!"
@@ -245,7 +244,7 @@ void ScreenRecorder::initAudioSource() {
         exit(-1);
     }
 
-    if (avformat_open_input(&FormatContextAudio, getAudioDevices()[0].c_str(), AudioInputFormat, NULL) < 0) {
+    if (avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, NULL) < 0) {
         cout << "[ ERROR ] Couldn't open audio input stream." << endl;
         exit(-1);
     }
