@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "GetAudioDevices.h"
+#include "MemoryCheckLinux.h"
 
 using namespace std;
 
@@ -19,6 +20,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
         cout << "-> Finita initAudioSource" << endl;
     }
     initOutputFile();
+    memoryCheck_init(1000);
 }
 
 ScreenRecorder::~ScreenRecorder() {
@@ -275,21 +277,17 @@ void ScreenRecorder::getRawPackets() {
         avRawPkt = av_packet_alloc();
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
             cout << "Error in getting RawPacket from x11" << endl;
-        } /*  else {
-            cout << "Captured " << i << " raw packets" << endl;
-        } */
+        } 
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
-    }
-
-    /*
-    TODO: da decidere se si aggiunge
-    if (memoryCheck_limitSurpassed()) {
-            memory_error = true;
-            break;
+        try {
+            memoryCheck_limitSurpassed();
+        } catch (const runtime_error &e) {
+            std::cerr << e.what() << '\n';
+            i = frameNumber;
         }
-     */
+    }
 
     avRawPkt_queue_mutex.lock();
     stop = true;

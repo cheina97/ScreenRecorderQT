@@ -6,6 +6,7 @@
 
 using namespace std;
 
+//KB
 static int memory_limit;
 
 //mem measures
@@ -31,18 +32,19 @@ int getCurrentVMemUsedByProc() {  //Note: this value is in KB!
         }
     }
     fclose(file);
-    cout << "CurrMemUsedByProc: " << (double)result / 1024 / 1024 << "GB" << endl;
+    //cout << "CurrMemUsedByProc: " << (double)result / 1024 / 1024 << "GB" << endl;
     return result;
 }
 
+/*Setup the memory limit starting from the current memory used by the process. 
+  memory_limit=currentUsedMemory+mem_limit, where mem_limit is the argument passed to the function.
+  Mem_limit is in MB*/
 void memoryCheck_init(int mem_limit) {
     memory_limit = getCurrentVMemUsedByProc() + (mem_limit * 1024);
 }
 
-bool memoryCheck_limitSurpassed() {
+void memoryCheck_limitSurpassed() {
     if (getCurrentVMemUsedByProc() > memory_limit) {
-        return true;
-    } else {
-        return false;
+        throw runtime_error{"Reached memory limit of " + to_string((float)memory_limit / 1024) + " MB"};
     }
 }
