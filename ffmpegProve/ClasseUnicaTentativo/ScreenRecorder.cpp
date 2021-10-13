@@ -217,7 +217,7 @@ void ScreenRecorder::initAudioSource() {
     }
 #endif
 
-#if defined linux
+#if defined __linux__
     // GET INPUT FORMAT ALSA
     AudioInputFormat = av_find_input_format("alsa");
     if (AudioInputFormat == NULL) {
