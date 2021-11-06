@@ -21,7 +21,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
         cout << "-> Finita initAudioSource" << endl;
     }
     initOutputFile();
-    memoryCheck_init(1000);
+    memoryCheck_init(4000);
 }
 
 ScreenRecorder::~ScreenRecorder() {
@@ -268,6 +268,7 @@ void ScreenRecorder::getRawPackets() {
         try {
             memoryCheck_limitSurpassed();
         } catch (const runtime_error &e) {
+            cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
             i = frameNumber;
         }
     }
@@ -301,6 +302,7 @@ void ScreenRecorder::decodeAndEncode() {
 
     avRawPkt_queue_mutex.lock();
     while (!stop || !avRawPkt_queue.empty()) {
+
         if (!avRawPkt_queue.empty()) {
             avRawPkt = avRawPkt_queue.front();
             avRawPkt_queue.pop();
@@ -346,7 +348,6 @@ void ScreenRecorder::decodeAndEncode() {
         avRawPkt_queue_mutex.lock();
     }
     avRawPkt_queue_mutex.unlock();
-
     av_packet_unref(&pkt);
 }
 
