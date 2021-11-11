@@ -1,0 +1,5 @@
+/Users/alessandro/Repo/PDS_Project/ffmpegProve/ClasseUnicaTentativo/CMakeFiles/rebuild_cache.dir
+/Users/alessandro/Repo/PDS_Project/ffmpegProve/ClasseUnicaTentativo/CMakeFiles/edit_cache.dir
+/Users/alessandro/Repo/PDS_Project/ffmpegProve/ClasseUnicaTentativo/CMakeFiles/package_source.dir
+/Users/alessandro/Repo/PDS_Project/ffmpegProve/ClasseUnicaTentativo/CMakeFiles/package.dir
+/Users/alessandro/Repo/PDS_Project/ffmpegProve/ClasseUnicaTentativo/CMakeFiles/main.dir
