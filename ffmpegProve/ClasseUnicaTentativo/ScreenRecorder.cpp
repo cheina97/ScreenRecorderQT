@@ -121,7 +121,7 @@ void ScreenRecorder::initVideoSource()
     av_dict_set(&avRawOptions, "preset", "ultrafast", 0);
     //av_dict_set(&avRawOptions, "list_devices", "true", 0); // TO SHOW DEVICE LIST
     av_dict_set(&avRawOptions, "pixel_format", "uyvy422", 0); /* yuv420p */
-    av_dict_set(&avRawOptions, "vf", ("crop=" + to_string(rrs.width) + ":" + to_string(rrs.height) + ":" + to_string(rrs.offset_x) + ":" + to_string(rrs.offset_y)).c_str(), 0);
+    av_dict_set(&avRawOptions, "vf", ("crop=1920:1080:0:0" + to_string(rrs.width) + ":" + to_string(rrs.height) + ":" + to_string(rrs.offset_x) + ":" + to_string(rrs.offset_y)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     //av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "42M", 0);
@@ -137,7 +137,6 @@ void ScreenRecorder::initVideoSource()
     {
         throw runtime_error{"Couldn't open Apple video input stream."};
     }
-    cout << "test" << endl;
 #endif
 
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0)
@@ -391,6 +390,7 @@ void ScreenRecorder::decodeAndEncode()
             {
                 //Inizio DECODING
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
+                cout << "send pkt: " << flag << endl;
                 av_packet_unref(avRawPkt);
                 av_packet_free(&avRawPkt);
                 
