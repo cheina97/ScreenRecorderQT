@@ -12,7 +12,7 @@ extern "C" {
 #else
 #include <X11/Xlib.h>
 
-#include "alsa/asoundlib.h"
+//#include "alsa/asoundlib.h"
 #endif
 
 #include <stdlib.h>
