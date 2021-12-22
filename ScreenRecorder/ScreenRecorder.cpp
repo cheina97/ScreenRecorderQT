@@ -102,17 +102,12 @@ void ScreenRecorder::initVideoSource()
 
     avRawOptions = nullptr;
 
-#if defined _WIN32
-    // WIN
-#elif defined __linux__
-    // Linux
-
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
-    av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-    //av_dict_set(&avRawOptions, "show_region", "1", 0);
-    av_dict_set(&avRawOptions, "probesize", "30M", 0);
+	av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
+	//av_dict_set(&avRawOptions, "show_region", "1", 0);
+	av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
-#ifdef _WIN32
+#if defined _WIN32
     AVInputFormat* avInputFmt = av_find_input_format("gdigrab");
     if (avInputFmt == nullptr) {
         throw logic_error{ "av_find_input_format not found......" };
@@ -123,6 +118,7 @@ void ScreenRecorder::initVideoSource()
     if (avformat_open_input(&avFmtCtx, "desktop", avInputFmt, &avRawOptions) != 0) {
         throw logic_error{ "Couldn't open input stream" };
     }
+
 #elif defined __linux__
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
