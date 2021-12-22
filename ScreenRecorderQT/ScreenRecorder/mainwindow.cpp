@@ -10,12 +10,13 @@
 
 #include "AreaSelector.h"
 #include "ui_mainwindow.h"
+#include "ScreenRecorder.h"
+#include "GetAudioDevices.h"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow) {
+MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    areaSelector = new AreaSelector();
+    areaSelector = new AreaSelector();            
 
     setWindowTitle("ScreenCapture");
 
@@ -126,11 +127,11 @@ void MainWindow::createTrayIcon() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-#ifdef Q_OS_MACOS
-    if (!event->spontaneous() || !isVisible()) {
-        return;
-    }
-#endif
+    #ifdef Q_OS_MACOS
+        if (!event->spontaneous() || !isVisible()) {
+            return;
+        }
+    #endif
     if (trayIcon->isVisible()) {
         QMessageBox::information(this, tr("Systray"),
                                  tr("The program will keep running in the "
@@ -182,9 +183,12 @@ void MainWindow::on_toolButton_clicked() {
     ui->lineEditPath->setText(path);
 }
 
+//////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
-    if (ui->pushButtonFullscreen->isChecked() |
-        ui->pushButtonSelectArea->isChecked()) {
+    if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
+
+        screenRecorder = new ScreenRecorder(rrs, vs, audioOn, outFilePath, getAudioDevices()[2].c_str());
+
         ui->pushButtonStop->setEnabled(true);
         stopAction->setEnabled(true);
         ui->pushButtonPause->setEnabled(true);
@@ -195,7 +199,7 @@ void MainWindow::on_pushButtonStart_clicked() {
         if (minimizeInSysTray)
             hide();
         if (ui->pushButtonSelectArea->isChecked())
-            emit signal_recording(true);
+            emit signal_recording(true); //this changes the color of the border
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
     }
 }
