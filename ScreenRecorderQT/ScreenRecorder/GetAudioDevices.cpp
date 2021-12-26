@@ -11,6 +11,9 @@
 using namespace filesystem;
 #elif defined _WIN32
 #include <windows.h>
+#include <initguid.h>
+#include <mmdeviceapi.h>
+
 #include <dshow.h>
 #include <objbase.h>
 #include <msxml.h>
