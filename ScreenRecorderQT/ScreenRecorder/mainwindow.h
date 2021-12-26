@@ -28,7 +28,6 @@ private:
     //settings chosen by the user in the window
     RecordingRegionSettings rrs;
     VideoSettings vs;
-    bool audioOn;
     string outFilePath;
 
   private slots:
@@ -41,7 +40,21 @@ private:
     void on_pushButtonStop_clicked();
     void on_checkBoxMinimize_toggled(bool);
 
-  signals:
+    void on_radioButtonYes_clicked();
+
+    void on_radioButtonNo_clicked();
+
+    void on_radioButton24_clicked();
+
+    void on_radioButton30_clicked();
+
+    void on_radioButton60_clicked();
+
+    void on_horizontalSlider_sliderMoved(int position);
+
+    void on_lineEditPath_textEdited(const QString &arg1);
+
+signals:
     void signal_close();
     void signal_show(bool);
     void signal_recording(bool);
@@ -63,7 +76,9 @@ private:
     QAction *quitAction;
     QShortcut *startstop_shortcut;
     bool minimizeInSysTray;
+    QScreen *screen;
 
     void enable_or_disable_tabs(bool);
+    void setDefaultValues();
 };
 #endif // MAINWINDOW_H

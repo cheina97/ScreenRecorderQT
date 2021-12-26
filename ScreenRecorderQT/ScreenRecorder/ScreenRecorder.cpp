@@ -8,7 +8,7 @@
 
 using namespace std;
 
-ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice)
+ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice)
 {
     initCommon();
     cout << "-> Finita initCommon" << endl;
@@ -16,7 +16,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
     cout << "-> Finita initVideoSource" << endl;
     initVideoVariables();
     cout << "-> Finita initiVideoVariables" << endl;
-    if (audioOn)
+    if (vs.audioOn)
     {
         initAudioSource();
         initAudioVariables();

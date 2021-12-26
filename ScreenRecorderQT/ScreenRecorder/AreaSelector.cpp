@@ -614,13 +614,11 @@ void AreaSelector::paintEvent(QPaintEvent *event) {
 // slots
 ////////////////////////////*/
 void AreaSelector::slot_init() {
-    qDebug() << "Eseguo slot init";
     screen = QGuiApplication::primaryScreen();
     resize(screen->size().width(), screen->size().height());
     screenWidth = screen->size().width();
     screenHeight = screen->size().height();
     move(screen->geometry().x(), screen->geometry().y());
-    qDebug() << "screen: " << screenWidth << "x" << screenHeight;
     // positioning the rectange in the middle of the screen:
     frame_width = frame_min_width;
     frame_height = frame_min_height;

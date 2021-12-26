@@ -50,6 +50,7 @@ typedef struct
     int fps;
     int capturetime_seconds;
     float quality;  //value between 0.1 and 1
+    bool audioOn;
 } VideoSettings;
 
 enum class RecordingStatus {
@@ -60,7 +61,7 @@ enum class RecordingStatus {
 
 class ScreenRecorder {
    public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice="noDevice");
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice="noDevice");
     ~ScreenRecorder();
     void record();
 
