@@ -2,7 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++17
+CONFIG += c++20
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -44,3 +44,59 @@ RESOURCES += \
     resource.qrc
 
 LIBS += -lpthread
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavcodec
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavcodecd
+else:unix: LIBS += -L$$PWD/../lib/ -lavcodec
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavdevice
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavdeviced
+else:unix: LIBS += -L$$PWD/../lib/ -lavdevice
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavfilter
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavfilterd
+else:unix: LIBS += -L$$PWD/../lib/ -lavfilter
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavformat
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavformatd
+else:unix: LIBS += -L$$PWD/../lib/ -lavformat
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavutil
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavutild
+else:unix: LIBS += -L$$PWD/../lib/ -lavutil
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lpostproc
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lpostprocd
+else:unix: LIBS += -L$$PWD/../lib/ -lpostproc
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lswresample
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lswresampled
+else:unix: LIBS += -L$$PWD/../lib/ -lswresample
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lswscale
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lswscaled
+else:unix: LIBS += -L$$PWD/../lib/ -lswscale
+
+INCLUDEPATH += $$PWD/../include
+DEPENDPATH += $$PWD/../include

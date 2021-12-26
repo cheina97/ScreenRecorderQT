@@ -1,0 +1,22 @@
+[
+{
+  "directory": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build",
+  "command": "/bin/x86_64-linux-gnu-g++-10 -I/include -g --std=c++20 -pthread -std=c++2a -o CMakeFiles/main.dir/main.cpp.o -c /home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/main.cpp",
+  "file": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/main.cpp"
+},
+{
+  "directory": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build",
+  "command": "/bin/x86_64-linux-gnu-g++-10 -I/include -g --std=c++20 -pthread -std=c++2a -o CMakeFiles/main.dir/GetAudioDevices.cpp.o -c /home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/GetAudioDevices.cpp",
+  "file": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/GetAudioDevices.cpp"
+},
+{
+  "directory": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build",
+  "command": "/bin/x86_64-linux-gnu-g++-10 -I/include -g --std=c++20 -pthread -std=c++2a -o CMakeFiles/main.dir/MemoryCheckLinux.cpp.o -c /home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/MemoryCheckLinux.cpp",
+  "file": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/MemoryCheckLinux.cpp"
+},
+{
+  "directory": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build",
+  "command": "/bin/x86_64-linux-gnu-g++-10 -I/include -g --std=c++20 -pthread -std=c++2a -o CMakeFiles/main.dir/ScreenRecorder.cpp.o -c /home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/ScreenRecorder.cpp",
+  "file": "/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/ScreenRecorder.cpp"
+}
+]
