@@ -43,60 +43,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     resource.qrc
 
-LIBS += -lpthread
+LIBS += -lpthread -lole32 -loleaut32
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavcodec
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavcodecd
-else:unix: LIBS += -L$$PWD/../lib/ -lavcodec
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavdevice
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavdeviced
-else:unix: LIBS += -L$$PWD/../lib/ -lavdevice
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavfilter
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavfilterd
-else:unix: LIBS += -L$$PWD/../lib/ -lavfilter
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavformat
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavformatd
-else:unix: LIBS += -L$$PWD/../lib/ -lavformat
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lavutil
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lavutild
-else:unix: LIBS += -L$$PWD/../lib/ -lavutil
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lpostproc
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lpostprocd
-else:unix: LIBS += -L$$PWD/../lib/ -lpostproc
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lswresample
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lswresampled
-else:unix: LIBS += -L$$PWD/../lib/ -lswresample
-
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../lib/ -lswscale
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../lib/ -lswscaled
-else:unix: LIBS += -L$$PWD/../lib/ -lswscale
+unix|win32: LIBS += -L$$PWD/../lib/ -lavcodec  -lavdevice -lavfilter -lavformat -lavutil -lpostproc -lswresample -lswscale
 
 INCLUDEPATH += $$PWD/../include
 DEPENDPATH += $$PWD/../include
