@@ -13,10 +13,28 @@
 #include "ScreenRecorder.h"
 #include "GetAudioDevices.h"
 
+void MainWindow::setDefaultValues(){
+    ///rrs values
+    screen = QGuiApplication::primaryScreen();
+    rrs.width = screen->size().width();
+    rrs.height = screen->size().height();
+    rrs.offset_x = 0;
+    rrs.offset_y = 0;
+    //CHECK: dovrebbe cambiare?
+    rrs.screen_number = 0;
+    rrs.fullscreen = true;
+
+    ///vs vlaues
+    vs.fps = 24;
+    vs.quality = 0.6;
+    vs.audioOn = true;
+    outFilePath = QDir::homePath().toStdString();
+}
+
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    areaSelector = new AreaSelector();            
+    areaSelector = new AreaSelector();
 
     setWindowTitle("ScreenCapture");
 
@@ -26,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     // button properties
     ui->pushButtonFullscreen->setCheckable(true);
     ui->pushButtonFullscreen->setChecked(true);
+
     ui->pushButtonFullscreen->setIcon(QIcon(":/icons/fullscreen.png"));
 
     ui->pushButtonSelectArea->setCheckable(true);
@@ -54,6 +73,9 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     ui->horizontalSlider->setMinimum(1);
     ui->horizontalSlider->setMaximum(3);
     ui->horizontalSlider->setValue(2);
+
+    //default values:
+    setDefaultValues();
 
     // connect
     connect(this, SIGNAL(signal_close()), areaSelector, SLOT(close()));
@@ -127,11 +149,11 @@ void MainWindow::createTrayIcon() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-    #ifdef Q_OS_MACOS
-        if (!event->spontaneous() || !isVisible()) {
-            return;
-        }
-    #endif
+#ifdef Q_OS_MACOS
+    if (!event->spontaneous() || !isVisible()) {
+        return;
+    }
+#endif
     if (trayIcon->isVisible()) {
         QMessageBox::information(this, tr("Systray"),
                                  tr("The program will keep running in the "
@@ -156,15 +178,18 @@ void MainWindow::enable_or_disable_tabs(bool val) {
 void MainWindow::on_pushButtonSelectArea_clicked() {
     static bool first_call = true;
     bool state = ui->pushButtonSelectArea->isChecked();
-    qDebug() << "select area clicked. state: " << state;
+
+    rrs.fullscreen = false;
+    qDebug()<<"rrs.fullscreen = false";
+
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
+    //evitare bad behaviour in caso di doppio click
     if (state) {
         if (first_call) {
             first_call = false;
             areaSelector->slot_init();
         }
-        qDebug() << "Lanciato il segnale di selezione";
         emit signal_show(true);
     }
 }
@@ -173,21 +198,35 @@ void MainWindow::on_pushButtonFullscreen_clicked() {
     qDebug() << "fullscreen button clicked";
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
-    qDebug() << "area selector is visible: " << areaSelector->isVisible();
+
+    rrs.fullscreen = true;
+    rrs.width = screen->size().width();
+    rrs.height = screen->size().height();
+    rrs.offset_x = 0;
+    rrs.offset_y = 0;
+    qDebug()<<"rrs.fullscreen = true";
+
     emit signal_show(false);
 }
 
 void MainWindow::on_toolButton_clicked() {
-    QString path = QFileDialog::getExistingDirectory(this, "Select a directory",
-                                                     QDir::homePath());
+    QString path = QFileDialog::getExistingDirectory(this, "Select a directory", QDir::homePath());
     ui->lineEditPath->setText(path);
+
+    outFilePath = path.toStdString();
+    qDebug()<<"outFilePath: "<<path;
 }
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
     if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
 
-        screenRecorder = new ScreenRecorder(rrs, vs, audioOn, outFilePath, getAudioDevices()[2].c_str());
+        if(!rrs.fullscreen){
+        rrs.height = areaSelector->getHeight();
+        rrs.width = areaSelector->getWidth();
+        rrs.offset_x = areaSelector->getX();
+        rrs.offset_y = areaSelector->getY();
+        }
 
         ui->pushButtonStop->setEnabled(true);
         stopAction->setEnabled(true);
@@ -201,6 +240,14 @@ void MainWindow::on_pushButtonStart_clicked() {
         if (ui->pushButtonSelectArea->isChecked())
             emit signal_recording(true); //this changes the color of the border
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
+
+       qDebug()<<"Valori rrs: "<<Qt::endl<<"wxh: "<<rrs.width<<" x "<<rrs.height<<Qt::endl<<"offset: "<<rrs.offset_x<<", "<<rrs.offset_y<<Qt::endl
+             <<"screen: "<<rrs.screen_number<<Qt::endl<<"fullscreen: "<< rrs.fullscreen<<Qt::endl;
+    qDebug()<<"valori di vs:"<<Qt::endl<<"fps: "<<vs.fps<<Qt::endl<<"quality: "<<vs.quality<<Qt::endl<<"audio: "<<QString::number(vs.audioOn)<<Qt::endl;
+        qDebug()<<"Directory: "<<QString::fromStdString(outFilePath);
+
+    //screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, getAudioDevices()[2].c_str());
+
     }
 }
 
@@ -244,8 +291,54 @@ void MainWindow::on_pushButtonStop_clicked() {
     if (minimizeInSysTray)
         show();
     trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
+
+    setDefaultValues();
 }
 
 void MainWindow::on_checkBoxMinimize_toggled(bool checked) {
     minimizeInSysTray = checked;
 }
+
+void MainWindow::on_radioButtonYes_clicked(){
+    vs.audioOn = true;
+}
+
+void MainWindow::on_radioButtonNo_clicked()
+{
+    vs.audioOn = false;
+}
+
+void MainWindow::on_radioButton24_clicked()
+{
+    vs.fps = 24;
+}
+
+
+void MainWindow::on_radioButton30_clicked()
+{
+    vs.fps = 30;
+}
+
+
+void MainWindow::on_radioButton60_clicked()
+{
+    vs.fps = 60;
+}
+
+
+void MainWindow::on_horizontalSlider_sliderMoved(int position)
+{
+    if(position == 1){
+        vs.quality = 0.3;
+    }else if(position == 2){
+        vs.quality = 0.6;
+    }else{
+        vs.quality = 1;
+    }
+}
+
+void MainWindow::on_lineEditPath_textEdited(const QString &arg1)
+{
+    outFilePath = arg1.toStdString();
+}
+
