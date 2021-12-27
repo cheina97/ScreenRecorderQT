@@ -282,3 +282,17 @@ cmake_check_build_system:
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 
+
+#=============================================================================
+
+compile-linux: *.o
+	g++ -Wall -std=c++2a -o main main.o GetAudioDevices.o ScreenRecorder.o MemoryCheckLinux.o -lavformat -lavcodec -lavutil -lavdevice -lm -lswscale -lX11 -lpthread -lswresample -lasound
+
+*.o :*.c
+	g++ -Wall -std=c++2a -c main.cpp GetAudioDevices.cpp ScreenRecorder.cpp MemoryCheckLinux.cpp
+*.c:
+	echo "Starting compiling"
+
+clean-linux:
+	rm *.o main
+
