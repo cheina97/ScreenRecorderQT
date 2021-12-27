@@ -5,7 +5,6 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QMenu>
-#include <QMessageBox>
 #include <QSystemTrayIcon>
 
 #include "AreaSelector.h"
@@ -28,7 +27,7 @@ void MainWindow::setDefaultValues(){
     vs.fps = 24;
     vs.quality = 0.6;
     vs.audioOn = true;
-    outFilePath = QDir::homePath().toStdString();
+    outFilePath = QDir::homePath().toStdString()+"/out.mp4";
 }
 
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -37,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     areaSelector = new AreaSelector();
 
     setWindowTitle("ScreenCapture");
+
+    errorDialog.setFixedSize(500, 200);
 
     // tab widget
     ui->tabWidget->setCurrentIndex(0); // always open on first tab
@@ -213,12 +214,16 @@ void MainWindow::on_toolButton_clicked() {
     QString path = QFileDialog::getExistingDirectory(this, "Select a directory", QDir::homePath());
     ui->lineEditPath->setText(path);
 
-    outFilePath = path.toStdString();
-    qDebug()<<"outFilePath: "<<path;
+    outFilePath = path.toStdString()+"/out.mp4";
+    qDebug()<<"outFilePath: "<<QString::fromStdString(outFilePath);
 }
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
+
+    // Call to open the error dialog
+    //errorDialog.critical(0, "Error", "An error has occurred!");
+
     if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
 
         if(!rrs.fullscreen){
@@ -295,6 +300,7 @@ void MainWindow::on_pushButtonStop_clicked() {
     setDefaultValues();
 }
 
+////Settings
 void MainWindow::on_checkBoxMinimize_toggled(bool checked) {
     minimizeInSysTray = checked;
 }
@@ -313,18 +319,15 @@ void MainWindow::on_radioButton24_clicked()
     vs.fps = 24;
 }
 
-
 void MainWindow::on_radioButton30_clicked()
 {
     vs.fps = 30;
 }
 
-
 void MainWindow::on_radioButton60_clicked()
 {
     vs.fps = 60;
 }
-
 
 void MainWindow::on_horizontalSlider_sliderMoved(int position)
 {
@@ -339,6 +342,6 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position)
 
 void MainWindow::on_lineEditPath_textEdited(const QString &arg1)
 {
-    outFilePath = arg1.toStdString();
+    outFilePath = arg1.toStdString()+"/out.mp4";
 }
 

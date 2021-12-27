@@ -7,6 +7,7 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QShortcut>
+#include <QMessageBox>
 #include <QSystemTrayIcon>
 
 QT_BEGIN_NAMESPACE
@@ -23,6 +24,7 @@ class MainWindow : public QMainWindow {
     ~MainWindow();
     AreaSelector *areaSelector;
     ScreenRecorder *screenRecorder;
+    QMessageBox errorDialog;
 
 private:
     //settings chosen by the user in the window
