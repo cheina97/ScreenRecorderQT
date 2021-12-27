@@ -4,7 +4,9 @@
 #include <iostream>
 
 #include "GetAudioDevices.h"
-//#include "MemoryCheckLinux.h"
+#if defined __linux__
+#include "MemoryCheckLinux.h"
+#endif
 
 using namespace std;
 
@@ -21,7 +23,9 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
         cout << "-> Finita initAudioSource" << endl;
     }
     initOutputFile();
-    //memoryCheck_init(4000); // ERROR
+#if defined __linux__
+    memoryCheck_init(1000);  // ERROR
+#endif
 }
 
 ScreenRecorder::~ScreenRecorder() {
@@ -320,18 +324,16 @@ void ScreenRecorder::getRawPackets() {
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
 
-        //da togliere da qui e mettere nell'app con chiamata a stop();
-        /* try
-        {
+//da togliere da qui e mettere nell'app con chiamata a stop();
+#if defined __linux__
+        try {
             memoryCheck_limitSurpassed();
-        }
-        catch (const runtime_error &e)
-        {
+        } catch (const runtime_error &e) {
             cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
             i = frameNumber;
-        } */
+        }
+#endif
     }
-    //cout << "getRaw" << endl;
 
     avRawPkt_queue_mutex.lock();
     stop = true;
@@ -361,6 +363,7 @@ void ScreenRecorder::decodeAndEncode() {
     int i = 0;
 
     avRawPkt_queue_mutex.lock();
+    
     while (!stop || !avRawPkt_queue.empty()) {
         if (!avRawPkt_queue.empty()) {
             avRawPkt = avRawPkt_queue.front();
@@ -564,7 +567,6 @@ void ScreenRecorder::acquireAudio() {
                     break;
                 else if (ret < 0) {
                     throw runtime_error("Error during decoding");
-                    //throw error("Error during decoding");
                 }
                 if (avFmtCtxOut->streams[audioIndexOut]->start_time <= 0) {
                     avFmtCtxOut->streams[audioIndexOut]->start_time = rawFrame->pts;
@@ -608,7 +610,6 @@ void ScreenRecorder::acquireAudio() {
                         else if (ret < 0) {
                             throw runtime_error("Error during encoding");
                         }
-                        //outPacket ready
                         av_packet_rescale_ts(outPacket, AudioCodecContextOut->time_base, avFmtCtxOut->streams[audioIndexOut]->time_base);
                         outPacket->stream_index = audioIndexOut;
 
