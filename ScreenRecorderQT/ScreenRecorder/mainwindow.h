@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include "AreaSelector.h"
-#include "ScreenRecorder.h"
 #include <QAction>
 #include <QMainWindow>
 #include <QMenu>
@@ -23,14 +22,10 @@ class MainWindow : public QMainWindow {
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     AreaSelector *areaSelector;
-    ScreenRecorder *screenRecorder;
     QMessageBox errorDialog;
 
 private:
     //settings chosen by the user in the window
-    RecordingRegionSettings rrs;
-    VideoSettings vs;
-    string outFilePath;
 
   private slots:
     void on_pushButtonSelectArea_clicked();

@@ -8,9 +8,13 @@
 #include <QSystemTrayIcon>
 
 #include "AreaSelector.h"
-#include "ui_mainwindow.h"
 #include "ScreenRecorder.h"
-#include "GetAudioDevices.h"
+#include "ui_mainwindow.h"
+
+ScreenRecorder *screenRecorder;
+RecordingRegionSettings rrs;
+VideoSettings vs;
+string outFilePath;
 
 void MainWindow::setDefaultValues(){
     ///rrs values

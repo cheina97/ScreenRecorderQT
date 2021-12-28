@@ -2,7 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++20
+CONFIG += c++2a
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -43,9 +43,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     resource.qrc
 
-LIBS += -lpthread -lole32 -loleaut32
+win32:LIBS += -lpthread -lole32 -loleaut32
 
 unix|win32: LIBS += -L$$PWD/../lib/ -lavcodec  -lavdevice -lavfilter -lavformat -lavutil -lpostproc -lswresample -lswscale
 
-INCLUDEPATH += $$PWD/../include
-DEPENDPATH += $$PWD/../include
+unix:LIBS += -lavformat -lavcodec -lavutil -lavdevice -lm -lswscale -lX11 -lpthread -lswresample -lasound
+
+
+win32:INCLUDEPATH += $$PWD/../include
+win32:DEPENDPATH += $$PWD/../include
