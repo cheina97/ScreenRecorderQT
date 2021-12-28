@@ -11,7 +11,7 @@ int main(int argc, char const* argv[]) {
         cout << "-> Avvio main" << endl;
 
         if (argc < 11) {
-            throw logic_error{ "Errore: parametri mancanti. Utilizzo: ./main width height offset_x offset_y screen_num fps capturetime_seconds quality audioOn outFilePath" };
+            throw logic_error{ "Errore: parametri mancanti. Utilizzo: ./main width height offset_x offset_y screen_num fps capturetime_seconds quality audioOn compression outFilePath" };
         }
         VideoSettings vs;
         RecordingRegionSettings rrs;
@@ -20,13 +20,14 @@ int main(int argc, char const* argv[]) {
         rrs.offset_x = atoi(argv[3]);
         rrs.offset_y = atoi(argv[4]);
         rrs.screen_number = atoi(argv[5]);
-        rrs.fullscreen = true;
+        rrs.fullscreen = false;
         vs.fps = atoi(argv[6]);
         vs.capturetime_seconds = atoi(argv[7]);
         vs.quality = atof(argv[8]);
 
         bool audioOn = atoi(argv[9]) == 1 ? true : false;
-        string outFilePath = argv[10];
+        vs.compression= atoi(argv[10]);
+        string outFilePath = argv[11];
 
         ScreenRecorder sr{rrs, vs, audioOn, outFilePath, getAudioDevices()[2].c_str()};
         cout << "-> Costruito oggetto Screen Recorder" << endl;
