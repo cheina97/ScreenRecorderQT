@@ -249,7 +249,8 @@ void MainWindow::on_pushButtonStart_clicked() {
 
         string temp = "Microphone (Realtek High Definition Audio)";
         try{
-            vs.capturetime_seconds= 10;
+            vs.capturetime_seconds= 5;
+            vs.quality = 8;
             screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, temp);
             cout << "-> Costruito oggetto Screen Recorder" << endl;
             cout << "-> RECORDING..." << endl;

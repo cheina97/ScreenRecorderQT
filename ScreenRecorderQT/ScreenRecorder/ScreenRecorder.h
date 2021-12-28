@@ -50,6 +50,7 @@ typedef struct
     int fps;
     int capturetime_seconds;
     float quality;  //value between 0.1 and 1
+    int compression; // value between 1 and 8
     bool audioOn;
 } VideoSettings;
 
@@ -61,7 +62,7 @@ enum class RecordingStatus {
 
 class ScreenRecorder {
    public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice="noDevice");
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice);
     ~ScreenRecorder();
     void record();
 
@@ -69,7 +70,6 @@ class ScreenRecorder {
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
-    bool audioOn;
     RecordingStatus status;
     string outFilePath;
     string audioDevice;
@@ -80,6 +80,7 @@ class ScreenRecorder {
     unique_ptr<thread> captureAudio_thread;
     unique_ptr<thread> elaborate_thread;
     bool stop;
+    bool gotFirstValidVideoPacket;
 #if defined _WIN32
     std::string deviceName;
 #endif
