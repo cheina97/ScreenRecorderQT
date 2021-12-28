@@ -88,13 +88,18 @@ vector<string> getAudioDevices() {
     regex findPcm{".*pcm.*"};
     string value, field, card, device, streamType;
 
+	
     for (auto i : alsaDir) {
         if (regex_match(i.path().c_str(), findCard)) {
             directory_iterator cardDir{i.path()};
+
             for (auto const& j : cardDir) {
                 if (regex_match(j.path().c_str(), findPcm)) {
+								
+
                     ifstream info{(string)j.path() + "/info"};
                     if (info.is_open()) {
+						
                         while (!info.eof()) {
                             info >> field;
                             info >> value;
@@ -106,6 +111,7 @@ vector<string> getAudioDevices() {
                                 streamType = value;
                             }
                         }
+
                         if (streamType == "CAPTURE") {
                             devices.emplace_back("hw:" + card + "," + device);
                         }
