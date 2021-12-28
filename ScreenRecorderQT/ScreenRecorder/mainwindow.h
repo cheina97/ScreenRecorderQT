@@ -51,6 +51,8 @@ private:
 
     void on_lineEditPath_textEdited(const QString &arg1);
 
+    void on_comboBox_activated(const QString &arg1);
+
 signals:
     void signal_close();
     void signal_show(bool);
