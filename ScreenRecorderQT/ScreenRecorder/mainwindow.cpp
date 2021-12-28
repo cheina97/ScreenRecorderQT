@@ -220,17 +220,13 @@ void MainWindow::on_toolButton_clicked() {
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
-
-    // Call to open the error dialog
-    //errorDialog.critical(0, "Error", "An error has occurred!");
-
     if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
 
         if(!rrs.fullscreen){
-        rrs.height = areaSelector->getHeight();
-        rrs.width = areaSelector->getWidth();
-        rrs.offset_x = areaSelector->getX();
-        rrs.offset_y = areaSelector->getY();
+            rrs.height = areaSelector->getHeight();
+            rrs.width = areaSelector->getWidth();
+            rrs.offset_x = areaSelector->getX();
+            rrs.offset_y = areaSelector->getY();
         }
 
         ui->pushButtonStop->setEnabled(true);
@@ -246,13 +242,22 @@ void MainWindow::on_pushButtonStart_clicked() {
             emit signal_recording(true); //this changes the color of the border
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
 
-       qDebug()<<"Valori rrs: "<<Qt::endl<<"wxh: "<<rrs.width<<" x "<<rrs.height<<Qt::endl<<"offset: "<<rrs.offset_x<<", "<<rrs.offset_y<<Qt::endl
-             <<"screen: "<<rrs.screen_number<<Qt::endl<<"fullscreen: "<< rrs.fullscreen<<Qt::endl;
-    qDebug()<<"valori di vs:"<<Qt::endl<<"fps: "<<vs.fps<<Qt::endl<<"quality: "<<vs.quality<<Qt::endl<<"audio: "<<QString::number(vs.audioOn)<<Qt::endl;
+        qDebug()<<"Valori rrs: "<<Qt::endl<<"wxh: "<<rrs.width<<" x "<<rrs.height<<Qt::endl<<"offset: "<<rrs.offset_x<<", "<<rrs.offset_y<<Qt::endl
+               <<"screen: "<<rrs.screen_number<<Qt::endl<<"fullscreen: "<< rrs.fullscreen<<Qt::endl;
+        qDebug()<<"valori di vs:"<<Qt::endl<<"fps: "<<vs.fps<<Qt::endl<<"quality: "<<vs.quality<<Qt::endl<<"audio: "<<QString::number(vs.audioOn)<<Qt::endl;
         qDebug()<<"Directory: "<<QString::fromStdString(outFilePath);
 
-    //screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, getAudioDevices()[2].c_str());
-
+        string temp = "Microphone (Realtek High Definition Audio)";
+        try{
+            vs.capturetime_seconds= 10;
+            screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, temp);
+            cout << "-> Costruito oggetto Screen Recorder" << endl;
+            cout << "-> RECORDING..." << endl;
+            screenRecorder->record();
+        } catch(const exception &e){
+            // Call to open the error dialog
+            errorDialog.critical(0, "Error", e.what());
+        }
     }
 }
 
