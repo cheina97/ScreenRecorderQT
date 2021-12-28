@@ -12,14 +12,14 @@
 
 using namespace std;
 
-ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
+ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
     initCommon();
     cout << "-> Finita initCommon" << endl;
     initVideoSource();
     cout << "-> Finita initVideoSource" << endl;
     initVideoVariables();
     cout << "-> Finita initiVideoVariables" << endl;
-    if (audioOn) {
+    if (vs.audioOn) {
         initAudioSource();
         initAudioVariables();
         cout << "-> Finita initAudioSource" << endl;
@@ -33,7 +33,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
 ScreenRecorder::~ScreenRecorder() {
     captureVideo_thread.get()->join();
     elaborate_thread.get()->join();
-    if (audioOn)
+    if (vs.audioOn)
         captureAudio_thread.get()->join();
 
     av_write_trailer(avFmtCtxOut);
@@ -51,7 +51,7 @@ void ScreenRecorder::record() {
     captureVideo_thread = make_unique<thread>([this]() { this->getRawPackets(); });
 
     elaborate_thread = make_unique<thread>([this]() { this->decodeAndEncode(); });
-    if (audioOn)
+    if (vs.audioOn)
         captureAudio_thread = make_unique<thread>([this]() { this->acquireAudio(); });
 }
 
@@ -318,7 +318,7 @@ void ScreenRecorder::initAudioSource() {
 }
 
 void ScreenRecorder::getRawPackets() {
-    cout << "Get Raw packets: " << gettid() << endl;
+    //cout << "Get Raw packets: " << getid() << endl;
     int frameNumber = vs.fps * vs.capturetime_seconds;
     AVPacket *avRawPkt;
     for (int i = 0; i < frameNumber; i++) {
@@ -350,7 +350,7 @@ void ScreenRecorder::getRawPackets() {
 }
 
 void ScreenRecorder::decodeAndEncode() {
-    cout << "Decode and encode: " << gettid() << endl;
+    //cout << "Decode and encode: " << gettid() << endl;
     int got_picture = 0;
     int flag = 0;
     int bufLen = 0;
