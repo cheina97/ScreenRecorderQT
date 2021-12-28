@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QSystemTrayIcon>
+#include <QAudioDeviceInfo>
 
 #include "AreaSelector.h"
 #include "ui_mainwindow.h"
@@ -26,8 +27,11 @@ void MainWindow::setDefaultValues(){
     ///vs vlaues
     vs.fps = 24;
     vs.quality = 0.6;
+    vs.compression = 4;
     vs.audioOn = true;
     outFilePath = QDir::homePath().toStdString()+"/out.mp4";
+
+    deviceName = ui->comboBox->currentText().toStdString();
 }
 
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -75,7 +79,15 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     ui->horizontalSlider->setMaximum(3);
     ui->horizontalSlider->setValue(2);
 
-    //default values:
+
+   //options in the combobox
+    const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+    for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
+        ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
+    //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
+    //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
+
+    //default values for screen recorder object:
     setDefaultValues();
 
     // connect
@@ -220,6 +232,7 @@ void MainWindow::on_toolButton_clicked() {
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
+
     if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
 
         if(!rrs.fullscreen){
@@ -246,15 +259,13 @@ void MainWindow::on_pushButtonStart_clicked() {
                <<"screen: "<<rrs.screen_number<<Qt::endl<<"fullscreen: "<< rrs.fullscreen<<Qt::endl;
         qDebug()<<"valori di vs:"<<Qt::endl<<"fps: "<<vs.fps<<Qt::endl<<"quality: "<<vs.quality<<Qt::endl<<"audio: "<<QString::number(vs.audioOn)<<Qt::endl;
         qDebug()<<"Directory: "<<QString::fromStdString(outFilePath);
-
-        string temp = "Microphone (Realtek High Definition Audio)";
+        qDebug()<<"DeviceName: "<<QString::fromStdString(deviceName);
         try{
             vs.capturetime_seconds= 5;
-            vs.quality = 8;
-            screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, temp);
+            screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
             cout << "-> Costruito oggetto Screen Recorder" << endl;
             cout << "-> RECORDING..." << endl;
-            //screenRecorder->record();
+            screenRecorder->record();
         } catch(const exception &e){
             // Call to open the error dialog
             string message = e.what();
@@ -315,11 +326,13 @@ void MainWindow::on_checkBoxMinimize_toggled(bool checked) {
 
 void MainWindow::on_radioButtonYes_clicked(){
     vs.audioOn = true;
+    ui->comboBox->setDisabled(false);
 }
 
 void MainWindow::on_radioButtonNo_clicked()
 {
     vs.audioOn = false;
+    ui->comboBox->setDisabled(true);
 }
 
 void MainWindow::on_radioButton24_clicked()
@@ -341,15 +354,24 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position)
 {
     if(position == 1){
         vs.quality = 0.3;
+        vs.compression = 8;
     }else if(position == 2){
         vs.quality = 0.6;
+        vs.compression = 4;
     }else{
         vs.quality = 1;
+        vs.compression = 5;
     }
 }
 
 void MainWindow::on_lineEditPath_textEdited(const QString &arg1)
 {
     outFilePath = arg1.toStdString()+"/out.mp4";
+}
+
+
+void MainWindow::on_comboBox_activated(const QString &arg1)
+{
+    deviceName = arg1.toStdString();
 }
 

@@ -31,6 +31,7 @@ private:
     RecordingRegionSettings rrs;
     VideoSettings vs;
     string outFilePath;
+    string deviceName;
 
   private slots:
     void on_pushButtonSelectArea_clicked();
@@ -55,6 +56,8 @@ private:
     void on_horizontalSlider_sliderMoved(int position);
 
     void on_lineEditPath_textEdited(const QString &arg1);
+
+    void on_comboBox_activated(const QString &arg1);
 
 signals:
     void signal_close();
