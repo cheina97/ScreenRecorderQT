@@ -25,11 +25,11 @@ int main(int argc, char const* argv[]) {
         vs.capturetime_seconds = atoi(argv[7]);
         vs.quality = atof(argv[8]);
 
-        bool audioOn = atoi(argv[9]) == 1 ? true : false;
+        vs.audioOn = atoi(argv[9]) == 1 ? true : false;
         vs.compression= atoi(argv[10]);
         string outFilePath = argv[11];
 
-        ScreenRecorder sr{rrs, vs, audioOn, outFilePath, getAudioDevices()[2].c_str()};
+        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[2].c_str()};
         cout << "-> Costruito oggetto Screen Recorder" << endl;
         cout << "-> RECORDING..." << endl;
 
