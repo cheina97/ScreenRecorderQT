@@ -254,10 +254,12 @@ void MainWindow::on_pushButtonStart_clicked() {
             screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, temp);
             cout << "-> Costruito oggetto Screen Recorder" << endl;
             cout << "-> RECORDING..." << endl;
-            screenRecorder->record();
+            //screenRecorder->record();
         } catch(const exception &e){
             // Call to open the error dialog
-            errorDialog.critical(0, "Error", e.what());
+            string message = e.what();
+            message += "\nPlease close and restart the application";
+            errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
     }
 }
