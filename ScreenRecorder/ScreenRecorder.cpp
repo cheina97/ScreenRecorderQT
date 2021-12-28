@@ -8,6 +8,8 @@
 #include "MemoryCheckLinux.h"
 #endif
 
+#include <time.h>
+
 using namespace std;
 
 ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bool audioOn, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), audioOn(audioOn), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
@@ -24,7 +26,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, bo
     }
     initOutputFile();
 #if defined __linux__
-    memoryCheck_init(1000);  // ERROR
+    memoryCheck_init(4000);  // ERROR
 #endif
 }
 
@@ -45,6 +47,7 @@ ScreenRecorder::~ScreenRecorder() {
 void ScreenRecorder::record() {
     stop = false;
     audio_stop = false;
+    gotFirstValidVideoPacket = false;
     captureVideo_thread = make_unique<thread>([this]() { this->getRawPackets(); });
 
     elaborate_thread = make_unique<thread>([this]() { this->decodeAndEncode(); });
@@ -98,6 +101,9 @@ void ScreenRecorder::initVideoSource() {
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
+    //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
+    //av_dict_set(&avRawOptions, "minrate", "0", 0);
+    //av_dict_set(&avRawOptions, "bufsize", "2000k", 0);
 
 #if defined _WIN32
     AVInputFormat *avInputFmt = av_find_input_format("gdigrab");
@@ -177,15 +183,15 @@ void ScreenRecorder::initVideoVariables() {
     avEncoderCtx->codec_id = AV_CODEC_ID_H264;
     avEncoderCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-    avEncoderCtx->bit_rate = 80000;
+    avEncoderCtx->bit_rate = 4000;
     avEncoderCtx->width = (int)(rrs.width * vs.quality) / 32 * 32;
     avEncoderCtx->height = (int)(rrs.height * vs.quality) / 2 * 2;
     avEncoderCtx->time_base.num = 1;
     avEncoderCtx->time_base.den = vs.fps;
-    avEncoderCtx->gop_size = 50;
-    avEncoderCtx->qmin = 5;
-    avEncoderCtx->qmax = 10;
-    avEncoderCtx->max_b_frames = 2;
+    avEncoderCtx->gop_size = vs.fps * 2;
+    avEncoderCtx->qmin = vs.compression * 5;
+    avEncoderCtx->qmax = 5 + vs.compression * 5;
+    avEncoderCtx->max_b_frames = 10;
 
     if (avEncoderCtx->codec_id == AV_CODEC_ID_H264) {
         av_opt_set(avEncoderCtx, "preset", "ultrafast", 0);
@@ -312,13 +318,13 @@ void ScreenRecorder::initAudioSource() {
 }
 
 void ScreenRecorder::getRawPackets() {
+    cout << "Get Raw packets: " << gettid() << endl;
     int frameNumber = vs.fps * vs.capturetime_seconds;
     AVPacket *avRawPkt;
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
         if (int value = av_read_frame(avFmtCtx, avRawPkt) < 0) {
-            //cout << "value: " << value << endl;
-            //throw runtime_error("Error in getting RawPacket from x11");
+            throw runtime_error("Error in getting RawPacket from x11");
         }
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
@@ -344,6 +350,7 @@ void ScreenRecorder::getRawPackets() {
 }
 
 void ScreenRecorder::decodeAndEncode() {
+    cout << "Decode and encode: " << gettid() << endl;
     int got_picture = 0;
     int flag = 0;
     int bufLen = 0;
@@ -363,7 +370,7 @@ void ScreenRecorder::decodeAndEncode() {
     int i = 0;
 
     avRawPkt_queue_mutex.lock();
-    
+
     while (!stop || !avRawPkt_queue.empty()) {
         if (!avRawPkt_queue.empty()) {
             avRawPkt = avRawPkt_queue.front();
@@ -372,17 +379,19 @@ void ScreenRecorder::decodeAndEncode() {
             if (avRawPkt->stream_index == videoIndex) {
                 //Inizio DECODING
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
+
                 av_packet_unref(avRawPkt);
                 av_packet_free(&avRawPkt);
 
                 if (flag < 0) {
                     throw runtime_error("Decoding Error: sending packet");
                 }
-
                 got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
+
                 //Fine DECODING
                 if (got_picture == 0) {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
+
                     //Inizio ENCODING
                     avYUVFrame->pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
@@ -391,8 +400,12 @@ void ScreenRecorder::decodeAndEncode() {
 
                     if (flag >= 0) {
                         if (got_picture == 0) {
+                            if (!gotFirstValidVideoPacket) {
+                                gotFirstValidVideoPacket = true;
+                            }
                             pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                             pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
+
                             write_lock.lock();
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
                                 throw runtime_error("Error in writing file");
@@ -550,6 +563,7 @@ void ScreenRecorder::acquireAudio() {
 
     int contatoreDaEliminare = 0;
     audio_stop_mutex.lock();
+    bool firstBuffer = true;
     while (!audio_stop) {
         audio_stop_mutex.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex) {
@@ -614,10 +628,16 @@ void ScreenRecorder::acquireAudio() {
                         outPacket->stream_index = audioIndexOut;
 
                         write_lock.lock();
-
-                        if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
-                            throw runtime_error("Error in writing audio frame");
+                        if (gotFirstValidVideoPacket) {
+                            if (!firstBuffer) {
+                                if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
+                                    throw runtime_error("Error in writing audio frame");
+                                }
+                            } else {
+                                firstBuffer = false;
+                            }
                         }
+
                         write_lock.unlock();
                         av_packet_unref(outPacket);
                     }
