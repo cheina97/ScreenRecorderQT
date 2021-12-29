@@ -16,6 +16,7 @@ ScreenRecorder *screenRecorder;
 RecordingRegionSettings rrs;
 VideoSettings vs;
 string outFilePath;
+string deviceName;
 
 void MainWindow::setDefaultValues(){
     ///rrs values
@@ -259,9 +260,9 @@ void MainWindow::on_pushButtonStart_clicked() {
             emit signal_recording(true); //this changes the color of the border
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
 
-        qDebug()<<"Valori rrs: "<<Qt::endl<<"wxh: "<<rrs.width<<" x "<<rrs.height<<Qt::endl<<"offset: "<<rrs.offset_x<<", "<<rrs.offset_y<<Qt::endl
-               <<"screen: "<<rrs.screen_number<<Qt::endl<<"fullscreen: "<< rrs.fullscreen<<Qt::endl;
-        qDebug()<<"valori di vs:"<<Qt::endl<<"fps: "<<vs.fps<<Qt::endl<<"quality: "<<vs.quality<<Qt::endl<<"audio: "<<QString::number(vs.audioOn)<<Qt::endl;
+        qDebug()<<"Valori rrs: \n wxh: "<<rrs.width<<" x "<<rrs.height<<"\noffset: "<<rrs.offset_x<<", "<<rrs.offset_y
+               <<"\n screen: "<<rrs.screen_number<<"\n fullscreen: "<< rrs.fullscreen<<"\n";
+        qDebug()<<"valori di vs:"<<"\n fps: "<<vs.fps<<"\n quality: "<<vs.quality<<"\n audio: "<<QString::number(vs.audioOn)<<"\n";
         qDebug()<<"Directory: "<<QString::fromStdString(outFilePath);
         qDebug()<<"DeviceName: "<<QString::fromStdString(deviceName);
         try{

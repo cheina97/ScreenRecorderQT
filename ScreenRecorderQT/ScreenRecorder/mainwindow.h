@@ -36,21 +36,13 @@ private:
     void on_pushButtonResume_clicked();
     void on_pushButtonStop_clicked();
     void on_checkBoxMinimize_toggled(bool);
-
     void on_radioButtonYes_clicked();
-
     void on_radioButtonNo_clicked();
-
     void on_radioButton24_clicked();
-
     void on_radioButton30_clicked();
-
     void on_radioButton60_clicked();
-
     void on_horizontalSlider_sliderMoved(int position);
-
     void on_lineEditPath_textEdited(const QString &arg1);
-
     void on_comboBox_activated(const QString &arg1);
 
 signals:
