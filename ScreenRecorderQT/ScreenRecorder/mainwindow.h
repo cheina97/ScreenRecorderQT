@@ -1,13 +1,15 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "AreaSelector.h"
 #include <QAction>
 #include <QMainWindow>
 #include <QMenu>
-#include <QShortcut>
 #include <QMessageBox>
+#include <QShortcut>
 #include <QSystemTrayIcon>
+#include <QtWidgets/QComboBox>
+
+#include "AreaSelector.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,16 +20,16 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
-  public:
+   public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     AreaSelector *areaSelector;
     QMessageBox errorDialog;
 
-private:
+   private:
     //settings chosen by the user in the window
 
-  private slots:
+   private slots:
     void on_pushButtonSelectArea_clicked();
     void on_pushButtonFullscreen_clicked();
     void on_toolButton_clicked();
@@ -45,15 +47,15 @@ private:
     void on_lineEditPath_textEdited(const QString &arg1);
     void on_comboBox_activated(const QString &arg1);
 
-signals:
+   signals:
     void signal_close();
     void signal_show(bool);
     void signal_recording(bool);
 
-  protected:
+   protected:
     void closeEvent(QCloseEvent *event);
 
-  private:
+   private:
     Ui::MainWindow *ui;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
@@ -72,4 +74,4 @@ signals:
     void enable_or_disable_tabs(bool);
     void setDefaultValues();
 };
-#endif // MAINWINDOW_H
+#endif  // MAINWINDOW_H
