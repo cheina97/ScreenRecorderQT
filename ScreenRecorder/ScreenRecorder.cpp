@@ -285,10 +285,10 @@ void ScreenRecorder::initAudioSource() {
 #endif
 
 #if defined _WIN32
-    deviceName = "audio=Microphone (Realtek High Definition Audio)";
+    audioDevice = "audio=" + audioDevice;
 
     AudioInputFormat = av_find_input_format("dshow");
-    int value = avformat_open_input(&FormatContextAudio, deviceName.c_str(), AudioInputFormat, &AudioOptions);
+    int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0) {
         //cerr << "Error in opening input device (audio)" << endl;
         //exit(-1);
