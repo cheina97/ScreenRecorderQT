@@ -33,9 +33,8 @@ int main(int argc, char const* argv[]) {
         for (auto i : x)
             cout << i.c_str() << endl;
 
-        cout << "quello che passo: " << getAudioDevices()[0].c_str() << endl;
 
-        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[0].c_str()};
+        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[2].c_str()};
         cout << "-> Costruito oggetto Screen Recorder" << endl;
         cout << "-> RECORDING..." << endl;
 
