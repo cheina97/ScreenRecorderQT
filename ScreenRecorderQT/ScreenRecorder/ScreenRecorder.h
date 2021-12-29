@@ -81,9 +81,6 @@ class ScreenRecorder {
     unique_ptr<thread> elaborate_thread;
     bool stop;
     bool gotFirstValidVideoPacket;
-#if defined _WIN32
-    std::string deviceName;
-#endif
 
     //video variables
     AVFormatContext *avFmtCtx, *avFmtCtxOut;

@@ -237,7 +237,6 @@ void MainWindow::on_toolButton_clicked() {
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
-
     if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
 
         if(!rrs.fullscreen){
@@ -266,7 +265,7 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug()<<"Directory: "<<QString::fromStdString(outFilePath);
         qDebug()<<"DeviceName: "<<QString::fromStdString(deviceName);
         try{
-            vs.capturetime_seconds= 5;
+            vs.capturetime_seconds= 10;
             screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
             cout << "-> Costruito oggetto Screen Recorder" << endl;
             cout << "-> RECORDING..." << endl;

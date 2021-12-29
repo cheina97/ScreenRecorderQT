@@ -56,6 +56,7 @@ void ScreenRecorder::record() {
     captureVideo_thread = make_unique<thread>([this]() {
         try{
             this->getRawPackets();
+            cout<<"1. capture video thread fine!"<<endl;
         } catch (const exception &e ){
             throw;
         }
@@ -64,6 +65,7 @@ void ScreenRecorder::record() {
     elaborate_thread = make_unique<thread>([this]() {
         try{
             this->decodeAndEncode();
+            cout<<"2. elaborate_thread fine!"<<endl;
         }catch(const exception &e){
             throw;
         }
@@ -72,6 +74,7 @@ void ScreenRecorder::record() {
         captureAudio_thread = make_unique<thread>([this]() {
             try{
                 this->acquireAudio();
+                cout<<"3. captureAudio_thread!"<<endl;
             } catch(const exception &e){
                 throw;
             }
@@ -308,8 +311,10 @@ void ScreenRecorder::initAudioSource() {
 #endif
 
 #if defined _WIN32
+    audioDevice = "audio=" + audioDevice;
+
     AudioInputFormat = av_find_input_format("dshow");
-    int value = avformat_open_input(&FormatContextAudio, deviceName.c_str(), AudioInputFormat, &AudioOptions);
+    int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0) {
         //cerr << "Error in opening input device (audio)" << endl;
         //exit(-1);
