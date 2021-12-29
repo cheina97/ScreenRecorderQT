@@ -367,7 +367,8 @@ void ScreenRecorder::decodeAndEncode() {
     av_init_packet(&pkt);
 
     AVPacket *avRawPkt;
-    int i = 0;
+    int i = 1;
+    int j = 1;
 
     avRawPkt_queue_mutex.lock();
 
@@ -393,12 +394,13 @@ void ScreenRecorder::decodeAndEncode() {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
 
                     //Inizio ENCODING
-                    avYUVFrame->pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
+                    avYUVFrame->pts = (int64_t)j * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
+                    j++;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
-                    got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                     //Fine ENCODING
 
                     if (flag >= 0) {
+                        got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
                         if (got_picture == 0) {
                             if (!gotFirstValidVideoPacket) {
                                 gotFirstValidVideoPacket = true;
@@ -411,13 +413,13 @@ void ScreenRecorder::decodeAndEncode() {
                                 throw runtime_error("Error in writing file");
                             }
                             write_lock.unlock();
+                            i++;
                         }
                     }
                 } else {
                     throw runtime_error("Error Decoding: receiving packet");
                 }
             }
-            i++;
         } else {
             avRawPkt_queue_mutex.unlock();
         }
@@ -561,7 +563,6 @@ void ScreenRecorder::acquireAudio() {
         swr_free(&swrContext);
     }
 
-    int contatoreDaEliminare = 0;
     audio_stop_mutex.lock();
     bool firstBuffer = true;
     while (!audio_stop) {
@@ -609,7 +610,6 @@ void ScreenRecorder::acquireAudio() {
                 av_frame_get_buffer(scaledFrame, 0);
                 while (av_audio_fifo_size(AudioFifoBuff) >= AudioCodecContextOut->frame_size) {
                     ret = av_audio_fifo_read(AudioFifoBuff, (void **)(scaledFrame->data), AudioCodecContextOut->frame_size);
-                    contatoreDaEliminare++;
                     scaledFrame->pts = pts;
                     pts += scaledFrame->nb_samples;
 
