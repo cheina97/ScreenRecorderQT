@@ -76,14 +76,14 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     ui->radioButton60->setToolTip("High performances required");
 
     // checkbox properties
-    ui->checkBoxMinimize->setChecked(true);
+    ui->checkBoxMinimize->setChecked(false);
+    minimizeInSysTray = false;
 
     // slider properties
     ui->horizontalSlider->setTracking(true);
     ui->horizontalSlider->setMinimum(1);
     ui->horizontalSlider->setMaximum(3);
     ui->horizontalSlider->setValue(2);
-
 
    //options in the combobox
     const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
@@ -101,7 +101,6 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
             SLOT(setVisible(bool)));
     connect(this, SIGNAL(signal_recording(bool)), areaSelector,
             SLOT(slot_recordMode(bool)));
-    minimizeInSysTray = false;
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         createActions();
         createTrayIcon();
@@ -253,8 +252,11 @@ void MainWindow::on_pushButtonStart_clicked() {
         ui->pushButtonStart->setDisabled(true);
         startAction->setDisabled(true);
         enable_or_disable_tabs(false);
-        if (minimizeInSysTray)
+
+        qDebug()<<"?? >> "<<minimizeInSysTray;
+        if (minimizeInSysTray){
             hide();
+        }
         if (ui->pushButtonSelectArea->isChecked())
             emit signal_recording(true); //this changes the color of the border
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
@@ -266,10 +268,10 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug()<<"DeviceName: "<<QString::fromStdString(deviceName);
         try{
             vs.capturetime_seconds= 10;
-            screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
-            cout << "-> Costruito oggetto Screen Recorder" << endl;
-            cout << "-> RECORDING..." << endl;
-            screenRecorder->record();
+            //screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
+            //cout << "-> Costruito oggetto Screen Recorder" << endl;
+            //cout << "-> RECORDING..." << endl;
+            //screenRecorder->record();
         } catch(const exception &e){
             // Call to open the error dialog
             string message = e.what();
@@ -319,7 +321,8 @@ void MainWindow::on_pushButtonStop_clicked() {
     if (minimizeInSysTray)
         show();
     trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
-
+    ui->checkBoxMinimize->setChecked(false);
+    minimizeInSysTray = false;
     setDefaultValues();
 }
 
@@ -372,7 +375,6 @@ void MainWindow::on_lineEditPath_textEdited(const QString &arg1)
 {
     outFilePath = arg1.toStdString()+"/out.mp4";
 }
-
 
 void MainWindow::on_comboBox_activated(const QString &arg1)
 {
