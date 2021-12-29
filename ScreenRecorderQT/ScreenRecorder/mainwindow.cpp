@@ -1,14 +1,15 @@
 #include "mainwindow.h"
 
+#include <QAudioDeviceInfo>
 #include <QCloseEvent>
 #include <QDebug>
 #include <QDir>
 #include <QFileDialog>
 #include <QMenu>
 #include <QSystemTrayIcon>
-#include <QAudioDeviceInfo>
 
 #include "AreaSelector.h"
+#include "GetAudioDevices.h"
 #include "ScreenRecorder.h"
 #include "ui_mainwindow.h"
 
@@ -18,7 +19,7 @@ VideoSettings vs;
 string outFilePath;
 string deviceName;
 
-void MainWindow::setDefaultValues(){
+void MainWindow::setDefaultValues() {
     ///rrs values
     screen = QGuiApplication::primaryScreen();
     rrs.width = screen->size().width();
@@ -34,13 +35,16 @@ void MainWindow::setDefaultValues(){
     vs.quality = 0.6;
     vs.compression = 4;
     vs.audioOn = true;
-    outFilePath = QDir::homePath().toStdString()+"/out.mp4";
+    outFilePath = QDir::homePath().toStdString() + "/out.mp4";
 
     deviceName = ui->comboBox->currentText().toStdString();
+    qDebug()<<QString::fromStdString(deviceName);
 }
 
-MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow) {
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+
+    ui->verticalLayout_6->addWidget(ui->comboBox);
 
     areaSelector = new AreaSelector();
 
@@ -49,7 +53,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     errorDialog.setFixedSize(500, 200);
 
     // tab widget
-    ui->tabWidget->setCurrentIndex(0); // always open on first tab
+    ui->tabWidget->setCurrentIndex(0);  // always open on first tab
 
     // button properties
     ui->pushButtonFullscreen->setCheckable(true);
@@ -84,11 +88,18 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     ui->horizontalSlider->setMaximum(3);
     ui->horizontalSlider->setValue(2);
 
-
-   //options in the combobox
+    //options in the combobox
+#if defined _WIN32
     const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
     for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
-        ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
+        this->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
+#endif
+#if defined __linux__
+    for (auto &device: getAudioDevices()){
+        ui->comboBox->addItem(tr(device.c_str()));
+    }
+#endif
+
     //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
     //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
 
@@ -198,7 +209,7 @@ void MainWindow::on_pushButtonSelectArea_clicked() {
     bool state = ui->pushButtonSelectArea->isChecked();
 
     rrs.fullscreen = false;
-    qDebug()<<"rrs.fullscreen = false";
+    qDebug() << "rrs.fullscreen = false";
 
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
@@ -222,7 +233,7 @@ void MainWindow::on_pushButtonFullscreen_clicked() {
     rrs.height = screen->size().height();
     rrs.offset_x = 0;
     rrs.offset_y = 0;
-    qDebug()<<"rrs.fullscreen = true";
+    qDebug() << "rrs.fullscreen = true";
 
     emit signal_show(false);
 }
@@ -231,16 +242,14 @@ void MainWindow::on_toolButton_clicked() {
     QString path = QFileDialog::getExistingDirectory(this, "Select a directory", QDir::homePath());
     ui->lineEditPath->setText(path);
 
-    outFilePath = path.toStdString()+"/out.mp4";
-    qDebug()<<"outFilePath: "<<QString::fromStdString(outFilePath);
+    outFilePath = path.toStdString() + "/out.mp4";
+    qDebug() << "outFilePath: " << QString::fromStdString(outFilePath);
 }
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
-
     if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
-
-        if(!rrs.fullscreen){
+        if (!rrs.fullscreen) {
             rrs.height = areaSelector->getHeight();
             rrs.width = areaSelector->getWidth();
             rrs.offset_x = areaSelector->getX();
@@ -257,21 +266,22 @@ void MainWindow::on_pushButtonStart_clicked() {
         if (minimizeInSysTray)
             hide();
         if (ui->pushButtonSelectArea->isChecked())
-            emit signal_recording(true); //this changes the color of the border
+            emit signal_recording(true);  //this changes the color of the border
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
 
-        qDebug()<<"Valori rrs: \n wxh: "<<rrs.width<<" x "<<rrs.height<<"\noffset: "<<rrs.offset_x<<", "<<rrs.offset_y
-               <<"\n screen: "<<rrs.screen_number<<"\n fullscreen: "<< rrs.fullscreen<<"\n";
-        qDebug()<<"valori di vs:"<<"\n fps: "<<vs.fps<<"\n quality: "<<vs.quality<<"\n audio: "<<QString::number(vs.audioOn)<<"\n";
-        qDebug()<<"Directory: "<<QString::fromStdString(outFilePath);
-        qDebug()<<"DeviceName: "<<QString::fromStdString(deviceName);
-        try{
-            vs.capturetime_seconds= 5;
+        qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
+                 << "\n screen: " << rrs.screen_number << "\n fullscreen: " << rrs.fullscreen << "\n";
+        qDebug() << "valori di vs:"
+                 << "\n fps: " << vs.fps << "\n quality: " << vs.quality << "\n audio: " << QString::number(vs.audioOn) << "\n";
+        qDebug() << "Directory: " << QString::fromStdString(outFilePath);
+        qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
+        try {
+            vs.capturetime_seconds = 5;
             screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
             cout << "-> Costruito oggetto Screen Recorder" << endl;
             cout << "-> RECORDING..." << endl;
             screenRecorder->record();
-        } catch(const exception &e){
+        } catch (const exception &e) {
             // Call to open the error dialog
             string message = e.what();
             message += "\nPlease close and restart the application";
@@ -329,54 +339,46 @@ void MainWindow::on_checkBoxMinimize_toggled(bool checked) {
     minimizeInSysTray = checked;
 }
 
-void MainWindow::on_radioButtonYes_clicked(){
+void MainWindow::on_radioButtonYes_clicked() {
     vs.audioOn = true;
     ui->comboBox->setDisabled(false);
 }
 
-void MainWindow::on_radioButtonNo_clicked()
-{
+void MainWindow::on_radioButtonNo_clicked() {
     vs.audioOn = false;
     ui->comboBox->setDisabled(true);
 }
 
-void MainWindow::on_radioButton24_clicked()
-{
+void MainWindow::on_radioButton24_clicked() {
     vs.fps = 24;
 }
 
-void MainWindow::on_radioButton30_clicked()
-{
+void MainWindow::on_radioButton30_clicked() {
     vs.fps = 30;
 }
 
-void MainWindow::on_radioButton60_clicked()
-{
+void MainWindow::on_radioButton60_clicked() {
     vs.fps = 60;
 }
 
-void MainWindow::on_horizontalSlider_sliderMoved(int position)
-{
-    if(position == 1){
+void MainWindow::on_horizontalSlider_sliderMoved(int position) {
+    if (position == 1) {
         vs.quality = 0.3;
         vs.compression = 8;
-    }else if(position == 2){
+    } else if (position == 2) {
         vs.quality = 0.6;
         vs.compression = 4;
-    }else{
+    } else {
         vs.quality = 1;
         vs.compression = 5;
     }
 }
 
-void MainWindow::on_lineEditPath_textEdited(const QString &arg1)
-{
-    outFilePath = arg1.toStdString()+"/out.mp4";
+void MainWindow::on_lineEditPath_textEdited(const QString &arg1) {
+    outFilePath = arg1.toStdString() + "/out.mp4";
 }
 
-
-void MainWindow::on_comboBox_activated(const QString &arg1)
-{
+ void MainWindow::on_comboBox_activated(const QString &arg1) {
+    qDebug()<<arg1;
     deviceName = arg1.toStdString();
 }
-
