@@ -106,6 +106,9 @@ void ScreenRecorder::resumeRecording()
     unique_lock<mutex> ul(mu);
     if (status == RecordingStatus::paused)
     {
+#if defined __linux__
+        linuxVideoResume();
+#endif
         status = RecordingStatus::recording;
         cv.notify_all();
     }
@@ -317,12 +320,12 @@ void ScreenRecorder::linuxVideoResume()
     {
         throw logic_error{"av_find_input_format not found......"};
     }
+    if(avFmtCtx == nullptr)
 
     if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0)
     {
         throw runtime_error{"Couldn't open input stream."};
     }
-
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0)
     {
         throw logic_error{"Couldn't open input stream."};
@@ -364,8 +367,8 @@ void ScreenRecorder::linuxVideoResume()
                             (int)(avRawCodecCtx->height * vs.quality) / 2 * 2,
                             AV_PIX_FMT_YUV420P,
                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-    
-    avYUVFrame = av_frame_alloc();
+
+    /* avYUVFrame = av_frame_alloc();
     int yuvLen = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height, 1);
 
     uint8_t *yuvBuf = new uint8_t[yuvLen];
@@ -373,7 +376,7 @@ void ScreenRecorder::linuxVideoResume()
 
     avYUVFrame->width = avRawCodecCtx->width;
     avYUVFrame->height = avRawCodecCtx->height;
-    avYUVFrame->format = AV_PIX_FMT_YUV420P;
+    avYUVFrame->format = AV_PIX_FMT_YUV420P; */
 }
 
 void ScreenRecorder::initVideoVariables()
@@ -545,6 +548,7 @@ void ScreenRecorder::getRawPackets()
     {
         // STATUS MUTEX LOCK
         unique_lock<mutex> ul(mu);
+
         // STOP CHECK
         if (status == RecordingStatus::stopped)
         {
@@ -555,11 +559,11 @@ void ScreenRecorder::getRawPackets()
         {
             cout << "Video Pause" << endl;
 #if defined __linux__
-            /*  avformat_close_input(&avFmtCtx);
+            avformat_close_input(&avFmtCtx);
             if (avFmtCtx != nullptr)
             {
                 throw runtime_error("Unable to close the avFmtCtx (before pause)");
-            } */
+            }
 #endif
             afterPause = true;
         }
@@ -570,9 +574,7 @@ void ScreenRecorder::getRawPackets()
         // AFTER PAUSE CHECK
         if (afterPause)
         {
-#if defined linux
-            //linuxVideoResume();
-#endif
+
             afterPause = false;
         }
         // STATUS MUTEX UNLOCK
@@ -583,6 +585,7 @@ void ScreenRecorder::getRawPackets()
         if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
             throw runtime_error("Error in getting RawPacket from x11");
         }
+
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
