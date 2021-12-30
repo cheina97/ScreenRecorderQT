@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 #include <string>
+#include <condition_variable>
 
 extern "C" {
 #if defined _WIN32
@@ -72,8 +73,10 @@ class ScreenRecorder {
     string outFilePath;
     string audioDevice;
     mutex write_lock;
+    mutex mu;
 
     //common variables
+    unique_ptr<thread> handler_thread;
     unique_ptr<thread> captureVideo_thread;
     unique_ptr<thread> captureAudio_thread;
     unique_ptr<thread> elaborate_thread;
@@ -121,6 +124,16 @@ class ScreenRecorder {
     int EncodeFrameCnt = 0;
     int64_t pts = 0;
     //???????????????????????
+
+    // HANDLER PAUSE/RESUME/STOP
+    condition_variable cv;
+    void stopRecording();
+    void pauseRecording();
+    void resumeRecording();
+    void handler();
+    void linuxVideoResume();
+    void windowsResumeAudio();
+    string statusToString();
 
     //functions
     void initCommon();
