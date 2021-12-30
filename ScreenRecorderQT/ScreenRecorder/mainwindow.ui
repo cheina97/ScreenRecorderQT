@@ -7,8 +7,20 @@
     <x>0</x>
     <y>0</y>
     <width>415</width>
-    <height>539</height>
+    <height>446</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>446</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>446</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -447,17 +459,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>415</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionno">
    <property name="text">
     <string>no</string>
