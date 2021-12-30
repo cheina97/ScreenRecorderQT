@@ -367,26 +367,26 @@ void MainWindow::on_radioButton60_clicked() {
 
 void MainWindow::on_horizontalSlider_sliderMoved(int position) {
     if (position == 1) {
-        vs.quality = 0.6;
+        vs.quality = 0.5;
         vs.compression = 7;
     } else if (position == 2) {
         vs.quality = 0.6;
-        vs.compression = 6;
+        vs.compression = 7;
     } else if (position == 3) {
-        vs.quality = 0.8;
-        vs.compression = 6;
+        vs.quality = 0.7;
+        vs.compression = 7;
     }else if (position == 4) {
         vs.quality = 0.8;
-        vs.compression = 5;
+        vs.compression = 7;
     }else if (position == 5) {
         vs.quality = 1;
-        vs.compression = 5;
+        vs.compression = 7;
     }else if (position == 6) {
         vs.quality = 1;
-        vs.compression = 3;
+        vs.compression = 6;
     }else if (position==7) {
         vs.quality = 1;
-        vs.compression = 1;
+        vs.compression = 5;
     }
 }
 
