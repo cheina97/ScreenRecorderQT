@@ -353,7 +353,7 @@ void ScreenRecorder::getRawPackets() {
     AVPacket *avRawPkt;
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
-        if (int value = av_read_frame(avFmtCtx, avRawPkt) < 0) {
+        if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
             throw runtime_error("Error in getting RawPacket from x11");
         }
         avRawPkt_queue_mutex.lock();
@@ -435,7 +435,7 @@ void ScreenRecorder::decodeAndEncode() {
                             if (!gotFirstValidVideoPacket) {
                                 gotFirstValidVideoPacket = true;
                             }
-                            pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
+                            pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;                            
                             pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
 
                             write_lock.lock();
