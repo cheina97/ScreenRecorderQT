@@ -6,31 +6,30 @@
 #include "GetAudioDevices.h"
 #if defined __linux__
 #include "MemoryCheckLinux.h"
+using namespace std;
 #endif
 
 #include <time.h>
 
-using namespace std;
-
-ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
+ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, std::string outFilePath, std::string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
     try{
         initCommon();
-        cout << "-> Finita initCommon" << endl;
+        std::cout << "-> Finita initCommon" << std::endl;
         initVideoSource();
-        cout << "-> Finita initVideoSource" << endl;
+        std::cout << "-> Finita initVideoSource" << std::endl;
         initVideoVariables();
-        cout << "-> Finita initiVideoVariables" << endl;
+        std::cout << "-> Finita initiVideoVariables" << std::endl;
         if (vs.audioOn) {
             initAudioSource();
             initAudioVariables();
-            cout << "-> Finita initAudioSource" << endl;
+            std::cout << "-> Finita initAudioSource" << std::endl;
         }
         initOutputFile();
 #if defined __linux__
         memoryCheck_init(4000);  // ERROR
 #endif
     }
-    catch(const exception &e){
+    catch(const std::exception &e){
         throw ;
     }
 }
@@ -46,36 +45,36 @@ ScreenRecorder::~ScreenRecorder() {
     avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
 
-    cout << "Distruttore Screen Recorder" << endl;
+    std::cout << "Distruttore Screen Recorder" << std::endl;
 }
 
 void ScreenRecorder::record() {
     stop = false;
     audio_stop = false;
     gotFirstValidVideoPacket = false;
-    captureVideo_thread = make_unique<thread>([this]() {
+    captureVideo_thread = std::make_unique<std::thread>([this]() {
         try{
             this->getRawPackets();
-            cout<<"1. capture video thread fine!"<<endl;
-        } catch (const exception &e ){
+            std::cout<<"1. capture video thread fine!"<<std::endl;
+        } catch (const std::exception &e ){
             throw;
         }
     });
 
-    elaborate_thread = make_unique<thread>([this]() {
+    elaborate_thread = std::make_unique<std::thread>([this]() {
         try{
             this->decodeAndEncode();
-            cout<<"2. elaborate_thread fine!"<<endl;
-        }catch(const exception &e){
+            std::cout<<"2. elaborate_thread fine!"<<std::endl;
+        }catch(const std::exception &e){
             throw;
         }
     });
     if (vs.audioOn)
-        captureAudio_thread = make_unique<thread>([this]() {
+        captureAudio_thread = std::make_unique<std::thread>([this]() {
             try{
                 this->acquireAudio();
-                cout<<"3. captureAudio_thread!"<<endl;
-            } catch(const exception &e){
+                std::cout<<"3. captureAudio_thread!"<<std::endl;
+            } catch(const std::exception &e){
                 throw;
             }
         });
@@ -88,13 +87,13 @@ void ScreenRecorder::initCommon() {
 
     fmt = av_guess_format(NULL, outFilePath.c_str(), NULL);
     if (fmt == NULL) {
-        throw runtime_error{"An error has occured. Cannot recognise output format for the video file."};
+        throw std::runtime_error{"An error has occured. Cannot recognise output format for the video file."};
     }
     avformat_alloc_output_context2(&avFmtCtxOut, fmt, fmt->name, outFilePath.c_str());
 
     avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
     if (!avEncodec) {
-        throw logic_error{"An error has occured. Encoder codec has not been found."};
+        throw std::logic_error{"An error has occured. Encoder codec has not been found."};
     }
 }
 
@@ -123,8 +122,8 @@ void ScreenRecorder::initVideoSource() {
 
     avRawOptions = nullptr;
 
-    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
-    av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
+    av_dict_set(&avRawOptions, "video_size", (std::to_string(rrs.width) + "*" + std::to_string(rrs.height)).c_str(), 0);
+    av_dict_set(&avRawOptions, "framerate", std::to_string(vs.fps).c_str(), 0);
     av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
@@ -134,13 +133,13 @@ void ScreenRecorder::initVideoSource() {
 #if defined _WIN32
     AVInputFormat *avInputFmt = av_find_input_format("gdigrab");
     if (avInputFmt == nullptr) {
-        throw logic_error{"An error has occured. Cannot recognise the name of the input format."};
+        throw std::logic_error{"An error has occured. Cannot recognise the name of the input format."};
     }
-    av_dict_set(&avRawOptions, "offset_x", to_string(rrs.offset_x).c_str(), 0);
-    av_dict_set(&avRawOptions, "offset_y", to_string(rrs.offset_y).c_str(), 0);
+    av_dict_set(&avRawOptions, "offset_x", std::to_string(rrs.offset_x).c_str(), 0);
+    av_dict_set(&avRawOptions, "offset_y", std::to_string(rrs.offset_y).c_str(), 0);
 
     if (avformat_open_input(&avFmtCtx, "desktop", avInputFmt, &avRawOptions) != 0) {
-        throw logic_error{"An error has occured. Couldn't open input stream."};
+        throw std::logic_error{"An error has occured. Couldn't open input stream."};
     }
 
 #elif defined __linux__
@@ -168,7 +167,7 @@ void ScreenRecorder::initVideoSource() {
     AVInputFormat *avInputFmt = nullptr;
     avInputFmt = av_find_input_format("avfoundation");
     if (avInputFmt == nullptr) {
-        cout << "errore apertura" << endl;
+        std::cout << "errore apertura" << std::endl;
     }
     //[video]:[audio]
     if (int value = avformat_open_input(&avFmtCtx, "1:none", avInputFmt, &avRawOptions)) {
@@ -177,7 +176,7 @@ void ScreenRecorder::initVideoSource() {
 #endif
 
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0) {
-        throw logic_error{"An error has occured. Couldn't open input stream."};
+        throw std::logic_error{"An error has occured. Couldn't open input stream."};
     }
 
     videoIndex = -1;
@@ -189,7 +188,7 @@ void ScreenRecorder::initVideoSource() {
     }
 
     if (videoIndex == -1 || videoIndex >= (int)avFmtCtx->nb_streams) {
-        throw logic_error{"An error has occured. Couldn't open input stream, cannot find any."};
+        throw std::logic_error{"An error has occured. Couldn't open input stream, cannot find any."};
     }
 
     avRawCodecCtx = avcodec_alloc_context3(nullptr);
@@ -197,7 +196,7 @@ void ScreenRecorder::initVideoSource() {
 
     avDecodec = avcodec_find_decoder(avRawCodecCtx->codec_id);
     if (avDecodec == nullptr) {
-        throw runtime_error{"An error has occured. Codec not found."};
+        throw std::runtime_error{"An error has occured. Codec not found."};
     }
 }
 
@@ -231,6 +230,7 @@ void ScreenRecorder::initVideoVariables() {
         av_opt_set(avEncoderCtx, "rc", "crf", 0);
         av_opt_set(avEncoderCtx, "rc_lookahead", "40", 0);
         av_opt_set(avEncoderCtx, "crf", "10.0", 0);
+        av_opt_set(avEncoderCtx, "threads", "8", 0);
     }
 
     if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER) {
@@ -238,11 +238,11 @@ void ScreenRecorder::initVideoVariables() {
     }
 
     if (avcodec_open2(avRawCodecCtx, avDecodec, nullptr) < 0) {
-        throw runtime_error{"An error has occurred. Could not open decodec. "};
+        throw std::runtime_error{"An error has occurred. Could not open decodec. "};
     }
 
     if (avcodec_open2(avEncoderCtx, avEncodec, NULL) < 0) {
-        throw runtime_error{"An error has occurred. Failed to open video encoder."};
+        throw std::runtime_error{"An error has occurred. Failed to open video encoder."};
     }
 
     int outVideoStreamIndex = -1;
@@ -253,13 +253,13 @@ void ScreenRecorder::initVideoVariables() {
     }
 
     if (outVideoStreamIndex < 0) {
-        throw runtime_error{"An error has occurred. Cannot find a free stream index for video output."};
+        throw std::runtime_error{"An error has occurred. Cannot find a free stream index for video output."};
     }
     avcodec_parameters_from_context(avFmtCtxOut->streams[outVideoStreamIndex]->codecpar, avEncoderCtx);
 
     //Open output URL
     if (avio_open(&avFmtCtxOut->pb, outFilePath.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
-        throw runtime_error{"An error has occurred. Failed to open output file!"};
+        throw std::runtime_error{"An error has occurred. Failed to open output file!"};
     }
 
     swsCtx = sws_getContext(avRawCodecCtx->width,
@@ -316,16 +316,16 @@ void ScreenRecorder::initAudioSource() {
     AudioInputFormat = av_find_input_format("dshow");
     int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0) {
-        //cerr << "Error in opening input device (audio)" << endl;
+        //cerr << "Error in opening input device (audio)" << std::endl;
         //exit(-1);
-        throw runtime_error("An error has occurred. Cannot open audio input device.");
+        throw std::runtime_error("An error has occurred. Cannot open audio input device.");
     }
 
 #endif
 
     // CHECK STREAM INFO
     if (avformat_find_stream_info(FormatContextAudio, NULL) < 0) {
-        throw runtime_error("An error has occurred. Couldn't find audio stream information.");
+        throw std::runtime_error("An error has occurred. Couldn't find audio stream information.");
     }
     // FIND AUDIO STREAM INDEX
     int StreamsNumber = (int)FormatContextAudio->nb_streams;
@@ -339,18 +339,18 @@ void ScreenRecorder::initAudioSource() {
     }
     // CHECK AUDIO STREAM INDEX
     if (audioIndex == -1 || audioIndex >= StreamsNumber) {
-        throw runtime_error("An error has occurred. Didn't find a audio stream.");
+        throw std::runtime_error("An error has occurred. Didn't find a audio stream.");
     }
 }
 
 void ScreenRecorder::getRawPackets() {
-    //cout << "Get Raw packets: " << getid() << endl;
+    //std::cout << "Get Raw packets: " << getid() << std::endl;
     int frameNumber = vs.fps * vs.capturetime_seconds;
     AVPacket *avRawPkt;
     for (int i = 0; i < frameNumber; i++) {
         avRawPkt = av_packet_alloc();
         if (int value = av_read_frame(avFmtCtx, avRawPkt) < 0) {
-            throw runtime_error("An error has occurred. Cannot get packet information from x11.");
+            throw std::runtime_error("An error has occurred. Cannot get packet information from x11.");
         }
         avRawPkt_queue_mutex.lock();
         avRawPkt_queue.push(avRawPkt);
@@ -361,7 +361,7 @@ void ScreenRecorder::getRawPackets() {
         try {
             memoryCheck_limitSurpassed();
         } catch (const runtime_error &e) {
-            cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
+            std::cout << "ERROR: MEMORY LIMIT SURPASSED" << std::endl;
             i = frameNumber;
         }
 #endif
@@ -376,7 +376,7 @@ void ScreenRecorder::getRawPackets() {
 }
 
 void ScreenRecorder::decodeAndEncode() {
-    //cout << "Decode and encode: " << gettid() << endl;
+    //std::cout << "Decode and encode: " << gettid() << std::endl;
     int got_picture = 0;
     int flag = 0;
     int bufLen = 0;
@@ -410,7 +410,7 @@ void ScreenRecorder::decodeAndEncode() {
                 av_packet_free(&avRawPkt);
 
                 if (flag < 0) {
-                    throw runtime_error("An error has occurred. Decoding Error: sending packet.");
+                    throw std::runtime_error("An error has occurred. Decoding Error: sending packet.");
                 }
                 got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
 
@@ -434,13 +434,13 @@ void ScreenRecorder::decodeAndEncode() {
 
                             write_lock.lock();
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
-                                throw runtime_error("An error has occurred. Error in writing file.");
+                                throw std::runtime_error("An error has occurred. Error in writing file.");
                             }
                             write_lock.unlock();
                         }
                     }
                 } else {
-                    throw runtime_error("An error has occurred. Error Decoding: receiving packet.");
+                    throw std::runtime_error("An error has occurred. Error Decoding: receiving packet.");
                 }
             }
             i++;
@@ -459,17 +459,17 @@ void ScreenRecorder::initAudioVariables() {
     // FIND DECODER CODEC
     AudioCodecIn = avcodec_find_decoder(AudioParams->codec_id);
     if (AudioCodecIn == NULL) {
-        throw runtime_error("An error has occurred. Didn't find a codec audio.");
+        throw std::runtime_error("An error has occurred. Didn't find a codec audio.");
     }
 
     // ALLOC AUDIO CODEC CONTEXT BY AUDIO CODEC
     AudioCodecContextIn = avcodec_alloc_context3(AudioCodecIn);
     if (avcodec_parameters_to_context(AudioCodecContextIn, AudioParams) < 0) {
-        throw runtime_error("An error has occurred. Audio codec cannot get its parameters.");
+        throw std::runtime_error("An error has occurred. Audio codec cannot get its parameters.");
     }
     // OPEN CODEC
     if (avcodec_open2(AudioCodecContextIn, AudioCodecIn, NULL) < 0) {
-        throw runtime_error("An error has occurred. Could not open decodec.");
+        throw std::runtime_error("An error has occurred. Could not open decodec.");
     }
 
     // NEW AUDIOSTREAM OUTPUT
@@ -480,11 +480,11 @@ void ScreenRecorder::initAudioVariables() {
     // FIND CODEC OUTPUT
     AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC);
     if (!AudioCodecOut) {
-        throw runtime_error("An error has occurred. Can not find audio encoder.");
+        throw std::runtime_error("An error has occurred. Can not find audio encoder.");
     }
     AudioCodecContextOut = avcodec_alloc_context3(AudioCodecOut);
     if (!AudioCodecContextOut) {
-        throw runtime_error("An error has occurred. Not enough memory for the codec.");
+        throw std::runtime_error("An error has occurred. Not enough memory for the codec.");
     }
 
     if ((AudioCodecOut)->supported_samplerates) {
@@ -506,7 +506,7 @@ void ScreenRecorder::initAudioVariables() {
     if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER)
         AudioCodecContextOut->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     if (avcodec_open2(AudioCodecContextOut, AudioCodecOut, NULL) < 0) {
-        throw runtime_error("An error has occurred. Could not open audio codec.");
+        throw std::runtime_error("An error has occurred. Could not open audio codec.");
     }
 
     //find a free stream index
@@ -516,7 +516,7 @@ void ScreenRecorder::initAudioVariables() {
         }
     }
     if (audioIndexOut < 0) {
-        throw runtime_error("An error has occurred. Cannot find a free stream for audio on the output.");
+        throw std::runtime_error("An error has occurred. Cannot find a free stream for audio on the output.");
     }
 
     avcodec_parameters_from_context(avFmtCtxOut->streams[audioIndexOut]->codecpar, AudioCodecContextOut);
@@ -526,15 +526,15 @@ void ScreenRecorder::initOutputFile() {
     // create an empty video file
     if (!(avFmtCtxOut->flags & AVFMT_NOFILE)) {
         if (avio_open2(&avFmtCtxOut->pb, outFilePath.c_str(), AVIO_FLAG_WRITE, NULL, NULL) < 0) {
-            throw runtime_error("An error has occurred. Error in creating the video file.");
+            throw std::runtime_error("An error has occurred. Error in creating the video file.");
         }
     }
 
     if (avFmtCtxOut->nb_streams == 0) {
-        throw runtime_error("An error has occurred. Output file does not contain any stream.");
+        throw std::runtime_error("An error has occurred. Output file does not contain any stream.");
     }
     if (avformat_write_header(avFmtCtxOut, NULL) < 0) {
-        throw runtime_error("An error has occurred. Error in writing the header context.");
+        throw std::runtime_error("An error has occurred. Error in writing the header context.");
     }
 }
 
@@ -546,31 +546,31 @@ void ScreenRecorder::acquireAudio() {
 
     try{
         init_fifo();
-    }catch(const exception &e){
+    }catch(const std::exception &e){
         throw;
     }
 
     //allocate space for a packet
     inPacket = (AVPacket *)av_malloc(sizeof(AVPacket));
     if (!inPacket) {
-        throw runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
+        throw std::runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
     }
     av_init_packet(inPacket);
 
     //allocate space for a packet
     rawFrame = av_frame_alloc();
     if (!rawFrame) {
-        throw runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
+        throw std::runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
     }
 
     scaledFrame = av_frame_alloc();
     if (!scaledFrame) {
-        throw runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
+        throw std::runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
     }
 
     outPacket = (AVPacket *)av_malloc(sizeof(AVPacket));
     if (!outPacket) {
-        throw runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
+        throw std::runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
     }
     //init the resampler
     SwrContext *swrContext = nullptr;
@@ -585,10 +585,10 @@ void ScreenRecorder::acquireAudio() {
                                     nullptr);
 
     if (!swrContext) {
-        throw runtime_error("An error has occurred. Cannot allocate the resample context.");
+        throw std::runtime_error("An error has occurred. Cannot allocate the resample context.");
     }
     if ((swr_init(swrContext)) < 0) {
-        throw runtime_error("An error has occurred. Could not open resample context.");
+        throw std::runtime_error("An error has occurred. Could not open resample context.");
         swr_free(&swrContext);
     }
 
@@ -602,7 +602,7 @@ void ScreenRecorder::acquireAudio() {
             av_packet_rescale_ts(outPacket, FormatContextAudio->streams[audioIndex]->time_base, AudioCodecContextIn->time_base);
 
             if ((ret = avcodec_send_packet(AudioCodecContextIn, inPacket)) < 0) {
-                throw runtime_error("An error has occurred. Cannot decode current audio packet.");
+                throw std::runtime_error("An error has occurred. Cannot decode current audio packet.");
                 continue;
             }
             while (ret >= 0) {
@@ -611,7 +611,7 @@ void ScreenRecorder::acquireAudio() {
                 if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                     break;
                 else if (ret < 0) {
-                    throw runtime_error("An error has occurred. Error during decoding.");
+                    throw std::runtime_error("An error has occurred. Error during decoding.");
                 }
                 if (avFmtCtxOut->streams[audioIndexOut]->start_time <= 0) {
                     avFmtCtxOut->streams[audioIndexOut]->start_time = rawFrame->pts;
@@ -623,14 +623,14 @@ void ScreenRecorder::acquireAudio() {
                             (const uint8_t **)rawFrame->extended_data, rawFrame->nb_samples);
                 try{
                     add_samples_to_fifo(resampledData, rawFrame->nb_samples);
-                }catch (const exception &e){
+                }catch (const std::exception &e){
                     throw;
                 }
 
                 //raw frame ready
                 try{
                     av_init_packet(outPacket);
-                }catch(const exception &e){
+                }catch(const std::exception &e){
                     throw;
                 }
 
@@ -639,7 +639,7 @@ void ScreenRecorder::acquireAudio() {
 
                 scaledFrame = av_frame_alloc();
                 if (!scaledFrame) {
-                    throw runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
+                    throw std::runtime_error("An error has occurred. Cannot allocate an AVPacket for encoded video.");
                 }
 
                 scaledFrame->nb_samples = AudioCodecContextOut->frame_size;
@@ -654,7 +654,7 @@ void ScreenRecorder::acquireAudio() {
                     pts += scaledFrame->nb_samples;
 
                     if (avcodec_send_frame(AudioCodecContextOut, scaledFrame) < 0) {
-                        throw runtime_error("An error has occurred. Cannot encode current audio packet.");
+                        throw std::runtime_error("An error has occurred. Cannot encode current audio packet.");
                     }
 
                     while (ret >= 0) {
@@ -662,7 +662,7 @@ void ScreenRecorder::acquireAudio() {
                         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                             break;
                         else if (ret < 0) {
-                            throw runtime_error("An error has occurred. Error during encoding.");
+                            throw std::runtime_error("An error has occurred. Error during encoding.");
                         }
                         av_packet_rescale_ts(outPacket, AudioCodecContextOut->time_base, avFmtCtxOut->streams[audioIndexOut]->time_base);
                         outPacket->stream_index = audioIndexOut;
@@ -671,7 +671,7 @@ void ScreenRecorder::acquireAudio() {
                         if (gotFirstValidVideoPacket) {
                             if (!firstBuffer) {
                                 if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
-                                    throw runtime_error("An error has occurred. Error in writing audio frame.");
+                                    throw std::runtime_error("An error has occurred. Error in writing audio frame.");
                                 }
                             } else {
                                 firstBuffer = false;
@@ -696,7 +696,7 @@ void ScreenRecorder::acquireAudio() {
 void ScreenRecorder::init_fifo() {
     /* Create the FIFO buffer based on the specified output sample format. */
     if (!(AudioFifoBuff = av_audio_fifo_alloc(AudioCodecContextOut->sample_fmt, AudioCodecContextOut->channels, 1))) {
-        throw runtime_error("An error has occurred. Could not allocate FIFO.");
+        throw std::runtime_error("An error has occurred. Could not allocate FIFO.");
     }
 }
 
@@ -705,21 +705,21 @@ void ScreenRecorder::add_samples_to_fifo(uint8_t **converted_input_samples, cons
     /* Make the FIFO as large as it needs to be to hold both,
     * the old and the new samples. */
     if ((error = av_audio_fifo_realloc(AudioFifoBuff, av_audio_fifo_size(AudioFifoBuff) + frame_size)) < 0) {
-        throw runtime_error("An error has occurred. Could not reallocate FIFO.");
+        throw std::runtime_error("An error has occurred. Could not reallocate FIFO.");
     }
     /* Store the new samples in the FIFO buffer. */
     if (av_audio_fifo_write(AudioFifoBuff, (void **)converted_input_samples, frame_size) < frame_size) {
-        throw runtime_error("An error has occurred. Could not write data to FIFO.");
+        throw std::runtime_error("An error has occurred. Could not write data to FIFO.");
     }
 }
 
 void ScreenRecorder::initConvertedSamples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size) {
     if (!(*converted_input_samples = (uint8_t **)calloc(output_codec_context->channels, sizeof(**converted_input_samples)))) {
-        throw runtime_error("An error has occurred. Could not allocate converted input sample pointers.");
+        throw std::runtime_error("An error has occurred. Could not allocate converted input sample pointers.");
     }
     /* Allocate memory for the samples of all channels in one consecutive
   * block for convenience. */
     if (av_samples_alloc(*converted_input_samples, nullptr, output_codec_context->channels, frame_size, output_codec_context->sample_fmt, 0) < 0) {
-        throw runtime_error("An error has occurred. Could not allocate memory for samples in all channels (audio).");
+        throw std::runtime_error("An error has occurred. Could not allocate memory for samples in all channels (audio).");
     }
 }

@@ -5,8 +5,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
-
-vector<string> getAudioDevices();
+std::vector<std::string> getAudioDevices();
 
 #endif // GETAUDIODEVICES_H

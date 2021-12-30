@@ -51,24 +51,24 @@ void AreaSelector::HandleMiddle(QPainter &painter) {
                        buttonArrow.getButton());
 
     painter.drawPixmap(
-        frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
-        frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
-        buttonArrow.getArrow(buttonArrow.degreeArrow::topMiddle));
+                frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
+                frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
+                buttonArrow.getArrow(buttonArrow.degreeArrow::topMiddle));
 
     painter.drawPixmap(
-        frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
-        frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
-        buttonArrow.getArrow(buttonArrow.degreeArrow::rightMiddle));
+                frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
+                frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
+                buttonArrow.getArrow(buttonArrow.degreeArrow::rightMiddle));
 
     painter.drawPixmap(
-        frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
-        frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
-        buttonArrow.getArrow(buttonArrow.degreeArrow::bottomMiddle));
+                frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
+                frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
+                buttonArrow.getArrow(buttonArrow.degreeArrow::bottomMiddle));
 
     painter.drawPixmap(
-        frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
-        frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
-        buttonArrow.getArrow(buttonArrow.degreeArrow::leftMiddle));
+                frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
+                frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
+                buttonArrow.getArrow(buttonArrow.degreeArrow::leftMiddle));
 }
 
 void AreaSelector::HandleTopLeft(QPainter &painter) {
@@ -144,11 +144,11 @@ void AreaSelector::HandleRecord(QPainter &painter, int x, int y, int startAngle,
 
 void AreaSelector::printSize(QPainter &painter) {
     QString widthHeigtSize =
-        QString::number(
-            static_cast<int>(getWidth() / screen->devicePixelRatio())) +
-        " x " +
-        QString::number(
-            static_cast<int>(getHeight() / screen->devicePixelRatio()));
+            QString::number(
+                static_cast<int>(getWidth() / screen->devicePixelRatio())) +
+            " x " +
+            QString::number(
+                static_cast<int>(getHeight() / screen->devicePixelRatio()));
 
     QFont font;
     font.setPointSize(14);
@@ -430,9 +430,9 @@ void AreaSelector::mouseMoveEvent(QMouseEvent *event) {
     }
     case Middle: { // Move
         int deltaX =
-            (old_frame_X2 - framePenWidth / 2 - frame_width / 2) - old_mouse_X;
+                (old_frame_X2 - framePenWidth / 2 - frame_width / 2) - old_mouse_X;
         int deltaY =
-            (old_frame_Y2 - framePenWidth / 2 - frame_height / 2) - old_mouse_Y;
+                (old_frame_Y2 - framePenWidth / 2 - frame_height / 2) - old_mouse_Y;
         frame_X = event->x() - frame_width / 2 + framePenWidth / 2 + deltaX;
         frame_Y = event->y() - frame_height / 2 + framePenWidth / 2 + deltaY;
 
@@ -520,9 +520,9 @@ void AreaSelector::mouseMoveEvent(QMouseEvent *event) {
     }
 
     QRect regionBottomMiddle(
-        frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
-        frame_Y + frame_height - buttonArrow.getWithHalf(),
-        buttonArrow.getWithHalf() * 2, buttonArrow.getWithHalf() * 2);
+                frame_X + frame_width / 2 - buttonArrow.getWithHalf(),
+                frame_Y + frame_height - buttonArrow.getWithHalf(),
+                buttonArrow.getWithHalf() * 2, buttonArrow.getWithHalf() * 2);
     if (regionBottomMiddle.contains(event->pos())) {
         setCursor(Qt::ClosedHandCursor);
         handleUnderMouse = BottomMiddle;
@@ -540,9 +540,9 @@ void AreaSelector::mouseMoveEvent(QMouseEvent *event) {
     }
 
     QRect regionLeftMiddle(
-        frame_X - buttonArrow.getWithHalf(),
-        frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
-        buttonArrow.getWithHalf() * 2, buttonArrow.getWithHalf() * 2);
+                frame_X - buttonArrow.getWithHalf(),
+                frame_Y + frame_height / 2 - buttonArrow.getWithHalf(),
+                buttonArrow.getWithHalf() * 2, buttonArrow.getWithHalf() * 2);
     if (regionLeftMiddle.contains(event->pos())) {
         setCursor(Qt::ClosedHandCursor);
         handleUnderMouse = LeftMiddle;
@@ -591,8 +591,8 @@ void AreaSelector::paintEvent(QPaintEvent *event) {
                      frame_Y + frame_height - radius + penWidth / 2, -180 * 16,
                      270 * 16);
         HandleRecord(
-            painterPixmap, frame_X + frame_width / 2 - radius + penWidth / 2,
-            frame_Y + frame_height - radius + penWidth / 2, 0 * 16, -180 * 16);
+                    painterPixmap, frame_X + frame_width / 2 - radius + penWidth / 2,
+                    frame_Y + frame_height - radius + penWidth / 2, 0 * 16, -180 * 16);
         HandleRecord(painterPixmap, frame_X - radius + penWidth / 2,
                      frame_Y + frame_height - radius + penWidth / 2, 0 * 16,
                      -270 * 16);
@@ -664,11 +664,11 @@ void AreaSelector::setY(int y) {
 
 qreal AreaSelector::getHeight() {
     qreal xReal =
-        ((frame_Y + framePenWidth / 2) + (frame_height - framePenWidth)) *
-        screen->devicePixelRatio();
+            ((frame_Y + framePenWidth / 2) + (frame_height - framePenWidth)) *
+            screen->devicePixelRatio();
     int xInt = static_cast<int>(
-        ((frame_Y + framePenWidth / 2) + (frame_height - framePenWidth)) *
-        screen->devicePixelRatio());
+                ((frame_Y + framePenWidth / 2) + (frame_height - framePenWidth)) *
+                screen->devicePixelRatio());
 
     if (xReal > xInt) {
         xReal = static_cast<int>((frame_height - framePenWidth) *
@@ -687,11 +687,11 @@ void AreaSelector::setHeight(int height) {
 }
 qreal AreaSelector::getWidth() {
     qreal xReal =
-        ((frame_X + framePenWidth / 2) + (frame_width - framePenWidth)) *
-        screen->devicePixelRatio();
+            ((frame_X + framePenWidth / 2) + (frame_width - framePenWidth)) *
+            screen->devicePixelRatio();
     int xInt = static_cast<int>(
-        ((frame_X + framePenWidth / 2) + (frame_width - framePenWidth)) *
-        screen->devicePixelRatio());
+                ((frame_X + framePenWidth / 2) + (frame_width - framePenWidth)) *
+                screen->devicePixelRatio());
 
     if (xReal > xInt) {
         xReal = static_cast<int>((frame_width - framePenWidth) *

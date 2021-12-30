@@ -9,6 +9,7 @@
 
 #ifdef __linux__
 using namespace filesystem;
+using namespace std;
 #elif defined _WIN32
 #include <windows.h>
 #include <initguid.h>
@@ -20,15 +21,13 @@ using namespace filesystem;
 #pragma comment(lib, "strmiids.lib")
 #endif
 
-using namespace std;
-
 #ifdef _WIN32
 HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum)
 {
     // Create the System Device Enumerator.
     ICreateDevEnum* pDevEnum;
     HRESULT hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL,
-        CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pDevEnum));
+                                  CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pDevEnum));
 
     if (SUCCEEDED(hr))
     {
@@ -43,7 +42,7 @@ HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum)
     return hr;
 }
 
-void DisplayDeviceInformation(IEnumMoniker* pEnum, vector<string>* devices)
+void DisplayDeviceInformation(IEnumMoniker* pEnum, std::vector<std::string>* devices)
 {
     IMoniker* pMoniker = NULL;
 
@@ -82,21 +81,21 @@ void DisplayDeviceInformation(IEnumMoniker* pEnum, vector<string>* devices)
 }
 #endif
 
-vector<string> getAudioDevices() {
-    vector<string> devices;
+std::vector<std::string> getAudioDevices() {
+    std::vector<std::string> devices;
 #ifdef __linux__
-    cout << "Starting" << endl;
+    std::cout << "Starting" << std::endl;
     directory_iterator alsaDir{"/proc/asound"};
     regex findCard{".*card(0|[1-9]?[0-9]*)"};
     regex findPcm{".*pcm.*"};
-    string value, field, card, device, streamType;
+    std::string value, field, card, device, streamType;
 
     for (auto i : alsaDir) {
         if (regex_match(i.path().c_str(), findCard)) {
             directory_iterator cardDir{i.path()};
             for (auto const& j : cardDir) {
                 if (regex_match(j.path().c_str(), findPcm)) {
-                    ifstream info{(string)j.path() + "/info"};
+                    ifstream info{(std::string)j.path() + "/info"};
                     if (info.is_open()) {
                         while (!info.eof()) {
                             info >> field;
@@ -113,7 +112,7 @@ vector<string> getAudioDevices() {
                             devices.emplace_back("hw:" + card + "," + device);
                         }
                     } else {
-                        cout << "Errore in apertura" << endl;
+                        std::cout << "Errore in apertura" << std::endl;
                     }
                 }
             }

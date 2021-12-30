@@ -16,8 +16,8 @@
 ScreenRecorder *screenRecorder;
 RecordingRegionSettings rrs;
 VideoSettings vs;
-string outFilePath;
-string deviceName;
+std::string outFilePath;
+std::string deviceName;
 
 void MainWindow::setDefaultValues() {
     ///rrs values
@@ -93,7 +93,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 #if defined _WIN32
     const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
     for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
-        this->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
+        ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
 #endif
 #if defined __linux__
     for (auto &device : getAudioDevices()) {
@@ -281,12 +281,12 @@ void MainWindow::on_pushButtonStart_clicked() {
         try {
             vs.capturetime_seconds = 5;
             screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
-            cout << "-> Costruito oggetto Screen Recorder" << endl;
-            cout << "-> RECORDING..." << endl;
+            std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
+            std::cout << "-> RECORDING..." << std::endl;
             screenRecorder->record();
-        } catch (const exception &e) {
+        } catch (const std::exception &e) {
             // Call to open the error dialog
-            string message = e.what();
+            std::string message = e.what();
             message += "\nPlease close and restart the application";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }

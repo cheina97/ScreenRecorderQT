@@ -6,7 +6,7 @@
 
 class AreaSelectorButtons : public QObject
 {
-Q_OBJECT
+    Q_OBJECT
 public:
     AreaSelectorButtons();
     virtual ~AreaSelectorButtons();
@@ -14,18 +14,18 @@ public:
                        bottomMiddle=180, bottomLeft=225, leftMiddle=270, topLeft=315 };
 
 private:
-  int penWidth = 2;
-  int penWidthHalf = penWidth/2;
-  int radius = 20;
-  int diameter = 2 * radius;
-  QColor color = Qt::yellow; //button background
-  QColor colorSelected = Qt::black; //arrow color
+    int penWidth = 2;
+    int penWidthHalf = penWidth/2;
+    int radius = 20;
+    int diameter = 2 * radius;
+    QColor color = Qt::yellow; //button background
+    QColor colorSelected = Qt::black; //arrow color
 
 public slots:
-  QPixmap getPixmapHandle(degreeArrow degree ); //creates a pixmap to use somewhere else
-  QPixmap getButton( );                         //draws the ellipse
-  QPixmap getArrow(degreeArrow degree);         //draws the arrow in the button
-  int getWithHalf();
+    QPixmap getPixmapHandle(degreeArrow degree ); //creates a pixmap to use somewhere else
+    QPixmap getButton( );                         //draws the ellipse
+    QPixmap getArrow(degreeArrow degree);         //draws the arrow in the button
+    int getWithHalf();
 
 private slots:
 

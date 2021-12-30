@@ -8,7 +8,7 @@
 
 class AreaSelector: public QWidget
 {
-Q_OBJECT
+    Q_OBJECT
 public:
     AreaSelector();
     virtual ~AreaSelector();
@@ -30,22 +30,22 @@ public:
     QColor getFrameColor();
 
 
-  public slots:
+public slots:
     void slot_areaReset();
     void slot_init(); //executed when it's time to initialise the window
     void slot_recordMode(bool value);
 
-  private slots:
+private slots:
 
 
-  protected:
+protected:
     void paintEvent( QPaintEvent *event );
     void mouseMoveEvent( QMouseEvent *event );
     void mousePressEvent( QMouseEvent *event );
     void mouseReleaseEvent( QMouseEvent * event );
 
-  private:
-//    Ui::MainWindow *ui;
+private:
+    //    Ui::MainWindow *ui;
     QScreen *screen;
     int screenWidth; //current screen dimension
     int screenHeight;
@@ -100,10 +100,10 @@ public:
 
     void setGeometry( int x, int y, int with, int height );
 
-//    enum vk_platform { x11, wayland, windows };
-//    vk_platform platform;
+    //    enum vk_platform { x11, wayland, windows };
+    //    vk_platform platform;
 
     bool recordemode = false;
 
-  };
-  #endif
+};
+#endif

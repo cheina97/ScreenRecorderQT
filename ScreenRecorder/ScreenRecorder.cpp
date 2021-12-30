@@ -13,21 +13,26 @@
 using namespace std;
 
 ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
-    initCommon();
-    cout << "-> Finita initCommon" << endl;
-    initVideoSource();
-    cout << "-> Finita initVideoSource" << endl;
-    initVideoVariables();
-    cout << "-> Finita initiVideoVariables" << endl;
-    if (vs.audioOn) {
-        initAudioSource();
-        initAudioVariables();
-        cout << "-> Finita initAudioSource" << endl;
-    }
-    initOutputFile();
+    try {
+        initCommon();
+        std::cout << "-> Finita initCommon" << std::endl;
+        initVideoSource();
+        std::cout << "-> Finita initVideoSource" << std::endl;
+        initVideoVariables();
+        std::cout << "-> Finita initiVideoVariables" << std::endl;
+        if (vs.audioOn) {
+            initAudioSource();
+            initAudioVariables();
+            std::cout << "-> Finita initAudioSource" << std::endl;
+        }
+        initOutputFile();
 #if defined __linux__
-    memoryCheck_init(4000);  // ERROR
+        memoryCheck_init(4000);  // ERROR
 #endif
+    }
+    catch (const std::exception& e) {
+        throw;
+    }
 }
 
 ScreenRecorder::~ScreenRecorder() {
@@ -48,11 +53,35 @@ void ScreenRecorder::record() {
     stop = false;
     audio_stop = false;
     gotFirstValidVideoPacket = false;
-    captureVideo_thread = make_unique<thread>([this]() { this->getRawPackets(); });
+    captureVideo_thread = std::make_unique<std::thread>([this]() {
+        try {
+            this->getRawPackets();
+            std::cout << "1. capture video thread fine!" << std::endl;
+        }
+        catch (const std::exception& e) {
+            throw;
+        }
+        });
 
-    elaborate_thread = make_unique<thread>([this]() { this->decodeAndEncode(); });
+    elaborate_thread = std::make_unique<std::thread>([this]() {
+        try {
+            this->decodeAndEncode();
+            std::cout << "2. elaborate_thread fine!" << std::endl;
+        }
+        catch (const std::exception& e) {
+            throw;
+        }
+        });
     if (vs.audioOn)
-        captureAudio_thread = make_unique<thread>([this]() { this->acquireAudio(); });
+        captureAudio_thread = std::make_unique<std::thread>([this]() {
+        try {
+            this->acquireAudio();
+            std::cout << "3. captureAudio_thread!" << std::endl;
+        }
+        catch (const std::exception& e) {
+            throw;
+        }
+            });
 }
 
 void ScreenRecorder::initCommon() {

@@ -17,6 +17,7 @@ extern "C" {
 #include <X11/Xlib.h>
 #include "unistd.h"
 #include "alsa/asoundlib.h"
+using namespace std;
 #endif
 
 #include <stdlib.h>
@@ -31,8 +32,6 @@ extern "C" {
 #include "libswresample/swresample.h"
 #include "libswscale/swscale.h"
 }
-
-using namespace std;
 
 typedef struct
 {
@@ -61,24 +60,24 @@ enum class RecordingStatus {
 };
 
 class ScreenRecorder {
-   public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice);
+public:
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, std::string outFilePath, std::string audioDevice);
     ~ScreenRecorder();
     void record();
 
-   private:
+private:
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
     RecordingStatus status;
-    string outFilePath;
-    string audioDevice;
-    mutex write_lock;
+    std::string outFilePath;
+    std::string audioDevice;
+    std::mutex write_lock;
 
     //common variables
-    unique_ptr<thread> captureVideo_thread;
-    unique_ptr<thread> captureAudio_thread;
-    unique_ptr<thread> elaborate_thread;
+    std::unique_ptr<std::thread> captureVideo_thread;
+    std::unique_ptr<std::thread> captureAudio_thread;
+    std::unique_ptr<std::thread> elaborate_thread;
     bool stop;
     bool gotFirstValidVideoPacket;
 
@@ -90,8 +89,8 @@ class ScreenRecorder {
     AVCodec *avDecodec;
     AVCodec *avEncodec;
     struct SwsContext *swsCtx;
-    queue<AVPacket *> avRawPkt_queue;
-    mutex avRawPkt_queue_mutex;
+    std::queue<AVPacket *> avRawPkt_queue;
+    std::mutex avRawPkt_queue_mutex;
     int videoIndex;
     AVFrame *avYUVFrame;
     AVOutputFormat *fmt;
@@ -108,7 +107,7 @@ class ScreenRecorder {
     const AVCodec *AudioCodecOut;
     AVAudioFifo *AudioFifoBuff;
     AVStream *AudioStream;
-    mutex audio_stop_mutex;
+    std::mutex audio_stop_mutex;
     bool audio_stop;
 
     int audioIndex;  // AUDIO STREAM INDEX
