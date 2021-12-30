@@ -312,6 +312,8 @@ void ScreenRecorder::initVideoSource()
 
 void ScreenRecorder::linuxVideoResume()
 {
+    av_dict_set(&avRawOptions, "probesize", "30M", 0);
+
     char *displayName = getenv("DISPLAY");
 
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
@@ -359,7 +361,7 @@ void ScreenRecorder::linuxVideoResume()
     {
         throw runtime_error{"Could not open decodec. "};
     }
-
+    
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
                             avRawCodecCtx->pix_fmt,
@@ -367,6 +369,8 @@ void ScreenRecorder::linuxVideoResume()
                             (int)(avRawCodecCtx->height * vs.quality) / 2 * 2,
                             AV_PIX_FMT_YUV420P,
                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+
+    
 
     /* avYUVFrame = av_frame_alloc();
     int yuvLen = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height, 1);
