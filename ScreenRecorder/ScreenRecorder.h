@@ -132,6 +132,7 @@ class ScreenRecorder {
     void resumeRecording();
     void handler();
     void linuxVideoResume();
+    void windowsResumeAudio();
     string statusToString();
 
     //functions

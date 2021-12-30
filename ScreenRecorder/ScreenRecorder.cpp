@@ -109,6 +109,9 @@ void ScreenRecorder::resumeRecording()
 #if defined __linux__
         linuxVideoResume();
 #endif
+#if defined _WIN32
+        windowsResumeAudio();
+#endif
         status = RecordingStatus::recording;
         cv.notify_all();
     }
@@ -322,12 +325,12 @@ void ScreenRecorder::linuxVideoResume()
     {
         throw logic_error{"av_find_input_format not found......"};
     }
-    if(avFmtCtx == nullptr)
+    if (avFmtCtx == nullptr)
 
-    if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0)
-    {
-        throw runtime_error{"Couldn't open input stream."};
-    }
+        if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0)
+        {
+            throw runtime_error{"Couldn't open input stream."};
+        }
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0)
     {
         throw logic_error{"Couldn't open input stream."};
@@ -361,7 +364,7 @@ void ScreenRecorder::linuxVideoResume()
     {
         throw runtime_error{"Could not open decodec. "};
     }
-    
+
     swsCtx = sws_getContext(avRawCodecCtx->width,
                             avRawCodecCtx->height,
                             avRawCodecCtx->pix_fmt,
@@ -369,8 +372,6 @@ void ScreenRecorder::linuxVideoResume()
                             (int)(avRawCodecCtx->height * vs.quality) / 2 * 2,
                             AV_PIX_FMT_YUV420P,
                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-
-    
 
     /* avYUVFrame = av_frame_alloc();
     int yuvLen = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height, 1);
@@ -547,7 +548,6 @@ void ScreenRecorder::initAudioSource()
 void ScreenRecorder::getRawPackets()
 {
     AVPacket *avRawPkt;
-    bool afterPause = false;
     while (true)
     {
         // STATUS MUTEX LOCK
@@ -569,18 +569,10 @@ void ScreenRecorder::getRawPackets()
                 throw runtime_error("Unable to close the avFmtCtx (before pause)");
             }
 #endif
-            afterPause = true;
         }
 
         cv.wait(ul, [this]()
                 { return status != RecordingStatus::paused; });
-
-        // AFTER PAUSE CHECK
-        if (afterPause)
-        {
-
-            afterPause = false;
-        }
         // STATUS MUTEX UNLOCK
         ul.unlock();
 
@@ -830,6 +822,44 @@ void ScreenRecorder::initOutputFile()
     }
 }
 
+void ScreenRecorder::windowsResumeAudio()
+{
+    audioDevice = "audio=Microphone (Realtek High Definition Audio)";
+
+    AudioInputFormat = av_find_input_format("dshow");
+    int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
+    if (value != 0)
+    {
+        //cerr << "Error in opening input device (audio)" << endl;
+        //exit(-1);
+        throw runtime_error("Error in opening input device");
+    }
+
+    // CHECK STREAM INFO
+    if (avformat_find_stream_info(FormatContextAudio, NULL) < 0)
+    {
+        throw runtime_error("Couldn't find audio stream information.");
+    }
+
+    // FIND AUDIO STREAM INDEX
+    int StreamsNumber = (int)FormatContextAudio->nb_streams;
+    for (int i = 0; i < StreamsNumber; i++)
+    {
+        if (FormatContextAudio->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+        {
+            audioIndex = i;
+            // SAVE AUDIO STREAM FROM AUDIO CONTEXT
+            AudioStream = FormatContextAudio->streams[i];
+            break;
+        }
+    }
+    // CHECK AUDIO STREAM INDEX
+    if (audioIndex == -1 || audioIndex >= StreamsNumber)
+    {
+        throw runtime_error("Didn't find a audio stream.");
+    }
+}
+
 void ScreenRecorder::acquireAudio()
 {
     int ret;
@@ -899,6 +929,15 @@ void ScreenRecorder::acquireAudio()
         if (status == RecordingStatus::paused)
         {
             cout << "Audio Pause" << endl;
+#if defined _WIN32
+            avformat_close_input(&inAudioFormatContext);
+            if (inAudioFormatContext != nullptr)
+            {
+                cerr << "Error: unable to close the inAudioFormatContext" << endl;
+                exit(-1);
+                //throw error("Error: unable to close the inAudioFormatContext (before pause)");
+            }
+#endif
         }
         cv.wait(ul, [this]()
                 { return status != RecordingStatus::paused; });
