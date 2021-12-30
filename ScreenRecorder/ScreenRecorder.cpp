@@ -205,6 +205,7 @@ void ScreenRecorder::initVideoVariables() {
         av_opt_set(avEncoderCtx, "rc", "crf", 0);
         av_opt_set(avEncoderCtx, "rc_lookahead", "40", 0);
         av_opt_set(avEncoderCtx, "crf", "10.0", 0);
+        av_opt_set(avEncoderCtx, "threads", "8", 0);
     }
 
     if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER) {
@@ -397,10 +398,10 @@ void ScreenRecorder::decodeAndEncode() {
                     avYUVFrame->pts = (int64_t)j * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                     j++;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
-                    //Fine ENCODING
 
                     if (flag >= 0) {
                         got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
+                        //Fine ENCODING
                         if (got_picture == 0) {
                             if (!gotFirstValidVideoPacket) {
                                 gotFirstValidVideoPacket = true;
