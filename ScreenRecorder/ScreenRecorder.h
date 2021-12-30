@@ -47,7 +47,6 @@ typedef struct
 typedef struct
 {
     int fps;
-    int capturetime_seconds;
     float quality;  //value between 0.1 and 1
     int compression; // value between 1 and 8
     bool audioOn;

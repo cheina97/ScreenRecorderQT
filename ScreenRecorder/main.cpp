@@ -20,9 +20,8 @@ int main(int argc, char const* argv[]) {
         rrs.offset_x = atoi(argv[3]);
         rrs.offset_y = atoi(argv[4]);
         rrs.screen_number = atoi(argv[5]);
-        rrs.fullscreen = false;
+        rrs.fullscreen = true;
         vs.fps = atoi(argv[6]);
-        vs.capturetime_seconds = atoi(argv[7]);
         vs.quality = atof(argv[8]);
 
         vs.audioOn = atoi(argv[9]) == 1 ? true : false;

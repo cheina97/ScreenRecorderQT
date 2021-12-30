@@ -12,7 +12,7 @@
 
 using namespace std;
 
-ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::stopped), outFilePath(outFilePath), audioDevice(audioDevice) {
+ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::recording), outFilePath(outFilePath), audioDevice(audioDevice) {
     try {
         initCommon();
         std::cout << "-> Finita initCommon" << std::endl;
@@ -167,12 +167,10 @@ void ScreenRecorder::record()
             throw;
         }
             }); */
+
     elaborate_thread = make_unique<thread>([this](){ this->decodeAndEncode(); });
     captureVideo_thread = make_unique<thread>([this]()
                                               { this->getRawPackets(); });
-    if (vs.audioOn)
-        captureAudio_thread = make_unique<thread>([this]()
-                                                  { this->acquireAudio(); });
     handler_thread = make_unique<thread>([this]()
                                          { this->handler(); });
 }
@@ -930,8 +928,8 @@ void ScreenRecorder::acquireAudio()
         {
             cout << "Audio Pause" << endl;
 #if defined _WIN32
-            avformat_close_input(&inAudioFormatContext);
-            if (inAudioFormatContext != nullptr)
+            avformat_close_input(&FormatContextAudio);
+            if (FormatContextAudio != nullptr)
             {
                 cerr << "Error: unable to close the inAudioFormatContext" << endl;
                 exit(-1);
