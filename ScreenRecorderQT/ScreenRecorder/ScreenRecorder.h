@@ -8,6 +8,7 @@
 #include <queue>
 #include <thread>
 #include <string>
+#include <condition_variable>
 
 extern "C" {
 #if defined _WIN32
@@ -17,7 +18,6 @@ extern "C" {
 #include <X11/Xlib.h>
 #include "unistd.h"
 #include "alsa/asoundlib.h"
-using namespace std;
 #endif
 
 #include <stdlib.h>
@@ -33,6 +33,8 @@ using namespace std;
 #include "libswscale/swscale.h"
 }
 
+using namespace std;
+
 typedef struct
 {
     int width;
@@ -47,7 +49,6 @@ typedef struct
 typedef struct
 {
     int fps;
-    int capturetime_seconds;
     float quality;  //value between 0.1 and 1
     int compression; // value between 1 and 8
     bool audioOn;
@@ -60,24 +61,26 @@ enum class RecordingStatus {
 };
 
 class ScreenRecorder {
-public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, std::string outFilePath, std::string audioDevice);
+   public:
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice="noDevice");
     ~ScreenRecorder();
     void record();
 
-private:
+   private:
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
     RecordingStatus status;
-    std::string outFilePath;
-    std::string audioDevice;
-    std::mutex write_lock;
+    string outFilePath;
+    string audioDevice;
+    mutex write_lock;
+    mutex mu;
 
     //common variables
-    std::unique_ptr<std::thread> captureVideo_thread;
-    std::unique_ptr<std::thread> captureAudio_thread;
-    std::unique_ptr<std::thread> elaborate_thread;
+    unique_ptr<thread> handler_thread;
+    unique_ptr<thread> captureVideo_thread;
+    unique_ptr<thread> captureAudio_thread;
+    unique_ptr<thread> elaborate_thread;
     bool stop;
     bool gotFirstValidVideoPacket;
 
@@ -89,8 +92,8 @@ private:
     AVCodec *avDecodec;
     AVCodec *avEncodec;
     struct SwsContext *swsCtx;
-    std::queue<AVPacket *> avRawPkt_queue;
-    std::mutex avRawPkt_queue_mutex;
+    queue<AVPacket *> avRawPkt_queue;
+    mutex avRawPkt_queue_mutex;
     int videoIndex;
     AVFrame *avYUVFrame;
     AVOutputFormat *fmt;
@@ -107,7 +110,7 @@ private:
     const AVCodec *AudioCodecOut;
     AVAudioFifo *AudioFifoBuff;
     AVStream *AudioStream;
-    std::mutex audio_stop_mutex;
+    mutex audio_stop_mutex;
     bool audio_stop;
 
     int audioIndex;  // AUDIO STREAM INDEX
@@ -122,6 +125,16 @@ private:
     int EncodeFrameCnt = 0;
     int64_t pts = 0;
     //???????????????????????
+
+    // HANDLER PAUSE/RESUME/STOP
+    condition_variable cv;
+    void stopRecording();
+    void pauseRecording();
+    void resumeRecording();
+    void handler();
+    void linuxVideoResume();
+    void windowsResumeAudio();
+    string statusToString();
 
     //functions
     void initCommon();
