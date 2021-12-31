@@ -170,8 +170,8 @@ void ScreenRecorder::record()
     elaborate_thread = make_unique<thread>([this](){ this->decodeAndEncode(); });
     captureVideo_thread = make_unique<thread>([this]()
                                               { this->getRawPackets(); });
-    handler_thread = make_unique<thread>([this]()
-                                         { this->handler(); });
+    /* handler_thread = make_unique<thread>([this]()
+                                         { this->handler(); }); */
 }
 
 void ScreenRecorder::initCommon()

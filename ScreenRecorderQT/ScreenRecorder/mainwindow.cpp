@@ -292,8 +292,6 @@ void MainWindow::on_pushButtonStart_clicked() {
             message += "\nPlease close and restart the application";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
-        //POI DA TOGLIERE MI RACCOMANDO, SERVE SOLO PER TESTARE CON TEMPO
-        screenRecorder.reset();
     }
 }
 
