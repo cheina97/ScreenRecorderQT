@@ -8,7 +8,6 @@
 #include <vector>
 
 #ifdef __linux__
-using namespace filesystem;
 using namespace std;
 #elif defined _WIN32
 #include <windows.h>
@@ -85,14 +84,14 @@ std::vector<std::string> getAudioDevices() {
     std::vector<std::string> devices;
 #ifdef __linux__
     std::cout << "Starting" << std::endl;
-    directory_iterator alsaDir{"/proc/asound"};
+    filesystem::directory_iterator alsaDir{"/proc/asound"};
     regex findCard{".*card(0|[1-9]?[0-9]*)"};
     regex findPcm{".*pcm.*"};
     std::string value, field, card, device, streamType;
 
     for (auto i : alsaDir) {
         if (regex_match(i.path().c_str(), findCard)) {
-            directory_iterator cardDir{i.path()};
+            filesystem::directory_iterator cardDir{i.path()};
             for (auto const& j : cardDir) {
                 if (regex_match(j.path().c_str(), findPcm)) {
                     ifstream info{(std::string)j.path() + "/info"};
