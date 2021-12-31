@@ -591,16 +591,21 @@ void ScreenRecorder::getRawPackets()
         }
         catch (const runtime_error &e)
         {
-            cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
+            //Da eliminare poi
+            cout << e.what() << endl;
             stopRecording();
+            throw;
         }
 #endif
     }
 
-    /* if (status != RecordingStatus::stopped)
-    {
-        stopRecording();
-    } */
+    avRawPkt_queue_mutex.lock();
+    stop = true;
+    avRawPkt_queue_mutex.unlock();
+    audio_stop_mutex.lock();
+    audio_stop = true;
+    audio_stop_mutex.unlock();
+
 }
 
 void ScreenRecorder::decodeAndEncode()

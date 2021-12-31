@@ -13,7 +13,7 @@
 #include "ScreenRecorder.h"
 #include "ui_mainwindow.h"
 
-ScreenRecorder *screenRecorder;
+std::unique_ptr<ScreenRecorder> screenRecorder;
 RecordingRegionSettings rrs;
 VideoSettings vs;
 std::string outFilePath;
@@ -123,7 +123,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             [&]() { qDebug() << "Pressed shortcut"; });
 }
 
-MainWindow::~MainWindow() { delete ui; }
+MainWindow::~MainWindow() {
+    screenRecorder.reset();
+    delete ui;
+}
 
 void MainWindow::createActions() {
     showhideAction = new QAction(tr("Show/Hide"), this);
@@ -279,8 +282,8 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug() << "Directory: " << QString::fromStdString(outFilePath);
         qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
         try {
-            vs.capturetime_seconds = 5;
-            screenRecorder = new ScreenRecorder(rrs, vs, outFilePath, deviceName);
+            vs.capturetime_seconds = 3;
+            screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
             std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
             std::cout << "-> RECORDING..." << std::endl;
             screenRecorder->record();
@@ -290,6 +293,8 @@ void MainWindow::on_pushButtonStart_clicked() {
             message += "\nPlease close and restart the application";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
+        //POI DA TOGLIERE MI RACCOMANDO, SERVE SOLO PER TESTARE CON TEMPO
+        screenRecorder.reset();
     }
 }
 
@@ -375,16 +380,16 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position) {
     } else if (position == 3) {
         vs.quality = 1;
         vs.compression = 8;
-    }else if (position == 4) {
+    } else if (position == 4) {
         vs.quality = 1;
         vs.compression = 7;
-    }else if (position == 5) {
+    } else if (position == 5) {
         vs.quality = 1;
         vs.compression = 6;
-    }else if (position == 6) {
+    } else if (position == 6) {
         vs.quality = 1;
         vs.compression = 5;
-    }else if (position==7) {
+    } else if (position == 7) {
         vs.quality = 1;
         vs.compression = 4;
     }
