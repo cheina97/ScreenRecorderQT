@@ -282,7 +282,6 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug() << "Directory: " << QString::fromStdString(outFilePath);
         qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
         try {
-            vs.capturetime_seconds = 3;
             screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
             std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
             std::cout << "-> RECORDING..." << std::endl;
