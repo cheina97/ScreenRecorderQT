@@ -29,7 +29,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
 #if defined __linux__
         memoryCheck_init(4000);  // ERROR
 #endif
-    } catch (const std::exception &e) { 
+    } catch (const std::exception &e) {
         throw;
     }
 }
@@ -37,13 +37,13 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
 ScreenRecorder::~ScreenRecorder() {
     captureVideo_thread.get()->join();
     elaborate_thread.get()->join();
-    if (vs.audioOn)
-        captureAudio_thread.get()->join();
+    if (vs.audioOn) captureAudio_thread.get()->join();
 
     av_write_trailer(avFmtCtxOut);
     avformat_close_input(&avFmtCtx);
     avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
+
     handler_thread.get()->join();
     cout << "Distruttore Screen Recorder" << endl;
 }
@@ -122,14 +122,23 @@ string ScreenRecorder::statusToString() {
     }
 }
 
+function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f) {
+    try {
+        f();
+        lock_guard<mutex> lg{error_queue_m};
+        terminated_threads++;
+        error_queue_cv.notify_one();
+    } catch (const std::exception &e) {
+        lock_guard<mutex> lg{error_queue_m};
+        error_queue.emplace(e.what());
+        error_queue_cv.notify_one();
+    }
+}
+
 void ScreenRecorder::record() {
     //stop = false;
     audio_stop = false;
     gotFirstValidVideoPacket = false;
-    queue<exception> exc_queue;
-    mutex exc_queue_m;
-    int terminated_threads = 0;
-    condition_variable exc_queue_cv;
 
     /* captureVideo_thread = std::make_unique<std::thread>([this]() {
         try {
@@ -161,50 +170,36 @@ void ScreenRecorder::record() {
         }
             }); */
 
-    elaborate_thread = make_unique<thread>([&]() {
-        try {
+    elaborate_thread = make_unique<thread>([this]() {
+        this->make_error_handler([this]() {
             this->decodeAndEncode();
-            lock_guard<mutex> lg{exc_queue_m};
-            terminated_threads++;
-            exc_queue_cv.notify_one();
-        } catch (const std::exception &e) {
-            lock_guard<mutex> lg{exc_queue_m};
-            exc_queue.emplace(e);
-            exc_queue_cv.notify_one();
-        }
-    });
-    captureVideo_thread = make_unique<thread>([&]() {
-        try {
-            this->getRawPackets();
-            lock_guard<mutex> lg{exc_queue_m};
-            terminated_threads++;
-            exc_queue_cv.notify_one();
-        } catch (const std::exception &e) {
-            lock_guard<mutex> lg{exc_queue_m};
-            exc_queue.emplace(e);
-            exc_queue_cv.notify_one();
-        }
-    });
-    if (vs.audioOn)
-        captureAudio_thread = std::make_unique<std::thread>([&]() {
-            try {
-                this->acquireAudio();
-                lock_guard<mutex> lg{exc_queue_m};
-                terminated_threads++;
-                exc_queue_cv.notify_one();
-            } catch (const std::exception &e) {
-                lock_guard<mutex> lg{exc_queue_m};
-                exc_queue.emplace(e);
-                exc_queue_cv.notify_one();
-            }
         });
-    /* handler_thread = make_unique<thread>([this]() { this->handler(); }); */
+    });
+    captureVideo_thread = make_unique<thread>([this]() {
+        ScreenRecorder::make_error_handler([this]() {
+            this->getRawPackets();
+        });
+    });
+    if (vs.audioOn) {
+        captureAudio_thread = std::make_unique<std::thread>([this]() {
+            ScreenRecorder::make_error_handler([this]() {
+                this->acquireAudio();
+            });
+        });
+    };
+    handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
-    unique_lock<mutex> exc_queue_ul{exc_queue_m};
-    exc_queue_cv.wait(exc_queue_ul, [&]() { cout<<"term_th: " <<terminated_threads<<" queue_size: "<< exc_queue.size()<<endl; return (!exc_queue.empty() || terminated_threads == (vs.audioOn?3:2)); });
-    cout << "passato qui" << endl;
-    if (!exc_queue.empty()) {
-        throw logic_error{"dsdads"};
+    unique_lock<mutex> error_queue_ul{error_queue_m};
+    error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
+    if (!error_queue.empty()) {
+        this->stopRecording();
+        string error_message = error_queue.front();
+        error_queue.pop();
+        while (!error_queue.empty()) {
+            error_message += string{"\n"} + error_queue.front();
+            error_queue.pop();
+        }
+        throw runtime_error{error_message};
     }
 }
 
@@ -534,7 +529,6 @@ void ScreenRecorder::initAudioSource() {
 }
 
 void ScreenRecorder::getRawPackets() {
-    throw logic_error{"ECCEZIONE DI PROVAAAA"};
     AVPacket *avRawPkt;
     while (true) {
         // STATUS MUTEX LOCK

@@ -1,21 +1,24 @@
 #include <time.h>
 
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
 #include <mutex>
 #include <queue>
-#include <thread>
 #include <string>
-#include <condition_variable>
+#include <thread>
+#include <functional>
 
 extern "C" {
 #if defined _WIN32
 #include <windows.h>
+
 #include "io.h"
 #else
 #include <X11/Xlib.h>
-#include "unistd.h"
+
 #include "alsa/asoundlib.h"
+#include "unistd.h"
 #endif
 
 #include <stdlib.h>
@@ -47,8 +50,8 @@ typedef struct
 typedef struct
 {
     int fps;
-    float quality;  //value between 0.1 and 1
-    int compression; // value between 1 and 8
+    float quality;    //value between 0.1 and 1
+    int compression;  // value between 1 and 8
     bool audioOn;
 } VideoSettings;
 
@@ -60,11 +63,18 @@ enum class RecordingStatus {
 
 class ScreenRecorder {
    public:
-    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice="noDevice");
+    ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice = "noDevice");
     ~ScreenRecorder();
     void record();
 
    private:
+    //errors handling
+    queue<string> error_queue;
+    mutex error_queue_m;
+    int terminated_threads = 0;
+    condition_variable error_queue_cv;
+    function<void(void)> make_error_handler(function<void(void)> f);
+
     //settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
