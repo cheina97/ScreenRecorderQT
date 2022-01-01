@@ -123,16 +123,18 @@ string ScreenRecorder::statusToString() {
 }
 
 function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f) {
-    try {
-        f();
-        lock_guard<mutex> lg{error_queue_m};
-        terminated_threads++;
-        error_queue_cv.notify_one();
-    } catch (const std::exception &e) {
-        lock_guard<mutex> lg{error_queue_m};
-        error_queue.emplace(e.what());
-        error_queue_cv.notify_one();
-    }
+    return [&]() {
+        try {
+            f();
+            lock_guard<mutex> lg{error_queue_m};
+            terminated_threads++;
+            error_queue_cv.notify_one();
+        } catch (const std::exception &e) {
+            lock_guard<mutex> lg{error_queue_m};
+            error_queue.emplace(e.what());
+            error_queue_cv.notify_one();
+        }
+    };
 }
 
 void ScreenRecorder::record() {
@@ -173,18 +175,18 @@ void ScreenRecorder::record() {
     elaborate_thread = make_unique<thread>([this]() {
         this->make_error_handler([this]() {
             this->decodeAndEncode();
-        });
+        })();
     });
     captureVideo_thread = make_unique<thread>([this]() {
         this->make_error_handler([this]() {
             this->getRawPackets();
-        });
+        })();
     });
     if (vs.audioOn) {
         captureAudio_thread = std::make_unique<std::thread>([this]() {
             this->make_error_handler([this]() {
                 this->acquireAudio();
-            });
+            })();
         });
     };
     handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });

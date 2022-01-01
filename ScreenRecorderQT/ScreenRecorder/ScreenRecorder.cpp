@@ -37,8 +37,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
 ScreenRecorder::~ScreenRecorder() {
     captureVideo_thread.get()->join();
     elaborate_thread.get()->join();
-    if (vs.audioOn)
-        captureAudio_thread.get()->join();
+    if (vs.audioOn) captureAudio_thread.get()->join();
 
     av_write_trailer(avFmtCtxOut);
     avformat_close_input(&avFmtCtx);
@@ -56,22 +55,22 @@ void ScreenRecorder::handler() {
     while (!handlerEnd) {
         cin >> command;
         switch (command) {
-        case 1:
-            cout << "Pause Recording..." << endl;
-            pauseRecording();
-            break;
-        case 2:
-            cout << "Resuming Recording..." << endl;
-            resumeRecording();
-            break;
-        case 3:
-            cout << "End Recording!" << endl;
-            stopRecording();
-            handlerEnd = true;
-            break;
-        default:
-            cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
-            break;
+            case 1:
+                cout << "Pause Recording..." << endl;
+                pauseRecording();
+                break;
+            case 2:
+                cout << "Resuming Recording..." << endl;
+                resumeRecording();
+                break;
+            case 3:
+                cout << "End Recording!" << endl;
+                stopRecording();
+                handlerEnd = true;
+                break;
+            default:
+                cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+                break;
         }
     }
 }
@@ -111,25 +110,36 @@ void ScreenRecorder::resumeRecording() {
 
 string ScreenRecorder::statusToString() {
     switch (status) {
-    case RecordingStatus::paused:
-        return "Pause";
-    case RecordingStatus::recording:
-        return "Recording";
-    case RecordingStatus::stopped:
-        return "Stopped";
-    default:
-        return "Undefined Status";
+        case RecordingStatus::paused:
+            return "Pause";
+        case RecordingStatus::recording:
+            return "Recording";
+        case RecordingStatus::stopped:
+            return "Stopped";
+        default:
+            return "Undefined Status";
     }
+}
+
+function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f) {
+    return [&] () {
+        try {
+            f();
+            lock_guard<mutex> lg{error_queue_m};
+            terminated_threads++;
+            error_queue_cv.notify_one();
+        } catch (const std::exception &e) {
+            lock_guard<mutex> lg{error_queue_m};
+            error_queue.emplace(e.what());
+            error_queue_cv.notify_one();
+        }
+    };
 }
 
 void ScreenRecorder::record() {
     //stop = false;
     audio_stop = false;
     gotFirstValidVideoPacket = false;
-    queue<exception> exc_queue;
-    mutex exc_queue_m;
-    int terminated_threads = 0;
-    condition_variable exc_queue_cv;
 
     /* captureVideo_thread = std::make_unique<std::thread>([this]() {
         try {
@@ -161,50 +171,37 @@ void ScreenRecorder::record() {
         }
             }); */
 
-    elaborate_thread = make_unique<thread>([&]() {
-        try {
+    elaborate_thread = make_unique<thread>([this]() {
+        this->make_error_handler([this]() {
             this->decodeAndEncode();
-            lock_guard<mutex> lg{exc_queue_m};
-            terminated_threads++;
-            exc_queue_cv.notify_one();
-        } catch (const std::exception &e) {
-            lock_guard<mutex> lg{exc_queue_m};
-            exc_queue.emplace(e);
-            exc_queue_cv.notify_one();
-        }
+        })();
     });
-    captureVideo_thread = make_unique<thread>([&]() {
-        try {
+    captureVideo_thread = make_unique<thread>([this]() {
+        this->make_error_handler([this]() {
             this->getRawPackets();
-            lock_guard<mutex> lg{exc_queue_m};
-            terminated_threads++;
-            exc_queue_cv.notify_one();
-        } catch (const std::exception &e) {
-            lock_guard<mutex> lg{exc_queue_m};
-            exc_queue.emplace(e);
-            exc_queue_cv.notify_one();
-        }
+        })();
     });
-    if (vs.audioOn)
-        captureAudio_thread = std::make_unique<std::thread>([&]() {
-            try {
+    if (vs.audioOn) {
+        captureAudio_thread = std::make_unique<std::thread>([this]() {
+            this->make_error_handler([this]() {
                 this->acquireAudio();
-                lock_guard<mutex> lg{exc_queue_m};
-                terminated_threads++;
-                exc_queue_cv.notify_one();
-            } catch (const std::exception &e) {
-                lock_guard<mutex> lg{exc_queue_m};
-                exc_queue.emplace(e);
-                exc_queue_cv.notify_one();
-            }
+            })();
         });
-    /* handler_thread = make_unique<thread>([this]() { this->handler(); }); */
+    };
+    //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
+    sleep(3);
 
-    unique_lock<mutex> exc_queue_ul{exc_queue_m};
-    exc_queue_cv.wait(exc_queue_ul, [&]() { cout<<"term_th: " <<terminated_threads<<" queue_size: "<< exc_queue.size()<<endl; return (!exc_queue.empty() || terminated_threads == (vs.audioOn?3:2)); });
-    cout << "passato qui" << endl;
-    if (!exc_queue.empty()) {
-        throw logic_error{"dsdads"};
+    unique_lock<mutex> error_queue_ul{error_queue_m};
+    error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
+    if (!error_queue.empty()) {
+        this->stopRecording();
+        string error_message = error_queue.front();
+        error_queue.pop();
+        while (!error_queue.empty()) {
+            error_message += string{"\n"} + error_queue.front();
+            error_queue.pop();
+        }
+        throw runtime_error{error_message};
     }
 }
 
@@ -231,8 +228,6 @@ void ScreenRecorder::initVideoSource() {
     if (rrs.fullscreen) {
         rrs.offset_x = 0;
         rrs.offset_y = 0;
-///not needed
-/*
 #if defined _WIN32
         SetProcessDPIAware();  //A program must tell the operating system that it is DPI-aware to get the true resolution when you go past 125%.
         rrs.width = (int)GetSystemMetrics(SM_CXSCREEN);
@@ -245,7 +240,6 @@ void ScreenRecorder::initVideoSource() {
         rrs.height = DisplayHeight(display, screenNum);
         XCloseDisplay(display);
 #endif
-*/
     }
 
     rrs.width = rrs.width / 32 * 32;

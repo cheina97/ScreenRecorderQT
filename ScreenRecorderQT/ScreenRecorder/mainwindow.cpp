@@ -270,7 +270,7 @@ void MainWindow::on_pushButtonStart_clicked() {
             hide();
         }
         if (ui->pushButtonSelectArea->isChecked())
-            emit signal_recording(true);  //this changes the color of the border
+            emit signal_recording(true);  //this changes the color of the bor   der
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
 
         qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
@@ -283,11 +283,18 @@ void MainWindow::on_pushButtonStart_clicked() {
             std::unique_ptr<ScreenRecorder> screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
             std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
             std::cout << "-> RECORDING..." << std::endl;
-            screenRecorder->record();
+            try {
+                screenRecorder->record();
+            } catch (const std::exception &e) {
+                cout<<"QUI DENTRO"<<endl;
+                std::string message = e.what();
+                message += "\nPlease close and restart the application";
+                errorDialog.critical(0, "Error", QString::fromStdString(message));
+            }
         } catch (const std::exception &e) {
             // Call to open the error dialog
             std::string message = e.what();
-            message += "\nPlease close and restart the application";
+            message += "\nPlease choose another device";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
     }
