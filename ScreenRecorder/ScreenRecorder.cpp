@@ -176,13 +176,13 @@ void ScreenRecorder::record() {
         });
     });
     captureVideo_thread = make_unique<thread>([this]() {
-        ScreenRecorder::make_error_handler([this]() {
+        this->make_error_handler([this]() {
             this->getRawPackets();
         });
     });
     if (vs.audioOn) {
         captureAudio_thread = std::make_unique<std::thread>([this]() {
-            ScreenRecorder::make_error_handler([this]() {
+            this->make_error_handler([this]() {
                 this->acquireAudio();
             });
         });
