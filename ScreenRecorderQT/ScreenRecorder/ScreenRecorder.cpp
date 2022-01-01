@@ -189,7 +189,6 @@ void ScreenRecorder::record() {
         });
     };
     //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
-    sleep(3);
 
     unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
@@ -531,7 +530,6 @@ void ScreenRecorder::initAudioSource() {
 }
 
 void ScreenRecorder::getRawPackets() {
-    throw logic_error{"ECCEZIONE DI PROVAAAA"};
     AVPacket *avRawPkt;
     while (true) {
         // STATUS MUTEX LOCK
