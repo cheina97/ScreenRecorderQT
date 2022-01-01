@@ -49,6 +49,7 @@ ScreenRecorder::~ScreenRecorder()
     cout << "Distruttore Screen Recorder" << endl;
 }
 
+/////remove
 void ScreenRecorder::handler()
 {
     bool handlerEnd = false;
@@ -137,6 +138,11 @@ void ScreenRecorder::record()
     //stop = false;
     audio_stop = false;
     gotFirstValidVideoPacket = false;
+    queue<exception> exc_queue;
+        mutex exc_queue_m;
+        int terminated_threads = 0;
+        condition_variable exc_queue_cv;
+
     /* captureVideo_thread = std::make_unique<std::thread>([this]() {
         try {
             this->getRawPackets();
@@ -167,11 +173,56 @@ void ScreenRecorder::record()
         }
             }); */
 
-    elaborate_thread = make_unique<thread>([this](){ this->decodeAndEncode(); });
+    /*elaborate_thread = make_unique<thread>([this](){ this->decodeAndEncode(); });
     captureVideo_thread = make_unique<thread>([this]()
                                               { this->getRawPackets(); });
-    /* handler_thread = make_unique<thread>([this]()
+    handler_thread = make_unique<thread>([this]()
                                          { this->handler(); }); */
+        elaborate_thread = make_unique<thread>([&]() {
+                try {
+                    this->decodeAndEncode();
+                    lock_guard<mutex> lg{exc_queue_m};
+                    terminated_threads++;
+                    exc_queue_cv.notify_one();
+                } catch (const std::exception &e) {
+                    lock_guard<mutex> lg{exc_queue_m};
+                    exc_queue.emplace(e);
+                    exc_queue_cv.notify_one();
+                }
+            });
+            captureVideo_thread = make_unique<thread>([&]() {
+                try {
+                    this->getRawPackets();
+                    lock_guard<mutex> lg{exc_queue_m};
+                    terminated_threads++;
+                    exc_queue_cv.notify_one();
+                } catch (const std::exception &e) {
+                    lock_guard<mutex> lg{exc_queue_m};
+                    exc_queue.emplace(e);
+                    exc_queue_cv.notify_one();
+                }
+            });
+            if (vs.audioOn)
+                captureAudio_thread = std::make_unique<std::thread>([&]() {
+                    try {
+                        this->acquireAudio();
+                        lock_guard<mutex> lg{exc_queue_m};
+                        terminated_threads++;
+                        exc_queue_cv.notify_one();
+                    } catch (const std::exception &e) {
+                        lock_guard<mutex> lg{exc_queue_m};
+                        exc_queue.emplace(e);
+                        exc_queue_cv.notify_one();
+                    }
+                });
+            /* handler_thread = make_unique<thread>([this]() { this->handler(); }); */
+
+            unique_lock<mutex> exc_queue_ul{exc_queue_m};
+            exc_queue_cv.wait(exc_queue_ul, [&]() { cout<<"term_th: " <<terminated_threads<<" queue_size: "<< exc_queue.size()<<endl; return (!exc_queue.empty() || terminated_threads == (vs.audioOn?3:2)); });
+            cout << "passato qui" << endl;
+            if (!exc_queue.empty()) {
+                throw logic_error{"dsdads"};
+            }
 }
 
 void ScreenRecorder::initCommon()
@@ -202,6 +253,9 @@ void ScreenRecorder::initVideoSource()
     {
         rrs.offset_x = 0;
         rrs.offset_y = 0;
+
+     //not needed
+        /*
 #if defined _WIN32
         SetProcessDPIAware(); //A program must tell the operating system that it is DPI-aware to get the true resolution when you go past 125%.
         rrs.width = (int)GetSystemMetrics(SM_CXSCREEN);
@@ -213,7 +267,7 @@ void ScreenRecorder::initVideoSource()
         rrs.width = DisplayWidth(display, screenNum);
         rrs.height = DisplayHeight(display, screenNum);
         XCloseDisplay(display);
-#endif
+#endif*/
     }
 
     rrs.width = rrs.width / 32 * 32;
@@ -599,12 +653,7 @@ void ScreenRecorder::getRawPackets()
 #endif
     }
 
-    avRawPkt_queue_mutex.lock();
-    stop = true;
-    avRawPkt_queue_mutex.unlock();
-    audio_stop_mutex.lock();
-    audio_stop = true;
-    audio_stop_mutex.unlock();
+
 
 }
 
@@ -826,8 +875,6 @@ void ScreenRecorder::initOutputFile()
 
 void ScreenRecorder::windowsResumeAudio()
 {
-    audioDevice = "audio=Microphone (Realtek High Definition Audio)";
-
     AudioInputFormat = av_find_input_format("dshow");
     int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0)

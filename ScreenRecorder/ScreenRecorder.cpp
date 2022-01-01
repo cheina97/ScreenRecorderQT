@@ -164,11 +164,11 @@ void ScreenRecorder::record() {
     elaborate_thread = make_unique<thread>([&]() {
         try {
             this->decodeAndEncode();
-            lock_guard lg{exc_queue_m};
+            lock_guard<mutex> lg{exc_queue_m};
             terminated_threads++;
             exc_queue_cv.notify_one();
         } catch (const std::exception &e) {
-            lock_guard lg{exc_queue_m};
+            lock_guard<mutex> lg{exc_queue_m};
             exc_queue.emplace(e);
             exc_queue_cv.notify_one();
         }
@@ -176,11 +176,11 @@ void ScreenRecorder::record() {
     captureVideo_thread = make_unique<thread>([&]() {
         try {
             this->getRawPackets();
-            lock_guard lg{exc_queue_m};
+            lock_guard<mutex> lg{exc_queue_m};
             terminated_threads++;
             exc_queue_cv.notify_one();
         } catch (const std::exception &e) {
-            lock_guard lg{exc_queue_m};
+            lock_guard<mutex> lg{exc_queue_m};
             exc_queue.emplace(e);
             exc_queue_cv.notify_one();
         }
@@ -189,11 +189,11 @@ void ScreenRecorder::record() {
         captureAudio_thread = std::make_unique<std::thread>([&]() {
             try {
                 this->acquireAudio();
-                lock_guard lg{exc_queue_m};
+                lock_guard<mutex> lg{exc_queue_m};
                 terminated_threads++;
                 exc_queue_cv.notify_one();
             } catch (const std::exception &e) {
-                lock_guard lg{exc_queue_m};
+                lock_guard<mutex> lg{exc_queue_m};
                 exc_queue.emplace(e);
                 exc_queue_cv.notify_one();
             }
