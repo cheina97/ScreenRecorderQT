@@ -44,7 +44,7 @@ ScreenRecorder::~ScreenRecorder() {
     avformat_close_input(&avFmtCtx);
     avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
-    handler_thread.get()->join();
+    //handler_thread.get()->join();
     cout << "Distruttore Screen Recorder" << endl;
 }
 

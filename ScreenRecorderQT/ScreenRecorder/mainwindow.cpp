@@ -13,7 +13,6 @@
 #include "ScreenRecorder.h"
 #include "ui_mainwindow.h"
 
-std::unique_ptr<ScreenRecorder> screenRecorder;
 RecordingRegionSettings rrs;
 VideoSettings vs;
 std::string outFilePath;
@@ -124,7 +123,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 }
 
 MainWindow::~MainWindow() {
-    screenRecorder.reset();
     delete ui;
 }
 
@@ -282,7 +280,7 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug() << "Directory: " << QString::fromStdString(outFilePath);
         qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
         try {
-            screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
+            std::unique_ptr<ScreenRecorder> screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
             std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
             std::cout << "-> RECORDING..." << std::endl;
             screenRecorder->record();
