@@ -452,12 +452,14 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position) {
 void MainWindow::on_lineEditPath_textEdited(const QString &arg1) {
     outFilePath = arg1.toStdString();
     std::string ending = ".mp4";
-    if(std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin())){
-        qDebug()<<"Ok";
-    }else{
-        outFilePath += "/out.mp4";
+    if(!std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin())){
+        ending = "/";
+        if(std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin()))
+            outFilePath += "out.mp4";
+        else{
+            outFilePath += "/out.mp4";
+        }
     }
-    qDebug()<<"fiel:: " <<outFilePath.c_str();
 }
 
 void MainWindow::on_comboBox_activated(const QString &arg1) {
