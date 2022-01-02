@@ -522,7 +522,7 @@ void ScreenRecorder::getRawPackets() {
         unique_lock<mutex> ul(status_lock);
 
         // STOP CHECK
-        if (status == RecordingStatus::stopped && audio_end) {
+        if (status == RecordingStatus::stopped && (audio_end||!vs.audioOn)) {
             //std::cout << "Video End" << endl;
             framesValue--;
         }
