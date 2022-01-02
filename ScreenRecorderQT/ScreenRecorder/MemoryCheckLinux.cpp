@@ -33,7 +33,6 @@ int getCurrentVMemUsedByProc() {  //Note: this value is in KB!
         }
     }
     fclose(file);
-    //cout << "CurrMemUsedByProc: " << (double)result / 1024 / 1024 << "GB" << endl;
     return result;
 }
 
@@ -50,4 +49,4 @@ void memoryCheck_limitSurpassed() {
     }
 }
 
-#endif // linux
+#endif  // linux

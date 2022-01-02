@@ -341,7 +341,6 @@ void MainWindow::on_pushButtonStart_clicked() {
                 std::cout << "-> RECORDING..." << std::endl;
                 //screenRecorder->record();
             } catch (const std::exception &e) {
-                cout<<"QUI DENTRO"<<endl;
                 std::string message = e.what();
                 message += "\nPlease close and restart the application.";
                 errorDialog.critical(0, "Error", QString::fromStdString(message));
@@ -372,6 +371,7 @@ void MainWindow::on_pushButtonResume_clicked() {
 }
 
 void MainWindow::on_pushButtonStop_clicked() {
+    
     enable_or_disable_tabs(true);
     startAction->setEnabled(true);
     if (ui->pushButtonSelectArea->isChecked()) {
