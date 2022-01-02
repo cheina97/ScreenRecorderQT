@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QMenu>
+#include <QStandardPaths>
 #include <QSystemTrayIcon>
 
 #include "AreaSelector.h"
@@ -120,6 +121,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->setupUi(this);
 
     ui->verticalLayout_6->addWidget(ui->comboBox);
+
+    ui->lineEditPath->setText(QString::fromStdString(forge_outpath(QStandardPaths::writableLocation(QStandardPaths::MoviesLocation).toStdString())));
 
     areaSelector = new AreaSelector();
 
