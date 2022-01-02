@@ -8,6 +8,8 @@
 #include <QMenu>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
+#include <condition_variable>
+#include <mutex>
 
 #include "AreaSelector.h"
 #include "GetAudioDevices.h"
@@ -19,6 +21,10 @@ RecordingRegionSettings rrs;
 VideoSettings vs;
 std::string outFilePath;
 std::string deviceName;
+
+// Used to syncronize the record ending and the buttons enabling
+mutex m;
+condition_variable cv;
 
 void MainWindow::alignValues() {
     ///rrs values
@@ -50,6 +56,7 @@ void MainWindow::alignValues() {
     outFilePath = ui->lineEditPath->text().toStdString();
 
     deviceName = ui->comboBox->currentText().toStdString();
+    minimizeInSysTray = ui->checkBoxMinimize->isChecked();
 }
 
 void MainWindow::setQualityANDCompression(int position) {
@@ -86,6 +93,7 @@ void MainWindow::defaultButtonProperties() {
     pauseAction->setDisabled(true);
     resumeAction->setDisabled(true);
     stopAction->setDisabled(true);
+    quitAction->setEnabled(true);
     trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
 }
 
@@ -367,6 +375,7 @@ void MainWindow::on_pushButtonStart_clicked() {
     pauseAction->setEnabled(true);
     ui->pushButtonStart->setDisabled(true);
     startAction->setDisabled(true);
+    quitAction->setDisabled(true);
     enable_or_disable_tabs(false);
 
     ui->lineEditPath->setText(QString(outFilePath.c_str()));
@@ -399,6 +408,7 @@ void MainWindow::on_pushButtonStart_clicked() {
                 errorDialog.critical(0, "Error", QString::fromStdString(message));
             }
             screenRecorder.reset();
+            cv.notify_one();
         }};
         record_thread.detach();
     } catch (const std::exception &e) {
@@ -417,7 +427,7 @@ void MainWindow::on_pushButtonPause_clicked() {
     resumeAction->setEnabled(true);
     ui->pushButtonPause->setEnabled(false);
     pauseAction->setEnabled(false);
-    showOrHideWindow(false);
+    trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
 }
 
 void MainWindow::on_pushButtonResume_clicked() {
@@ -431,17 +441,22 @@ void MainWindow::on_pushButtonResume_clicked() {
 
 void MainWindow::on_pushButtonStop_clicked() {
     if (screenRecorder) screenRecorder.get()->stopRecording();
-    enable_or_disable_tabs(true);
-    startAction->setEnabled(true);
     if (ui->pushButtonSelectArea->isChecked()) {
         emit signal_recording(false);
     }
     pauseAction->setDisabled(true);
-    resumeAction->setDisabled(true);
     stopAction->setDisabled(true);
+    ui->pushButtonPause->setEnabled(false);
+    ui->pushButtonStop->setEnabled(false);
 
-    defaultButtonProperties();
-    showOrHideWindow(false);
+    auto waiting_thread = std::thread{[&]() {
+        unique_lock ul{m};
+        cv.wait(ul, []() { return !screenRecorder; });
+        defaultButtonProperties();
+        showOrHideWindow(false);
+        enable_or_disable_tabs(true);
+    }};
+    waiting_thread.detach();
 }
 
 ////Settings
