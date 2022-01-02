@@ -13,6 +13,7 @@
 #include "ScreenRecorder.h"
 #include "ui_mainwindow.h"
 
+std::unique_ptr<ScreenRecorder> screenRecorder;
 RecordingRegionSettings rrs;
 VideoSettings vs;
 std::string outFilePath;
@@ -20,7 +21,7 @@ std::string deviceName;
 
 void MainWindow::alignValues() {
     ///rrs values
-    if( ui->pushButtonFullscreen->isChecked()){
+    if (ui->pushButtonFullscreen->isChecked()) {
         screen = QGuiApplication::primaryScreen();
         rrs.width = screen->size().width();
         rrs.height = screen->size().height();
@@ -29,7 +30,7 @@ void MainWindow::alignValues() {
 
         rrs.screen_number = 0;
         rrs.fullscreen = true;
-    }else{
+    } else {
         rrs.height = areaSelector->getHeight();
         rrs.width = areaSelector->getWidth();
         rrs.offset_x = areaSelector->getX();
@@ -37,9 +38,12 @@ void MainWindow::alignValues() {
     }
 
     ///vs values
-    if(ui->radioButton30->isChecked()) vs.fps = 30;
-    else if (ui->radioButton24->isChecked()) vs.fps = 24;
-    else if(ui->radioButton60->isChecked()) vs.fps = 60;
+    if (ui->radioButton30->isChecked())
+        vs.fps = 30;
+    else if (ui->radioButton24->isChecked())
+        vs.fps = 24;
+    else if (ui->radioButton60->isChecked())
+        vs.fps = 60;
 
     setQualityANDCompression(ui->horizontalSlider->value());
 
@@ -49,7 +53,7 @@ void MainWindow::alignValues() {
     deviceName = ui->comboBox->currentText().toStdString();
 }
 
-void MainWindow::setQualityANDCompression(int position){
+void MainWindow::setQualityANDCompression(int position) {
     if (position == 1) {
         vs.quality = 0.3;
         vs.compression = 8;
@@ -74,7 +78,7 @@ void MainWindow::setQualityANDCompression(int position){
     }
 }
 
-void MainWindow::defaultButtonProperties(){
+void MainWindow::defaultButtonProperties() {
     ui->pushButtonStart->setEnabled(true);
     ui->pushButtonPause->setDisabled(true);
     ui->pushButtonResume->setDisabled(true);
@@ -83,7 +87,7 @@ void MainWindow::defaultButtonProperties(){
     minimizeInSysTray = false;
 }
 
-void MainWindow::setGeneralDefaultProperties(){
+void MainWindow::setGeneralDefaultProperties() {
     ///button properties
     defaultButtonProperties();
 
@@ -100,12 +104,12 @@ void MainWindow::setGeneralDefaultProperties(){
     ui->horizontalSlider->setValue(7);
 }
 
-void MainWindow::showOrHideWindow(bool recording){
-    if(!recording){
+void MainWindow::showOrHideWindow(bool recording) {
+    if (!recording) {
         if (minimizeInSysTray)
             show();
         trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
-    }else{
+    } else {
         if (minimizeInSysTray)
             hide();
         trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
@@ -148,8 +152,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
     for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
         ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
-    //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
-    //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
+        //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
+        //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
 #endif
 #if defined __linux__
     for (auto &device : getAudioDevices()) {
@@ -330,13 +334,13 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
                  << "\n screen: " << rrs.screen_number << "\n fullscreen: " << rrs.fullscreen << "\n";
         qDebug() << "valori di vs:"
-                 << "\n fps: " << vs.fps << "\n quality: " << vs.quality <<"\n compression: "<<vs.compression<< "\n audio: " << QString::number(vs.audioOn) << "\n";
+                 << "\n fps: " << vs.fps << "\n quality: " << vs.quality << "\n compression: " << vs.compression << "\n audio: " << QString::number(vs.audioOn) << "\n";
         qDebug() << "Directory: " << QString::fromStdString(outFilePath);
         qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
-        qDebug()<<"minimize:: "<<minimizeInSysTray;
+        qDebug() << "minimize:: " << minimizeInSysTray;
         try {
-            //std::unique_ptr<ScreenRecorder> screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
-            std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
+            screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
+            std::cout << "Built ScreenRecorder Object" << std::endl;
             try {
                 std::cout << "-> RECORDING..." << std::endl;
                 //screenRecorder->record();
@@ -351,6 +355,7 @@ void MainWindow::on_pushButtonStart_clicked() {
             message += "\nPlease choose another device.";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
+        screenRecorder.reset();
     }
 }
 
@@ -371,7 +376,7 @@ void MainWindow::on_pushButtonResume_clicked() {
 }
 
 void MainWindow::on_pushButtonStop_clicked() {
-    
+    if (screenRecorder) screenRecorder.get()->stopRecording();
     enable_or_disable_tabs(true);
     startAction->setEnabled(true);
     if (ui->pushButtonSelectArea->isChecked()) {
