@@ -1,13 +1,15 @@
+#ifndef SCREENRECORDER_H
+#define SCREENRECORDER_H
 #include <time.h>
 
 #include <chrono>
 #include <condition_variable>
+#include <functional>
 #include <iostream>
 #include <mutex>
 #include <queue>
 #include <string>
 #include <thread>
-#include <functional>
 
 extern "C" {
 #if defined _WIN32
@@ -65,6 +67,9 @@ class ScreenRecorder {
     ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice = "noDevice");
     ~ScreenRecorder();
     void record();
+    void stopRecording();
+    void pauseRecording();
+    void resumeRecording();
 
    private:
     //errors handling
@@ -123,7 +128,6 @@ class ScreenRecorder {
     int audioIndex;  // AUDIO STREAM INDEX
     int audioIndexOut;
 
-    ///????????????????
     int64_t NextAudioPts = 0;
     int AudioSamplesCount = 0;
     int AudioSamples = 0;
@@ -131,13 +135,9 @@ class ScreenRecorder {
 
     int EncodeFrameCnt = 0;
     int64_t pts = 0;
-    //???????????????????????
 
     // HANDLER PAUSE/RESUME/STOP
     condition_variable cv;
-    void stopRecording();
-    void pauseRecording();
-    void resumeRecording();
     void handler();
     void linuxVideoResume();
     void windowsResumeAudio();
@@ -158,3 +158,5 @@ class ScreenRecorder {
     void add_samples_to_fifo(uint8_t **, const int);
     void initConvertedSamples(uint8_t ***, AVCodecContext *, int);
 };
+
+#endif  // SCREENRECORDER_H

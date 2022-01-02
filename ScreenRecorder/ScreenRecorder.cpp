@@ -15,15 +15,15 @@ using namespace std;
 ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice) : rrs(rrs), vs(vs), status(RecordingStatus::recording), outFilePath(outFilePath), audioDevice(audioDevice) {
     try {
         initCommon();
-        std::cout << "-> Finita initCommon" << std::endl;
+        std::cout << "-> Finished initCommon" << std::endl;
         initVideoSource();
-        std::cout << "-> Finita initVideoSource" << std::endl;
+        std::cout << "-> Finished initVideoSource" << std::endl;
         initVideoVariables();
-        std::cout << "-> Finita initiVideoVariables" << std::endl;
+        std::cout << "-> Finished initiVideoVariables" << std::endl;
         if (vs.audioOn) {
             initAudioSource();
             initAudioVariables();
-            std::cout << "-> Finita initAudioSource" << std::endl;
+            std::cout << "-> Finished initAudioSource" << std::endl;
         }
         initOutputFile();
 #if defined __linux__
@@ -43,9 +43,8 @@ ScreenRecorder::~ScreenRecorder() {
     avformat_close_input(&avFmtCtx);
     avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
-
-    handler_thread.get()->join();
-    cout << "Distruttore Screen Recorder" << endl;
+    //handler_thread.get()->join();
+    cout << "Screen Recorder deallocated" << endl;
 }
 
 void ScreenRecorder::handler() {
@@ -142,36 +141,6 @@ void ScreenRecorder::record() {
     audio_stop = false;
     gotFirstValidVideoPacket = false;
 
-    /* captureVideo_thread = std::make_unique<std::thread>([this]() {
-        try {
-            this->getRawPackets();
-            std::cout << "1. capture video thread fine!" << std::endl;
-        }
-        catch (const std::exception& e) {
-            throw;
-        }
-        });
-
-    elaborate_thread = std::make_unique<std::thread>([this]() {
-        try {
-            this->decodeAndEncode();
-            std::cout << "2. elaborate_thread fine!" << std::endl;
-        }
-        catch (const std::exception& e) {
-            throw;
-        }
-        });
-    if (vs.audioOn)
-        captureAudio_thread = std::make_unique<std::thread>([this]() {
-        try {
-            this->acquireAudio();
-            std::cout << "3. captureAudio_thread!" << std::endl;
-        }
-        catch (const std::exception& e) {
-            throw;
-        }
-            }); */
-
     elaborate_thread = make_unique<thread>([this]() {
         this->make_error_handler([this]() {
             this->decodeAndEncode();
@@ -189,9 +158,9 @@ void ScreenRecorder::record() {
             })();
         });
     };
-    handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
+    //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
-    unique_lock<mutex> error_queue_ul{error_queue_m};
+    /* unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
     if (!error_queue.empty()) {
         this->stopRecording();
@@ -202,7 +171,7 @@ void ScreenRecorder::record() {
             error_queue.pop();
         }
         throw runtime_error{error_message};
-    }
+    } */
 }
 
 void ScreenRecorder::initCommon() {
@@ -547,13 +516,13 @@ void ScreenRecorder::getRawPackets() {
         avRawPkt_queue.push(avRawPkt);
         avRawPkt_queue_mutex.unlock();
 
-//da togliere da qui e mettere nell'app con chiamata a stop();
+        //da togliere da qui e mettere nell'app con chiamata a stop();
 #if defined __linux__
         try {
             memoryCheck_limitSurpassed();
         } catch (const runtime_error &e) {
-            cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
             stopRecording();
+            throw;
         }
 #endif
     }
@@ -585,26 +554,6 @@ void ScreenRecorder::decodeAndEncode() {
     int j = 1;
 
     while (true) {
-        /* unique_lock<mutex> ul(mu);
-
-        if (status == RecordingStatus::paused)
-        {
-            cout << "Video Pause" << endl;
-            afterPause = true;
-        }
-        cv.wait(ul, [this]()
-                { return status != RecordingStatus::paused; });
-        ul.unlock();
-        //cout << statusToString() << endl;
-        if (afterPause)
-        {
-            cout << "Video decode restarted" << endl;
-#if defined linux
-            //linuxVideoResume();
-#endif
-            afterPause = false;
-        }
- */
         avRawPkt_queue_mutex.lock();
         if (!avRawPkt_queue.empty()) {
             avRawPkt = avRawPkt_queue.front();
@@ -753,8 +702,6 @@ void ScreenRecorder::initOutputFile() {
 }
 
 void ScreenRecorder::windowsResumeAudio() {
-    audioDevice = "audio=Microphone (Realtek High Definition Audio)";
-
     AudioInputFormat = av_find_input_format("dshow");
     int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0) {
@@ -842,7 +789,6 @@ void ScreenRecorder::acquireAudio() {
             break;
         }
         if (status == RecordingStatus::paused) {
-            cout << "Audio Pause" << endl;
 #if defined _WIN32
             avformat_close_input(&FormatContextAudio);
             if (FormatContextAudio != nullptr) {
