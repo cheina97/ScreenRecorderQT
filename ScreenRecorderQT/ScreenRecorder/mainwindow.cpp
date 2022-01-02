@@ -245,6 +245,19 @@ void MainWindow::createTrayIcon() {
     trayIcon->setVisible(true);
 }
 
+string MainWindow::forge_outpath(string outFilePath) {
+    std::string ending = ".mp4";
+    if (!std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin())) {
+        ending = "/";
+        if (std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin()))
+            outFilePath += "out.mp4";
+        else {
+            outFilePath += "/out.mp4";
+        }
+    }
+    return outFilePath;
+}
+
 void MainWindow::check_stopped_and_exec(function<void(void)> f, QCloseEvent *event) {
     if (screenRecorder && screenRecorder.get()->getStatus() != RecordingStatus::stopped) {
         QMessageBox::information(this, tr("Action forbidden"),
@@ -320,7 +333,8 @@ void MainWindow::on_pushButtonFullscreen_clicked() {
 }
 
 void MainWindow::on_toolButton_clicked() {
-    QString path = QFileDialog::getSaveFileName(this, tr("Select a directory"), QString(QDir::homePath()), tr("Audio (*.mp4)"));
+    QString path = QFileDialog::getSaveFileName(this, tr("Choose file to save"), QString(QDir::homePath()), tr("Audio (*.mp4)"));
+    path = path.endsWith(".mp4") ? path : path + ".mp4";
     ui->lineEditPath->setText(path);
 
     outFilePath = path.toStdString();
@@ -332,7 +346,7 @@ void MainWindow::on_pushButtonStart_clicked() {
     if (ui->lineEditPath->text().isEmpty()) {
         QMessageBox::information(this, tr("Invalid Path"),
                                  tr("The message box containing the path where to save the file cannot be empty"));
-        return;                         
+        return;
     }
     if (ui->pushButtonSelectArea->isChecked()) {
         rrs.height = areaSelector->getHeight();
@@ -349,7 +363,6 @@ void MainWindow::on_pushButtonStart_clicked() {
     startAction->setDisabled(true);
     enable_or_disable_tabs(false);
 
-    
     ui->lineEditPath->setText(QString(outFilePath.c_str()));
 
     showOrHideWindow(true);
@@ -456,16 +469,7 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position) {
 }
 
 void MainWindow::on_lineEditPath_textEdited(const QString &arg1) {
-    outFilePath = arg1.toStdString();
-    std::string ending = ".mp4";
-    if(!std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin())){
-        ending = "/";
-        if(std::equal(ending.rbegin(), ending.rend(), outFilePath.rbegin()))
-            outFilePath += "out.mp4";
-        else{
-            outFilePath += "/out.mp4";
-        }
-    }
+    outFilePath = forge_outpath(arg1.toStdString());
 }
 
 void MainWindow::on_comboBox_activated(const QString &arg1) {

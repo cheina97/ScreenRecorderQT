@@ -8,10 +8,10 @@
 #include <QShortcut>
 #include <QSystemTrayIcon>
 #include <QtWidgets/QComboBox>
+#include <functional>
+#include <string>
 
 #include "AreaSelector.h"
-
-#include <functional>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,9 +27,6 @@ class MainWindow : public QMainWindow {
     ~MainWindow();
     AreaSelector *areaSelector;
     QMessageBox errorDialog;
-
-   private:
-    void check_stopped_and_exec(std::function<void(void)> f, QCloseEvent *event);
 
    private slots:
     void on_pushButtonSelectArea_clicked();
@@ -79,5 +76,7 @@ class MainWindow : public QMainWindow {
     void setGeneralDefaultProperties();
     void showOrHideWindow(bool);
     void setQualityANDCompression(int);
+    void check_stopped_and_exec(std::function<void(void)> f, QCloseEvent *event);
+    std::string forge_outpath(std::string outFilePath);
 };
 #endif  // MAINWINDOW_H
