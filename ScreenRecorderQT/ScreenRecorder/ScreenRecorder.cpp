@@ -56,22 +56,22 @@ void ScreenRecorder::handler() {
     while (!handlerEnd) {
         cin >> command;
         switch (command) {
-            case 1:
-                std::cout << "Pause Recording..." << endl;
-                pauseRecording();
-                break;
-            case 2:
-                std::cout << "Resuming Recording..." << endl;
-                resumeRecording();
-                break;
-            case 3:
-                std::cout << "End Recording!" << endl;
-                stopRecording();
-                handlerEnd = true;
-                break;
-            default:
-                std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
-                break;
+        case 1:
+            std::cout << "Pause Recording..." << endl;
+            pauseRecording();
+            break;
+        case 2:
+            std::cout << "Resuming Recording..." << endl;
+            resumeRecording();
+            break;
+        case 3:
+            std::cout << "End Recording!" << endl;
+            stopRecording();
+            handlerEnd = true;
+            break;
+        default:
+            std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+            break;
         }
     }
 }
@@ -169,7 +169,9 @@ void ScreenRecorder::resumeRecording() {
         linuxVideoResume();
 #endif
 #if defined _WIN32
-        windowsResumeAudio();
+        if(vs.audioOn){
+            windowsResumeAudio();
+        }
 #endif
         status = RecordingStatus::recording;
         cv.notify_all();
@@ -179,14 +181,14 @@ void ScreenRecorder::resumeRecording() {
 
 string ScreenRecorder::statusToString() {
     switch (status) {
-        case RecordingStatus::paused:
-            return "Pause";
-        case RecordingStatus::recording:
-            return "Recording";
-        case RecordingStatus::stopped:
-            return "Stopped";
-        default:
-            return "Undefined Status";
+    case RecordingStatus::paused:
+        return "Pause";
+    case RecordingStatus::recording:
+        return "Recording";
+    case RecordingStatus::stopped:
+        return "Stopped";
+    default:
+        return "Undefined Status";
     }
 }
 
@@ -231,7 +233,7 @@ void ScreenRecorder::initVideoSource() {
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
 #if defined _WIN32
     if(vs.fps>15){
-         vs.fps = 15;
+        vs.fps = 15;
     }
 #endif
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
