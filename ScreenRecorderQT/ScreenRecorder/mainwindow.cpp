@@ -354,12 +354,12 @@ void MainWindow::on_pushButtonStart_clicked() {
                                  tr("The message box containing the path where to save the file cannot be empty"));
         return;
     }
-    if (ui->pushButtonSelectArea->isChecked()) {
+    /* if (ui->pushButtonSelectArea->isChecked()) {
         rrs.height = areaSelector->getHeight();
         rrs.width = areaSelector->getWidth();
         rrs.offset_x = areaSelector->getX();
         rrs.offset_y = areaSelector->getY();
-    }
+    } */
 
     ui->pushButtonStop->setEnabled(true);
     stopAction->setEnabled(true);
@@ -375,6 +375,8 @@ void MainWindow::on_pushButtonStart_clicked() {
 
     if (ui->pushButtonSelectArea->isChecked())
         emit signal_recording(true);  //this changes the color of the border
+
+    alignValues();
 
     qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
              << "\n screen: " << rrs.screen_number << "\n fullscreen: " << ui->pushButtonFullscreen->isChecked() << "\n";
