@@ -382,6 +382,7 @@ void MainWindow::on_pushButtonStart_clicked() {
 }
 
 void MainWindow::on_pushButtonPause_clicked() {
+    screenRecorder->pauseRecording();
     ui->pushButtonResume->setEnabled(true);
     resumeAction->setEnabled(true);
     ui->pushButtonPause->setEnabled(false);
@@ -390,6 +391,7 @@ void MainWindow::on_pushButtonPause_clicked() {
 }
 
 void MainWindow::on_pushButtonResume_clicked() {
+    screenRecorder->resumeRecording();
     ui->pushButtonPause->setEnabled(true);
     pauseAction->setEnabled(true);
     ui->pushButtonResume->setEnabled(false);
