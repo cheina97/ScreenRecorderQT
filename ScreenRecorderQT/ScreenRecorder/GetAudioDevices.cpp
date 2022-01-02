@@ -111,7 +111,7 @@ std::vector<std::string> getAudioDevices() {
                             devices.emplace_back("hw:" + card + "," + device);
                         }
                     } else {
-                        std::cout << "Errore in apertura" << std::endl;
+                        throw runtime_error{"Error opening device file"};
                     }
                 }
             }

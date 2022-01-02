@@ -281,12 +281,11 @@ void MainWindow::on_pushButtonStart_clicked() {
         qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
         try {
             std::unique_ptr<ScreenRecorder> screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
-            std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
-            std::cout << "-> RECORDING..." << std::endl;
+            std::cout << "Built ScreenRecorder Object" << std::endl;
+            std::cout << "RECORDING..." << std::endl;
             try {
                 screenRecorder->record();
             } catch (const std::exception &e) {
-                cout<<"QUI DENTRO"<<endl;
                 std::string message = e.what();
                 message += "\nPlease close and restart the application";
                 errorDialog.critical(0, "Error", QString::fromStdString(message));
@@ -321,6 +320,7 @@ void MainWindow::on_pushButtonResume_clicked() {
 }
 
 void MainWindow::on_pushButtonStop_clicked() {
+    
     enable_or_disable_tabs(true);
     ui->pushButtonStart->setEnabled(true);
     startAction->setEnabled(true);
