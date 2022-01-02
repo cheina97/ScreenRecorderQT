@@ -41,8 +41,10 @@ ScreenRecorder::~ScreenRecorder() {
 
     av_write_trailer(avFmtCtxOut);
     avformat_close_input(&avFmtCtx);
+    avformat_close_input(&FormatContextAudio);
     avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
+    avformat_free_context(FormatContextAudio);
     std::cout << "Screen Recorder deallocated" << endl;
 }
 
