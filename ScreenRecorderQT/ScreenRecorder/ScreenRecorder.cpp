@@ -37,14 +37,16 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
 ScreenRecorder::~ScreenRecorder() {
     captureVideo_thread.get()->join();
     elaborate_thread.get()->join();
-    if (vs.audioOn) captureAudio_thread.get()->join();
+    if (vs.audioOn) {
+        captureAudio_thread.get()->join();
+        avformat_close_input(&FormatContextAudio);
+        avformat_free_context(FormatContextAudio);
+    };
 
     av_write_trailer(avFmtCtxOut);
     avformat_close_input(&avFmtCtx);
-    avformat_close_input(&FormatContextAudio);
-    avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
-    avformat_free_context(FormatContextAudio);
+    avio_close(avFmtCtxOut->pb);
     std::cout << "Screen Recorder deallocated" << endl;
 }
 
@@ -56,22 +58,22 @@ void ScreenRecorder::handler() {
     while (!handlerEnd) {
         cin >> command;
         switch (command) {
-        case 1:
-            std::cout << "Pause Recording..." << endl;
-            pauseRecording();
-            break;
-        case 2:
-            std::cout << "Resuming Recording..." << endl;
-            resumeRecording();
-            break;
-        case 3:
-            std::cout << "End Recording!" << endl;
-            stopRecording();
-            handlerEnd = true;
-            break;
-        default:
-            std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
-            break;
+            case 1:
+                std::cout << "Pause Recording..." << endl;
+                pauseRecording();
+                break;
+            case 2:
+                std::cout << "Resuming Recording..." << endl;
+                resumeRecording();
+                break;
+            case 3:
+                std::cout << "End Recording!" << endl;
+                stopRecording();
+                handlerEnd = true;
+                break;
+            default:
+                std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+                break;
         }
     }
 }
@@ -169,7 +171,7 @@ void ScreenRecorder::resumeRecording() {
         linuxVideoResume();
 #endif
 #if defined _WIN32
-        if(vs.audioOn){
+        if (vs.audioOn) {
             windowsResumeAudio();
         }
 #endif
@@ -181,14 +183,14 @@ void ScreenRecorder::resumeRecording() {
 
 string ScreenRecorder::statusToString() {
     switch (status) {
-    case RecordingStatus::paused:
-        return "Pause";
-    case RecordingStatus::recording:
-        return "Recording";
-    case RecordingStatus::stopped:
-        return "Stopped";
-    default:
-        return "Undefined Status";
+        case RecordingStatus::paused:
+            return "Pause";
+        case RecordingStatus::recording:
+            return "Recording";
+        case RecordingStatus::stopped:
+            return "Stopped";
+        default:
+            return "Undefined Status";
     }
 }
 
@@ -232,7 +234,7 @@ void ScreenRecorder::initVideoSource() {
 
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
 #if defined _WIN32
-    if(vs.fps>15){
+    if (vs.fps > 15) {
         vs.fps = 15;
     }
 #endif
