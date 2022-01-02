@@ -82,8 +82,11 @@ void MainWindow::defaultButtonProperties() {
     ui->pushButtonPause->setDisabled(true);
     ui->pushButtonResume->setDisabled(true);
     ui->pushButtonStop->setDisabled(true);
-    ui->checkBoxMinimize->setChecked(false);
-    minimizeInSysTray = false;
+    startAction->setDisabled(false);
+    pauseAction->setDisabled(true);
+    resumeAction->setDisabled(true);
+    stopAction->setDisabled(true);
+    trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
 }
 
 void MainWindow::setGeneralDefaultProperties() {
@@ -167,9 +170,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 #endif
 
-    //set the general properties for the elements of the window
-    setGeneralDefaultProperties();
-
     //default values for screen recorder object:
     alignValues();
 
@@ -183,6 +183,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         createActions();
         createTrayIcon();
     }
+
+    //set the general properties for the elements of the window
+    setGeneralDefaultProperties();
 
     startstop_shortcut = new QShortcut{QKeySequence(tr("Ctrl+O")), this};
     connect(startstop_shortcut, &QShortcut::activated, this,
@@ -387,14 +390,13 @@ void MainWindow::on_pushButtonStart_clicked() {
             try {
                 std::cout << "-> RECORDING..." << std::endl;
                 screenRecorder->record();
-                screenRecorder.reset();
             } catch (const std::exception &e) {
                 setGeneralDefaultProperties();
                 alignValues();
                 std::string message = e.what();
-                message += "\nPlease close and restart the application.";
                 errorDialog.critical(0, "Error", QString::fromStdString(message));
             }
+            screenRecorder.reset();
         }};
         record_thread.detach();
     } catch (const std::exception &e) {

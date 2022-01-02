@@ -27,7 +27,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
         }
         initOutputFile();
 #if defined __linux__
-        memoryCheck_init(4000);  // ERROR
+        memoryCheck_init(2000);  // ERROR
 #endif
     } catch (const std::exception &e) {
         throw;
@@ -199,7 +199,7 @@ int ScreenRecorder::getlatestFramesValue() {
         return 20;
     else if (vs.fps == 24)
         return 25;
-    else if(vs.fps == 15)
+    else if (vs.fps == 15)
         return 40;
     else {
         std::cout << "Bad FPS Settings" << endl;
@@ -528,44 +528,50 @@ void ScreenRecorder::getRawPackets() {
         // FINE DOPPIA PORTA
     }
 
-    while (framesValue != 0) {
-        // STATUS MUTEX LOCK
-        unique_lock<mutex> ul(status_lock);
+    try {
+        while (framesValue != 0) {
+            // STATUS MUTEX LOCK
+            unique_lock<mutex> ul(status_lock);
 
-        // STOP CHECK
-        if (status == RecordingStatus::stopped && (audio_end||!vs.audioOn)) {
-            //std::cout << "Video End" << endl;
-            framesValue--;
-        }
-        // PAUSE CHECK
-        if (status == RecordingStatus::paused) {
-            std::cout << "Video Pause" << endl;
-#if defined __linux__
-            avformat_close_input(&avFmtCtx);
-            if (avFmtCtx != nullptr) {
-                throw runtime_error("Unable to close the avFmtCtx (before pause)");
+            // STOP CHECK
+            if (status == RecordingStatus::stopped && (audio_end || !vs.audioOn)) {
+                //std::cout << "Video End" << endl;
+                framesValue--;
             }
-#endif
-        }
-
-        cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
-        // STATUS MUTEX UNLOCK
-        ul.unlock();
-
-        avRawPkt = av_packet_alloc();
-        if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
-            throw runtime_error("Error in getting RawPacket from x11");
-        }
-
-        avRawPkt_queue_mutex.lock();
-        avRawPkt_queue.push(avRawPkt);
-        avRawPkt_queue_mutex.unlock();
-
-        //da togliere da qui e mettere nell'app con chiamata a stop();
+            // PAUSE CHECK
+            if (status == RecordingStatus::paused) {
+                std::cout << "Video Pause" << endl;
 #if defined __linux__
-        memoryCheck_limitSurpassed();
+                avformat_close_input(&avFmtCtx);
+                if (avFmtCtx != nullptr) {
+                    throw runtime_error("Unable to close the avFmtCtx (before pause)");
+                }
 #endif
+            }
+
+            cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
+            // STATUS MUTEX UNLOCK
+            ul.unlock();
+
+            avRawPkt = av_packet_alloc();
+            if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
+                throw runtime_error("Error in getting RawPacket");
+            }
+
+            avRawPkt_queue_mutex.lock();
+            avRawPkt_queue.push(avRawPkt);
+            avRawPkt_queue_mutex.unlock();
+
+            //da togliere da qui e mettere nell'app con chiamata a stop();
+#if defined __linux__
+            memoryCheck_limitSurpassed();
+#endif
+        }
+    } catch (const std::exception &e) {
+        end = true;
+        throw;
     }
+
     std::cout << "END GETRAWPACKET" << endl;
     end = true;
 }

@@ -45,7 +45,9 @@ void memoryCheck_init(int mem_limit) {
 
 void memoryCheck_limitSurpassed() {
     if (getCurrentVMemUsedByProc() > memory_limit) {
-        throw runtime_error{"Reached memory limit of " + to_string((float)memory_limit / 1024) + " MB"};
+        throw runtime_error{
+            "Memory limit reached. Your recording have been stopped and saved.\n"
+            "Please try again with lower quality or fps to avoid this problem"};
     }
 }
 
