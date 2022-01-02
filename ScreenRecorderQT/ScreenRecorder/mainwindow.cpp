@@ -18,26 +18,98 @@ VideoSettings vs;
 std::string outFilePath;
 std::string deviceName;
 
-void MainWindow::setDefaultValues() {
+void MainWindow::alignValues() {
     ///rrs values
-    screen = QGuiApplication::primaryScreen();
-    rrs.width = screen->size().width();
-    rrs.height = screen->size().height();
-    rrs.offset_x = 0;
-    rrs.offset_y = 0;
-    //CHECK: dovrebbe cambiare?
-    rrs.screen_number = 0;
-    rrs.fullscreen = true;
+    if( ui->pushButtonFullscreen->isChecked()){
+        screen = QGuiApplication::primaryScreen();
+        rrs.width = screen->size().width();
+        rrs.height = screen->size().height();
+        rrs.offset_x = 0;
+        rrs.offset_y = 0;
 
-    ///vs vlaues
-    vs.fps = 30;
-    vs.quality = 1;
-    vs.compression = 1;
-    vs.audioOn = true;
-    outFilePath = QDir::homePath().toStdString() + "/out.mp4";
+        rrs.screen_number = 0;
+        rrs.fullscreen = true;
+    }else{
+        rrs.height = areaSelector->getHeight();
+        rrs.width = areaSelector->getWidth();
+        rrs.offset_x = areaSelector->getX();
+        rrs.offset_y = areaSelector->getY();
+    }
+
+    ///vs values
+    if(ui->radioButton30->isChecked()) vs.fps = 30;
+    else if (ui->radioButton24->isChecked()) vs.fps = 24;
+    else if(ui->radioButton60->isChecked()) vs.fps = 60;
+
+    setQualityANDCompression(ui->horizontalSlider->value());
+
+    vs.audioOn = ui->radioButtonYes->isChecked();
+    outFilePath = ui->lineEditPath->text().toStdString() + "/out.mp4";
 
     deviceName = ui->comboBox->currentText().toStdString();
-    qDebug() << QString::fromStdString(deviceName);
+}
+
+void MainWindow::setQualityANDCompression(int position){
+    if (position == 1) {
+        vs.quality = 0.3;
+        vs.compression = 8;
+    } else if (position == 2) {
+        vs.quality = 0.5;
+        vs.compression = 8;
+    } else if (position == 3) {
+        vs.quality = 1;
+        vs.compression = 8;
+    } else if (position == 4) {
+        vs.quality = 1;
+        vs.compression = 7;
+    } else if (position == 5) {
+        vs.quality = 1;
+        vs.compression = 6;
+    } else if (position == 6) {
+        vs.quality = 1;
+        vs.compression = 5;
+    } else if (position == 7) {
+        vs.quality = 1;
+        vs.compression = 4;
+    }
+}
+
+void MainWindow::defaultButtonProperties(){
+    ui->pushButtonStart->setEnabled(true);
+    ui->pushButtonPause->setDisabled(true);
+    ui->pushButtonResume->setDisabled(true);
+    ui->pushButtonStop->setDisabled(true);
+    ui->checkBoxMinimize->setChecked(false);
+    minimizeInSysTray = false;
+}
+
+void MainWindow::setGeneralDefaultProperties(){
+    ///button properties
+    defaultButtonProperties();
+
+    // line edit default text
+    ui->lineEditPath->setText(QDir::homePath());
+
+    // audio default selection
+    ui->radioButtonYes->setChecked(true);
+
+    // radio buttons
+    ui->radioButton30->setChecked(true);
+
+    // slider
+    ui->horizontalSlider->setValue(7);
+}
+
+void MainWindow::showOrHideWindow(bool recording){
+    if(!recording){
+        if (minimizeInSysTray)
+            show();
+        trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
+    }else{
+        if (minimizeInSysTray)
+            hide();
+        trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
+    }
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -57,42 +129,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // button properties
     ui->pushButtonFullscreen->setCheckable(true);
     ui->pushButtonFullscreen->setChecked(true);
+    ui->pushButtonSelectArea->setCheckable(true);
 
     ui->pushButtonFullscreen->setIcon(QIcon(":/icons/fullscreen.png"));
-
-    ui->pushButtonSelectArea->setCheckable(true);
     ui->pushButtonSelectArea->setIcon(QIcon(":/icons/area.png"));
 
-    ui->pushButtonPause->setDisabled(true);
-    ui->pushButtonResume->setDisabled(true);
-    ui->pushButtonStop->setDisabled(true);
-
-    // line edit default text
-    ui->lineEditPath->setText(QDir::homePath());
-
-    // audio default selection
-    ui->radioButtonYes->setChecked(true);
-
-    // radio buttons
-    ui->radioButton30->setChecked(true);
+    //radio button tooltip
     ui->radioButton60->setMouseTracking(true);
     ui->radioButton60->setToolTip("High performances required");
-
-    // checkbox properties
-    ui->checkBoxMinimize->setChecked(false);
-    minimizeInSysTray = false;
 
     // slider properties
     ui->horizontalSlider->setTracking(true);
     ui->horizontalSlider->setMinimum(1);
     ui->horizontalSlider->setMaximum(7);
-    ui->horizontalSlider->setValue(7);
 
     //options in the combobox
 #if defined _WIN32
     const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
     for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
         ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
+    //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
+    //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
 #endif
 #if defined __linux__
     for (auto &device : getAudioDevices()) {
@@ -100,11 +157,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 #endif
 
-    //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
-    //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
+    //set the general properties for the elements of the window
+    setGeneralDefaultProperties();
 
     //default values for screen recorder object:
-    setDefaultValues();
+    alignValues();
 
     // connect
     connect(this, SIGNAL(signal_close()), areaSelector, SLOT(close()));
@@ -265,36 +322,34 @@ void MainWindow::on_pushButtonStart_clicked() {
         startAction->setDisabled(true);
         enable_or_disable_tabs(false);
 
-        qDebug() << "?? >> " << minimizeInSysTray;
-        if (minimizeInSysTray) {
-            hide();
-        }
+        showOrHideWindow(true);
+
         if (ui->pushButtonSelectArea->isChecked())
-            emit signal_recording(true);  //this changes the color of the bor   der
-        trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
+            emit signal_recording(true);  //this changes the color of the border
 
         qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
                  << "\n screen: " << rrs.screen_number << "\n fullscreen: " << rrs.fullscreen << "\n";
         qDebug() << "valori di vs:"
-                 << "\n fps: " << vs.fps << "\n quality: " << vs.quality << "\n audio: " << QString::number(vs.audioOn) << "\n";
+                 << "\n fps: " << vs.fps << "\n quality: " << vs.quality <<"\n compression: "<<vs.compression<< "\n audio: " << QString::number(vs.audioOn) << "\n";
         qDebug() << "Directory: " << QString::fromStdString(outFilePath);
         qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
+        qDebug()<<"minimize:: "<<minimizeInSysTray;
         try {
-            std::unique_ptr<ScreenRecorder> screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
+            //std::unique_ptr<ScreenRecorder> screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
             std::cout << "-> Costruito oggetto Screen Recorder" << std::endl;
-            std::cout << "-> RECORDING..." << std::endl;
             try {
-                screenRecorder->record();
+                std::cout << "-> RECORDING..." << std::endl;
+                //screenRecorder->record();
             } catch (const std::exception &e) {
                 cout<<"QUI DENTRO"<<endl;
                 std::string message = e.what();
-                message += "\nPlease close and restart the application";
+                message += "\nPlease close and restart the application.";
                 errorDialog.critical(0, "Error", QString::fromStdString(message));
             }
         } catch (const std::exception &e) {
             // Call to open the error dialog
             std::string message = e.what();
-            message += "\nPlease choose another device";
+            message += "\nPlease choose another device.";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
     }
@@ -305,9 +360,7 @@ void MainWindow::on_pushButtonPause_clicked() {
     resumeAction->setEnabled(true);
     ui->pushButtonPause->setEnabled(false);
     pauseAction->setEnabled(false);
-    if (minimizeInSysTray)
-        show();
-    trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
+    showOrHideWindow(false);
 }
 
 void MainWindow::on_pushButtonResume_clicked() {
@@ -315,34 +368,21 @@ void MainWindow::on_pushButtonResume_clicked() {
     pauseAction->setEnabled(true);
     ui->pushButtonResume->setEnabled(false);
     resumeAction->setEnabled(false);
-    if (minimizeInSysTray)
-        hide();
-    trayIcon->setIcon(QIcon(":/icons/trayicon_recording.png"));
+    showOrHideWindow(true);
 }
 
 void MainWindow::on_pushButtonStop_clicked() {
     enable_or_disable_tabs(true);
-    ui->pushButtonStart->setEnabled(true);
     startAction->setEnabled(true);
     if (ui->pushButtonSelectArea->isChecked()) {
         emit signal_recording(false);
     }
-
-    ui->pushButtonPause->setDisabled(true);
     pauseAction->setDisabled(true);
-    ui->pushButtonResume->setDisabled(true);
     resumeAction->setDisabled(true);
-    ui->pushButtonStop->setDisabled(true);
     stopAction->setDisabled(true);
-    ui->lineEditPath->setText(QDir::homePath());
-    ui->radioButtonYes->setChecked(true);
-    ui->radioButton24->setChecked(true);
-    if (minimizeInSysTray)
-        show();
-    trayIcon->setIcon(QIcon(":/icons/trayicon_normal.png"));
-    ui->checkBoxMinimize->setChecked(false);
-    minimizeInSysTray = false;
-    setDefaultValues();
+
+    defaultButtonProperties();
+    showOrHideWindow(false);
 }
 
 ////Settings
@@ -373,28 +413,7 @@ void MainWindow::on_radioButton60_clicked() {
 }
 
 void MainWindow::on_horizontalSlider_sliderMoved(int position) {
-    if (position == 1) {
-        vs.quality = 0.3;
-        vs.compression = 8;
-    } else if (position == 2) {
-        vs.quality = 0.5;
-        vs.compression = 8;
-    } else if (position == 3) {
-        vs.quality = 1;
-        vs.compression = 8;
-    } else if (position == 4) {
-        vs.quality = 1;
-        vs.compression = 7;
-    } else if (position == 5) {
-        vs.quality = 1;
-        vs.compression = 6;
-    } else if (position == 6) {
-        vs.quality = 1;
-        vs.compression = 5;
-    } else if (position == 7) {
-        vs.quality = 1;
-        vs.compression = 4;
-    }
+    setQualityANDCompression(position);
 }
 
 void MainWindow::on_lineEditPath_textEdited(const QString &arg1) {

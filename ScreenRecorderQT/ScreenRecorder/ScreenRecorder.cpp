@@ -228,7 +228,7 @@ void ScreenRecorder::initVideoSource() {
         rrs.offset_x = 0;
         rrs.offset_y = 0;
 #if defined _WIN32
-        SetProcessDPIAware();  //A program must tell the operating system that it is DPI-aware to get the true resolution when you go past 125%.
+        //SetProcessDPIAware();  //A program must tell the operating system that it is DPI-aware to get the true resolution when you go past 125%.
         rrs.width = (int)GetSystemMetrics(SM_CXSCREEN);
         rrs.height = (int)GetSystemMetrics(SM_CYSCREEN);
 #endif

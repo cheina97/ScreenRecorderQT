@@ -72,6 +72,10 @@ private:
     QScreen *screen;
 
     void enable_or_disable_tabs(bool);
-    void setDefaultValues();
+    void defaultButtonProperties();
+    void alignValues();
+    void setGeneralDefaultProperties();
+    void showOrHideWindow(bool);
+    void setQualityANDCompression(int);
 };
 #endif  // MAINWINDOW_H
