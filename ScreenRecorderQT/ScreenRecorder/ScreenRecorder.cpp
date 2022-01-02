@@ -160,7 +160,7 @@ void ScreenRecorder::record() {
     };
     //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
-    /* unique_lock<mutex> error_queue_ul{error_queue_m};
+    unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
     if (!error_queue.empty()) {
         this->stopRecording();
@@ -171,7 +171,7 @@ void ScreenRecorder::record() {
             error_queue.pop();
         }
         throw runtime_error{error_message};
-    } */
+    }
 }
 
 void ScreenRecorder::initCommon() {
@@ -214,7 +214,7 @@ void ScreenRecorder::initVideoSource() {
     av_dict_set(&avRawOptions, "offset_y", to_string(rrs.offset_y).c_str(), 0);
 
     if (avformat_open_input(&avFmtCtx, "desktop", avInputFmt, &avRawOptions) != 0) {
-        throw logic_error{"Couldn't open input stream"};
+        throw logic_error{err_msg_baddevice_video};
     }
 
 #elif defined __linux__
@@ -226,7 +226,7 @@ void ScreenRecorder::initVideoSource() {
     }
 
     if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0) {
-        throw runtime_error{"Couldn't open input stream."};
+        throw runtime_error{err_msg_baddevice_video};
     }
 #else
     // Apple
@@ -247,12 +247,12 @@ void ScreenRecorder::initVideoSource() {
     }
     //[video]:[audio]
     if (int value = avformat_open_input(&avFmtCtx, "1:none", avInputFmt, &avRawOptions)) {
-        throw runtime_error{"Couldn't open Apple video input stream."};
+        throw runtime_error{err_msg_baddevice_video};
     }
 #endif
 
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0) {
-        throw logic_error{"Couldn't open input stream."};
+        throw logic_error{err_msg_baddevice_video};
     }
 
     videoIndex = -1;
@@ -289,10 +289,10 @@ void ScreenRecorder::linuxVideoResume() {
     if (avFmtCtx == nullptr)
 
         if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0) {
-            throw runtime_error{"Couldn't open input stream."};
+            throw runtime_error{err_msg_baddevice_video};
         }
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0) {
-        throw logic_error{"Couldn't open input stream."};
+        throw logic_error{err_msg_baddevice_video};
     }
 
     videoIndex = -1;
@@ -397,7 +397,7 @@ void ScreenRecorder::initVideoVariables() {
 
     //Open output URL
     if (avio_open(&avFmtCtxOut->pb, outFilePath.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
-        throw runtime_error{"Failed to open output file!"};
+        throw runtime_error{"Failed to create output file.\nThis path is invalid or doesn't exist."};
     }
 
     swsCtx = sws_getContext(avRawCodecCtx->width,
@@ -432,7 +432,7 @@ void ScreenRecorder::initAudioSource() {
         throw runtime_error{"Cannot open AVFoundation driver"};
     }
     if (avformat_open_input(&FormatContextAudio, "none:0", AudioInputFormat, &AudioOptions) < 0) {
-        throw runtime_error("Couldn't open audio input stream.");
+        throw runtime_error(err_msg_baddevice_audio);
     }
 #endif
 
@@ -444,7 +444,7 @@ void ScreenRecorder::initAudioSource() {
     }
 
     if (avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, NULL) < 0) {
-        throw runtime_error("Couldn't open audio input stream.");
+        throw runtime_error(err_msg_baddevice_audio);
     }
 #endif
 
@@ -456,7 +456,7 @@ void ScreenRecorder::initAudioSource() {
     if (value != 0) {
         //cerr << "Error in opening input device (audio)" << endl;
         //exit(-1);
-        throw runtime_error("Error in opening input device");
+        throw runtime_error(err_msg_baddevice_audio);
     }
 
 #endif
@@ -916,4 +916,8 @@ void ScreenRecorder::initConvertedSamples(uint8_t ***converted_input_samples, AV
     if (av_samples_alloc(*converted_input_samples, nullptr, output_codec_context->channels, frame_size, output_codec_context->sample_fmt, 0) < 0) {
         throw runtime_error("could not allocate memeory for samples in all channels (audio)");
     }
+}
+
+RecordingStatus ScreenRecorder::getStatus() {
+    return this->status;
 }

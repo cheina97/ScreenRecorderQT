@@ -11,6 +11,8 @@
 
 #include "AreaSelector.h"
 
+#include <functional>
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -20,16 +22,16 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
-public:
+   public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     AreaSelector *areaSelector;
     QMessageBox errorDialog;
 
-private:
-    //settings chosen by the user in the window
+   private:
+    void check_stopped_and_exec(std::function<void(void)> f, QCloseEvent *event);
 
-private slots:
+   private slots:
     void on_pushButtonSelectArea_clicked();
     void on_pushButtonFullscreen_clicked();
     void on_toolButton_clicked();
@@ -47,15 +49,15 @@ private slots:
     void on_lineEditPath_textEdited(const QString &arg1);
     void on_comboBox_activated(const QString &arg1);
 
-signals:
+   signals:
     void signal_close();
     void signal_show(bool);
     void signal_recording(bool);
 
-protected:
+   protected:
     void closeEvent(QCloseEvent *event);
 
-private:
+   private:
     Ui::MainWindow *ui;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;

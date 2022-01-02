@@ -86,6 +86,7 @@ void MainWindow::defaultButtonProperties() {
 }
 
 void MainWindow::setGeneralDefaultProperties() {
+    enable_or_disable_tabs(true);
     ///button properties
     defaultButtonProperties();
 
@@ -116,7 +117,7 @@ void MainWindow::showOrHideWindow(bool recording) {
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     screen = QGuiApplication::primaryScreen();
-    qDebug()<<"serialNumber: "<<screen->serialNumber();
+    qDebug() << "serialNumber: " << screen->serialNumber();
     ui->setupUi(this);
 
     ui->verticalLayout_6->addWidget(ui->comboBox);
@@ -218,8 +219,11 @@ void MainWindow::createActions() {
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, &QAction::triggered, qApp, [&]() {
-        emit signal_close();
-        QCoreApplication::quit();
+        check_stopped_and_exec([&]() {
+            emit signal_close();
+            QCoreApplication::quit();
+        },
+                               nullptr);
     });
 }
 
@@ -239,24 +243,39 @@ void MainWindow::createTrayIcon() {
     trayIcon->setVisible(true);
 }
 
+void MainWindow::check_stopped_and_exec(function<void(void)> f, QCloseEvent *event) {
+    if (screenRecorder && screenRecorder.get()->getStatus() != RecordingStatus::stopped) {
+        QMessageBox::information(this, tr("Action forbidden"),
+                                 tr("The application is still recording.\n"
+                                    "Please stop the video recording before closing the application"));
+        if (event != nullptr) event->ignore();
+    } else {
+        f();
+    }
+}
+
 void MainWindow::closeEvent(QCloseEvent *event) {
 #ifdef Q_OS_MACOS
     if (!event->spontaneous() || !isVisible()) {
         return;
     }
 #endif
-    if (trayIcon->isVisible()) {
-        QMessageBox::information(this, tr("Systray"),
-                                 tr("The program will keep running in the "
-                                    "system tray. To terminate the program, "
-                                    "choose <b>Quit</b> in the context menu "
-                                    "of the system tray entry."));
-        hide();
-        event->ignore();
-    } else {
-        emit signal_close();
-        QCoreApplication::quit();
-    }
+    check_stopped_and_exec(
+        [this, event]() {
+            if (trayIcon->isVisible()) {
+                QMessageBox::information(this, tr("Systray"),
+                                         tr("The program will keep running in the "
+                                            "system tray. To terminate the program, "
+                                            "choose <b>Quit</b> in the context menu "
+                                            "of the system tray entry."));
+                hide();
+                event->ignore();
+            } else {
+                emit signal_close();
+                QCoreApplication::quit();
+            }
+        },
+        event);
 }
 
 void MainWindow::enable_or_disable_tabs(bool val) {
@@ -299,7 +318,7 @@ void MainWindow::on_pushButtonFullscreen_clicked() {
 }
 
 void MainWindow::on_toolButton_clicked() {
-    QString path = QFileDialog::getExistingDirectory(this, "Select a directory", QDir::homePath());
+    QString path = QFileDialog::getSaveFileName(this, "Select a directory", QDir::homePath());
     ui->lineEditPath->setText(path);
 
     outFilePath = path.toStdString() + "/out.mp4";
@@ -338,25 +357,28 @@ void MainWindow::on_pushButtonStart_clicked() {
     try {
         screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
         std::cout << "Built ScreenRecorder Object" << std::endl;
-        try {
-            std::cout << "-> RECORDING..." << std::endl;
-            screenRecorder->record();
-        } catch (const std::exception &e) {
-            setGeneralDefaultProperties();
-            alignValues();
-            std::string message = e.what();
-            message += "\nPlease close and restart the application.";
-            errorDialog.critical(0, "Error", QString::fromStdString(message));
-        }
+        auto record_thread = std::thread{[&]() {
+            try {
+                std::cout << "-> RECORDING..." << std::endl;
+                screenRecorder->record();
+                screenRecorder.reset();
+            } catch (const std::exception &e) {
+                setGeneralDefaultProperties();
+                alignValues();
+                std::string message = e.what();
+                message += "\nPlease close and restart the application.";
+                errorDialog.critical(0, "Error", QString::fromStdString(message));
+            }
+        }};
+        record_thread.detach();
     } catch (const std::exception &e) {
         setGeneralDefaultProperties();
         alignValues();
+
         // Call to open the error dialog
         std::string message = e.what();
-        message += "\nPlease choose another device.";
         errorDialog.critical(0, "Error", QString::fromStdString(message));
     }
-    //screenRecorder.reset();
 }
 
 void MainWindow::on_pushButtonPause_clicked() {
