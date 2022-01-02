@@ -19,7 +19,7 @@ int main(int argc, char const* argv[]) {
     rrs.offset_x = atoi(argv[3]);
     rrs.offset_y = atoi(argv[4]);
     rrs.screen_number = atoi(argv[5]);
-    rrs.fullscreen = true;
+
     vs.fps = atoi(argv[6]);
     vs.quality = atof(argv[8]);
 
