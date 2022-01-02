@@ -43,81 +43,35 @@ ScreenRecorder::~ScreenRecorder() {
     avformat_close_input(&avFmtCtx);
     avio_close(avFmtCtxOut->pb);
     avformat_free_context(avFmtCtx);
-    //handler_thread.get()->join();
-    cout << "Screen Recorder deallocated" << endl;
+    handler_thread.get()->join();
+    std::cout << "Screen Recorder deallocated" << endl;
 }
 
 void ScreenRecorder::handler() {
     bool handlerEnd = false;
     int command = 0;
-    cout << "\nScreerRecorder Handler" << endl;
-    cout << "Commands:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+    std::cout << "\nScreerRecorder Handler" << endl;
+    std::cout << "Commands:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
     while (!handlerEnd) {
         cin >> command;
         switch (command) {
             case 1:
-                cout << "Pause Recording..." << endl;
+                std::cout << "Pause Recording..." << endl;
                 pauseRecording();
                 break;
             case 2:
-                cout << "Resuming Recording..." << endl;
+                std::cout << "Resuming Recording..." << endl;
                 resumeRecording();
                 break;
             case 3:
-                cout << "End Recording!" << endl;
+                std::cout << "End Recording!" << endl;
                 stopRecording();
                 handlerEnd = true;
                 break;
             default:
-                cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+                std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
                 break;
         }
-    }
-}
-
-void ScreenRecorder::stopRecording() {
-    cout << "trying to stop recording" << endl;
-    unique_lock<mutex> ul(mu);
-    if (status == RecordingStatus::recording || status == RecordingStatus::paused)
-        status = RecordingStatus::stopped;
-    cv.notify_all();
-    cout << "status: " << statusToString() << endl;
-}
-
-void ScreenRecorder::pauseRecording() {
-    cout << "trying to pause recording" << endl;
-    unique_lock<mutex> ul(mu);
-    if (status == RecordingStatus::recording)
-        status = RecordingStatus::paused;
-    cout << "status: " << statusToString() << endl;
-}
-
-void ScreenRecorder::resumeRecording() {
-    cout << "trying to resume recording" << endl;
-    unique_lock<mutex> ul(mu);
-    if (status == RecordingStatus::paused) {
-#if defined __linux__
-        linuxVideoResume();
-#endif
-#if defined _WIN32
-        windowsResumeAudio();
-#endif
-        status = RecordingStatus::recording;
-        cv.notify_all();
-    }
-    cout << "status: " << statusToString() << endl;
-}
-
-string ScreenRecorder::statusToString() {
-    switch (status) {
-        case RecordingStatus::paused:
-            return "Pause";
-        case RecordingStatus::recording:
-            return "Recording";
-        case RecordingStatus::stopped:
-            return "Stopped";
-        default:
-            return "Undefined Status";
     }
 }
 
@@ -158,7 +112,7 @@ void ScreenRecorder::record() {
             })();
         });
     };
-    //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
+    handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
     /* unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
@@ -172,6 +126,80 @@ void ScreenRecorder::record() {
         }
         throw runtime_error{error_message};
     } */
+}
+
+bool ScreenRecorder::audioReady() {
+    lock_guard<mutex> lg(audio_lock);
+    return audio_ready;
+}
+
+bool ScreenRecorder::videoReady() {
+    lock_guard<mutex> lg(video_lock);
+    return video_ready;
+}
+
+void ScreenRecorder::audioEnd() {
+    lock_guard<mutex> lg(audio_lock);
+    audio_end = true;
+}
+
+void ScreenRecorder::stopRecording() {
+    std::cout << "trying to stop recording" << endl;
+    lock_guard<mutex> lg(status_lock);
+    if (status == RecordingStatus::recording || status == RecordingStatus::paused)
+        status = RecordingStatus::stopped;
+    cv.notify_all();
+    std::cout << "status: " << statusToString() << endl;
+}
+
+void ScreenRecorder::pauseRecording() {
+    std::cout << "trying to pause recording" << endl;
+    lock_guard<mutex> lg(status_lock);
+    if (status == RecordingStatus::recording)
+        status = RecordingStatus::paused;
+    std::cout << "status: " << statusToString() << endl;
+}
+
+void ScreenRecorder::resumeRecording() {
+    std::cout << "trying to resume recording" << endl;
+    lock_guard<mutex> lg(status_lock);
+    if (status == RecordingStatus::paused) {
+#if defined __linux__
+        linuxVideoResume();
+#endif
+#if defined _WIN32
+        windowsResumeAudio();
+#endif
+        status = RecordingStatus::recording;
+        cv.notify_all();
+    }
+    std::cout << "status: " << statusToString() << endl;
+}
+
+string ScreenRecorder::statusToString() {
+    switch (status) {
+        case RecordingStatus::paused:
+            return "Pause";
+        case RecordingStatus::recording:
+            return "Recording";
+        case RecordingStatus::stopped:
+            return "Stopped";
+        default:
+            return "Undefined Status";
+    }
+}
+
+int ScreenRecorder::getlatestFramesValue() {
+    if (vs.fps == 60)
+        return 10;
+    else if (vs.fps == 30)
+        return 20;
+    else if (vs.fps == 24)
+        return 25;
+    else {
+        std::cout << "Bad FPS Settings" << endl;
+        return 1;
+    }
 }
 
 void ScreenRecorder::initCommon() {
@@ -243,7 +271,7 @@ void ScreenRecorder::initVideoSource() {
     AVInputFormat *avInputFmt = nullptr;
     avInputFmt = av_find_input_format("avfoundation");
     if (avInputFmt == nullptr) {
-        cout << "errore apertura" << endl;
+        std::cout << "errore apertura" << endl;
     }
     //[video]:[audio]
     if (int value = avformat_open_input(&avFmtCtx, "1:none", avInputFmt, &avRawOptions)) {
@@ -277,6 +305,9 @@ void ScreenRecorder::initVideoSource() {
 }
 
 void ScreenRecorder::linuxVideoResume() {
+    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
+    av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
+    av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
     char *displayName = getenv("DISPLAY");
@@ -326,16 +357,6 @@ void ScreenRecorder::linuxVideoResume() {
                             (int)(avRawCodecCtx->height * vs.quality) / 2 * 2,
                             AV_PIX_FMT_YUV420P,
                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-
-    /* avYUVFrame = av_frame_alloc();
-    int yuvLen = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height, 1);
-
-    uint8_t *yuvBuf = new uint8_t[yuvLen];
-    av_image_fill_arrays(avYUVFrame->data, avYUVFrame->linesize, (uint8_t *)yuvBuf, AV_PIX_FMT_YUV420P, avRawCodecCtx->width, avRawCodecCtx->height, 1);
-
-    avYUVFrame->width = avRawCodecCtx->width;
-    avYUVFrame->height = avRawCodecCtx->height;
-    avYUVFrame->format = AV_PIX_FMT_YUV420P; */
 }
 
 void ScreenRecorder::initVideoVariables() {
@@ -483,17 +504,32 @@ void ScreenRecorder::initAudioSource() {
 
 void ScreenRecorder::getRawPackets() {
     AVPacket *avRawPkt;
-    while (true) {
+    //bool run = true;
+    int framesValue = getlatestFramesValue();
+    if (vs.audioOn) {
+        // DOPPIA PORTA PER PARTENZA SINCRO
+        unique_lock<mutex> ul_video(video_lock);
+        video_ready = true;
+        std::cout << "Video Ready" << endl;
+        cv_video.wait(ul_video, [this]() { return audioReady(); });
+        cv_audio.notify_all();
+        ul_video.unlock();
+        std::cout << "Video Started" << endl;
+        // FINE DOPPIA PORTA
+    }
+
+    while (framesValue != 0) {
         // STATUS MUTEX LOCK
-        unique_lock<mutex> ul(mu);
+        unique_lock<mutex> ul(status_lock);
 
         // STOP CHECK
-        if (status == RecordingStatus::stopped) {
-            break;
+        if (status == RecordingStatus::stopped && audio_end) {
+            //std::cout << "Video End" << endl;
+            framesValue--;
         }
         // PAUSE CHECK
         if (status == RecordingStatus::paused) {
-            cout << "Video Pause" << endl;
+            std::cout << "Video Pause" << endl;
 #if defined __linux__
             avformat_close_input(&avFmtCtx);
             if (avFmtCtx != nullptr) {
@@ -506,9 +542,9 @@ void ScreenRecorder::getRawPackets() {
         // STATUS MUTEX UNLOCK
         ul.unlock();
 
-        // ------------------
         avRawPkt = av_packet_alloc();
-        if (av_read_frame(avFmtCtx, avRawPkt) < 0) {
+        int value = av_read_frame(avFmtCtx, avRawPkt) < 0;
+        if (value < 0) {
             throw runtime_error("Error in getting RawPacket from x11");
         }
 
@@ -521,16 +557,13 @@ void ScreenRecorder::getRawPackets() {
         try {
             memoryCheck_limitSurpassed();
         } catch (const runtime_error &e) {
+            std::cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
             stopRecording();
-            throw;
         }
 #endif
     }
-
-    /* if (status != RecordingStatus::stopped)
-    {
-        stopRecording();
-    } */
+    std::cout << "END GETRAWPACKET" << endl;
+    end = true;
 }
 
 void ScreenRecorder::decodeAndEncode() {
@@ -580,9 +613,10 @@ void ScreenRecorder::decodeAndEncode() {
                     j++;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
 
+                    //Fine ENCODING
+
                     if (flag >= 0) {
                         got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
-                        //Fine ENCODING
                         if (got_picture == 0) {
                             if (!gotFirstValidVideoPacket) {
                                 gotFirstValidVideoPacket = true;
@@ -604,9 +638,9 @@ void ScreenRecorder::decodeAndEncode() {
             }
         } else {
             avRawPkt_queue_mutex.unlock();
-            unique_lock<mutex> ul(mu);
-            if (status == RecordingStatus::stopped) {
-                cout << "STOP" << endl;
+            unique_lock<mutex> ul(status_lock);
+            if (status == RecordingStatus::stopped && avRawPkt_queue.empty() && end) {
+                ul.unlock();
                 break;
             }
             ul.unlock();
@@ -614,6 +648,7 @@ void ScreenRecorder::decodeAndEncode() {
     }
 
     av_packet_unref(&pkt);
+    std::cout << "END DECODEANDENCODE" << endl;
 }
 
 void ScreenRecorder::initAudioVariables() {
@@ -780,27 +815,35 @@ void ScreenRecorder::acquireAudio() {
         swr_free(&swrContext);
     }
 
-    //audio_stop_mutex.lock();
+#if defined __linux__
     bool firstBuffer = true;
+#endif
+
+    if (vs.audioOn) {
+        // DOPPIA PORTA PER PARTENZA SINCRO
+        unique_lock<mutex> ul_audio(audio_lock);
+        audio_ready = true;
+        cout << "Audio Ready" << endl;
+        cv_audio.wait(ul_audio, [this]() { return videoReady(); });
+        cv_video.notify_all();
+        ul_audio.unlock();
+        cout << "Audio Started" << endl;
+        // FINE DOPPIA PORTA
+    }
+
     while (true) {
-        unique_lock<mutex> ul(mu);
-        if (status == RecordingStatus::stopped) {
-            ul.unlock();
-            break;
-        }
+        unique_lock<mutex> ul(status_lock);
         if (status == RecordingStatus::paused) {
+            cout << "Audio Pause" << endl;
 #if defined _WIN32
             avformat_close_input(&FormatContextAudio);
             if (FormatContextAudio != nullptr) {
-                cerr << "Error: unable to close the inAudioFormatContext" << endl;
-                exit(-1);
-                //throw error("Error: unable to close the inAudioFormatContext (before pause)");
+                throw std::logic_error("Error: unable to close the FormatContextAudio (before pause)");
             }
 #endif
         }
         cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
         ul.unlock();
-        //audio_stop_mutex.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex) {
             //decode audio routing
             av_packet_rescale_ts(outPacket, FormatContextAudio->streams[audioIndex]->time_base, AudioCodecContextIn->time_base);
@@ -834,7 +877,7 @@ void ScreenRecorder::acquireAudio() {
 
                 scaledFrame = av_frame_alloc();
                 if (!scaledFrame) {
-                    throw runtime_error("Cannot allocate an AVPacket for encoded video");
+                    throw runtime_error("Cannot allocate an AVPacket for encoded auio");
                 }
 
                 scaledFrame->nb_samples = AudioCodecContextOut->frame_size;
@@ -862,6 +905,11 @@ void ScreenRecorder::acquireAudio() {
                         outPacket->stream_index = audioIndexOut;
 
                         write_lock.lock();
+#if defined _WIN32
+                        if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
+                            throw runtime_error("Error in writing audio frame");
+                        }
+#elif defined __linux__
                         if (gotFirstValidVideoPacket) {
                             if (!firstBuffer) {
                                 if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
@@ -871,7 +919,7 @@ void ScreenRecorder::acquireAudio() {
                                 firstBuffer = false;
                             }
                         }
-
+#endif
                         write_lock.unlock();
                         av_packet_unref(outPacket);
                     }
@@ -882,9 +930,16 @@ void ScreenRecorder::acquireAudio() {
                 av_packet_unref(outPacket);
             }
         }
-        //audio_stop_mutex.lock();
+        ul.lock();
+        if (status == RecordingStatus::stopped) {
+            cout << "Audio End" << endl;
+            audioEnd();
+            ul.unlock();
+            break;
+        }
+        ul.unlock();
     }
-    //audio_stop_mutex.unlock();
+    cout << "END ACQUIREAUDIO" << endl;
 }
 
 void ScreenRecorder::init_fifo() {

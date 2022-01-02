@@ -23,15 +23,11 @@ int main(int argc, char const* argv[]) {
     vs.fps = atoi(argv[6]);
     vs.quality = atof(argv[8]);
 
-    vs.audioOn = atoi(argv[9]) == 1 ? true : false;
     vs.compression = atoi(argv[10]);
     string outFilePath = argv[11];
     try {
-        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[2].c_str()};
+        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[0].c_str()};
         cout << "-> Costruito oggetto Screen Recorder" << endl;
-        cout << "-> RECORDING..." << endl;
-
-        //std::future<int> handle = std::async(std::launch::async, [&sr]()->int{return sr.record();});
         sr.record();
     } catch (const std::exception& e) {
         cout << "Exception handled in main" << endl;
