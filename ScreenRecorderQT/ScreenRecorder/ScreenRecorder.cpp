@@ -27,7 +27,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
         }
         initOutputFile();
 #if defined __linux__
-        memoryCheck_init(2000);  // ERROR
+        memoryCheck_init(3000);  // ERROR
 #endif
     } catch (const std::exception &e) {
         throw;
