@@ -16,11 +16,13 @@ extern "C" {
 #include <windows.h>
 
 #include "io.h"
-#else
+#elif defined __linux__
 #include <X11/Xlib.h>
 
 #include "alsa/asoundlib.h"
 #include "unistd.h"
+#elif defined __APPLE__
+
 #endif
 
 #include <stdlib.h>
@@ -40,12 +42,15 @@ using namespace std;
 
 //error messages
 
-const string err_msg_baddevice_audio="Couldn't use this audio device to record, maybe it is busy or cannot be used to record.\n"
-            "Check if it is used by another program, then try again.\n"
-            "If it still not work try with another device";
-const string err_msg_baddevice_video="Couldn't use this video device to record, maybe it is busy or cannot be used to record.\n"
-            "Check if it is used by another program, then try again.\n"
-            "If it still not work try with another device";
+const string err_msg_baddevice_audio =
+    "Couldn't use this audio device to record, maybe it is busy or cannot be used to record.\n"
+    "Check if it is used by another program, then try again.\n"
+    "If it still not work try with another device";
+const string err_msg_baddevice_video =
+    "Couldn't use this video device to record, maybe it is busy or cannot be used to record.\n"
+    "Check if it is used by another program, then try again.\n"
+    "If it still not work try with another device";
+const string err_msg_badpath = "Failed to create output file.\nThis path is invalid or doesn't exist.";
 typedef struct
 {
     int width;
@@ -95,14 +100,19 @@ class ScreenRecorder {
     string outFilePath;
     string audioDevice;
     mutex write_lock;
-    mutex mu;
+    mutex status_lock;
+    mutex video_lock;
+    mutex audio_lock;
+    bool audio_ready = false;
+    bool video_ready = false;
+    bool audio_end = false;
+    bool end = false;
 
     //common variables
     unique_ptr<thread> handler_thread;
     unique_ptr<thread> captureVideo_thread;
     unique_ptr<thread> captureAudio_thread;
     unique_ptr<thread> elaborate_thread;
-    bool stop;
     bool gotFirstValidVideoPacket;
 
     //video variables
@@ -146,7 +156,13 @@ class ScreenRecorder {
     int64_t pts = 0;
 
     // HANDLER PAUSE/RESUME/STOP
+    condition_variable cv_audio;
+    condition_variable cv_video;
     condition_variable cv;
+    int getlatestFramesValue();
+    bool audioReady();
+    bool videoReady();
+    void audioEnd();
     void handler();
     void linuxVideoResume();
     void windowsResumeAudio();
