@@ -155,8 +155,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
     for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
         ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
-    //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
-    //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
+        //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
+        //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
 #endif
 #if defined __linux__
     for (auto &device : getAudioDevices()) {
@@ -225,7 +225,7 @@ void MainWindow::createActions() {
             emit signal_close();
             QCoreApplication::quit();
         },
-        nullptr);
+                               nullptr);
     });
 }
 
@@ -263,21 +263,21 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     }
 #endif
     check_stopped_and_exec(
-                [this, event]() {
-        if (trayIcon->isVisible()) {
-            QMessageBox::information(this, tr("Systray"),
-                                     tr("The program will keep running in the "
-                                        "system tray. To terminate the program, "
-                                        "choose <b>Quit</b> in the context menu "
-                                        "of the system tray entry."));
-            hide();
-            event->ignore();
-        } else {
-            emit signal_close();
-            QCoreApplication::quit();
-        }
-    },
-    event);
+        [this, event]() {
+            if (trayIcon->isVisible()) {
+                QMessageBox::information(this, tr("Systray"),
+                                         tr("The program will keep running in the "
+                                            "system tray. To terminate the program, "
+                                            "choose <b>Quit</b> in the context menu "
+                                            "of the system tray entry."));
+                hide();
+                event->ignore();
+            } else {
+                emit signal_close();
+                QCoreApplication::quit();
+            }
+        },
+        event);
 }
 
 void MainWindow::enable_or_disable_tabs(bool val) {
@@ -329,6 +329,11 @@ void MainWindow::on_toolButton_clicked() {
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
+    if (ui->lineEditPath->text().isEmpty()) {
+        QMessageBox::information(this, tr("Invalid Path"),
+                                 tr("The message box containing the path where to save the file cannot be empty"));
+        return;                         
+    }
     if (ui->pushButtonSelectArea->isChecked()) {
         rrs.height = areaSelector->getHeight();
         rrs.width = areaSelector->getWidth();
@@ -344,6 +349,7 @@ void MainWindow::on_pushButtonStart_clicked() {
     startAction->setDisabled(true);
     enable_or_disable_tabs(false);
 
+    
     ui->lineEditPath->setText(QString(outFilePath.c_str()));
 
     showOrHideWindow(true);
