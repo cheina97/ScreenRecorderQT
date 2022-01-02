@@ -195,6 +195,8 @@ int ScreenRecorder::getlatestFramesValue() {
         return 20;
     else if (vs.fps == 24)
         return 25;
+    else if(vs.fps == 15)
+        return 40;
     else {
         std::cout << "Bad FPS Settings" << endl;
         return 1;
@@ -225,6 +227,11 @@ void ScreenRecorder::initVideoSource() {
     avRawOptions = nullptr;
 
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
+#if defined _WIN32
+    if(vs.fps>15){
+         vs.fps = 15;
+    }
+#endif
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
