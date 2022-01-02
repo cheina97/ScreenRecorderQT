@@ -160,7 +160,7 @@ void ScreenRecorder::record() {
     };
     //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
-    unique_lock<mutex> error_queue_ul{error_queue_m};
+    /* unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
     if (!error_queue.empty()) {
         this->stopRecording();
@@ -171,7 +171,7 @@ void ScreenRecorder::record() {
             error_queue.pop();
         }
         throw runtime_error{error_message};
-    }
+    } */
 }
 
 void ScreenRecorder::initCommon() {
@@ -192,25 +192,6 @@ void ScreenRecorder::initCommon() {
 }
 
 void ScreenRecorder::initVideoSource() {
-    char *displayName = getenv("DISPLAY");
-
-    if (rrs.fullscreen) {
-        rrs.offset_x = 0;
-        rrs.offset_y = 0;
-#if defined _WIN32
-        SetProcessDPIAware();  //A program must tell the operating system that it is DPI-aware to get the true resolution when you go past 125%.
-        rrs.width = (int)GetSystemMetrics(SM_CXSCREEN);
-        rrs.height = (int)GetSystemMetrics(SM_CYSCREEN);
-#endif
-#if defined __linux__
-        Display *display = XOpenDisplay(displayName);
-        int screenNum = DefaultScreen(display);
-        rrs.width = DisplayWidth(display, screenNum);
-        rrs.height = DisplayHeight(display, screenNum);
-        XCloseDisplay(display);
-#endif
-    }
-
     rrs.width = rrs.width / 32 * 32;
     rrs.height = rrs.height / 2 * 2;
 

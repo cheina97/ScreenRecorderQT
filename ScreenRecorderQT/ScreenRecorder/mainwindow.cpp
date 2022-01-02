@@ -22,14 +22,12 @@ std::string deviceName;
 void MainWindow::alignValues() {
     ///rrs values
     if (ui->pushButtonFullscreen->isChecked()) {
-        screen = QGuiApplication::primaryScreen();
         rrs.width = screen->size().width();
         rrs.height = screen->size().height();
         rrs.offset_x = 0;
         rrs.offset_y = 0;
 
         rrs.screen_number = 0;
-        rrs.fullscreen = true;
     } else {
         rrs.height = areaSelector->getHeight();
         rrs.width = areaSelector->getWidth();
@@ -117,6 +115,8 @@ void MainWindow::showOrHideWindow(bool recording) {
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+    screen = QGuiApplication::primaryScreen();
+    qDebug()<<"serialNumber: "<<screen->serialNumber();
     ui->setupUi(this);
 
     ui->verticalLayout_6->addWidget(ui->comboBox);
@@ -270,7 +270,6 @@ void MainWindow::on_pushButtonSelectArea_clicked() {
     static bool first_call = true;
     bool state = ui->pushButtonSelectArea->isChecked();
 
-    rrs.fullscreen = false;
     qDebug() << "rrs.fullscreen = false";
 
     ui->pushButtonFullscreen->setChecked(false);
@@ -286,16 +285,15 @@ void MainWindow::on_pushButtonSelectArea_clicked() {
 }
 
 void MainWindow::on_pushButtonFullscreen_clicked() {
-    qDebug() << "fullscreen button clicked";
     ui->pushButtonSelectArea->setChecked(false);
     ui->pushButtonFullscreen->setChecked(true);
 
-    rrs.fullscreen = true;
     rrs.width = screen->size().width();
     rrs.height = screen->size().height();
     rrs.offset_x = 0;
     rrs.offset_y = 0;
-    qDebug() << "rrs.fullscreen = true";
+
+    qDebug() << "fullscreen: " << rrs.width << "x" << rrs.height;
 
     emit signal_show(false);
 }
@@ -310,53 +308,55 @@ void MainWindow::on_toolButton_clicked() {
 
 //////MAIN ACTIONS//////
 void MainWindow::on_pushButtonStart_clicked() {
-    if (ui->pushButtonFullscreen->isChecked() | ui->pushButtonSelectArea->isChecked()) {
-        if (!rrs.fullscreen) {
-            rrs.height = areaSelector->getHeight();
-            rrs.width = areaSelector->getWidth();
-            rrs.offset_x = areaSelector->getX();
-            rrs.offset_y = areaSelector->getY();
-        }
+    if (ui->pushButtonSelectArea->isChecked()) {
+        rrs.height = areaSelector->getHeight();
+        rrs.width = areaSelector->getWidth();
+        rrs.offset_x = areaSelector->getX();
+        rrs.offset_y = areaSelector->getY();
+    }
 
-        ui->pushButtonStop->setEnabled(true);
-        stopAction->setEnabled(true);
-        ui->pushButtonPause->setEnabled(true);
-        pauseAction->setEnabled(true);
-        ui->pushButtonStart->setDisabled(true);
-        startAction->setDisabled(true);
-        enable_or_disable_tabs(false);
+    ui->pushButtonStop->setEnabled(true);
+    stopAction->setEnabled(true);
+    ui->pushButtonPause->setEnabled(true);
+    pauseAction->setEnabled(true);
+    ui->pushButtonStart->setDisabled(true);
+    startAction->setDisabled(true);
+    enable_or_disable_tabs(false);
 
-        showOrHideWindow(true);
+    showOrHideWindow(true);
 
-        if (ui->pushButtonSelectArea->isChecked())
-            emit signal_recording(true);  //this changes the color of the border
+    if (ui->pushButtonSelectArea->isChecked())
+        emit signal_recording(true);  //this changes the color of the border
 
-        qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
-                 << "\n screen: " << rrs.screen_number << "\n fullscreen: " << rrs.fullscreen << "\n";
-        qDebug() << "valori di vs:"
-                 << "\n fps: " << vs.fps << "\n quality: " << vs.quality << "\n compression: " << vs.compression << "\n audio: " << QString::number(vs.audioOn) << "\n";
-        qDebug() << "Directory: " << QString::fromStdString(outFilePath);
-        qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
-        qDebug() << "minimize:: " << minimizeInSysTray;
+    qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
+             << "\n screen: " << rrs.screen_number << "\n fullscreen: " << ui->pushButtonFullscreen->isChecked() << "\n";
+    qDebug() << "valori di vs:"
+             << "\n fps: " << vs.fps << "\n quality: " << vs.quality << "\n compression: " << vs.compression << "\n audio: " << QString::number(vs.audioOn) << "\n";
+    qDebug() << "Directory: " << QString::fromStdString(outFilePath);
+    qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
+    qDebug() << "minimize:: " << minimizeInSysTray;
+    try {
+        screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
+        std::cout << "Built ScreenRecorder Object" << std::endl;
         try {
-            screenRecorder = make_unique<ScreenRecorder>(rrs, vs, outFilePath, deviceName);
-            std::cout << "Built ScreenRecorder Object" << std::endl;
-            try {
-                std::cout << "-> RECORDING..." << std::endl;
-                //screenRecorder->record();
-            } catch (const std::exception &e) {
-                std::string message = e.what();
-                message += "\nPlease close and restart the application.";
-                errorDialog.critical(0, "Error", QString::fromStdString(message));
-            }
+            std::cout << "-> RECORDING..." << std::endl;
+            screenRecorder->record();
         } catch (const std::exception &e) {
-            // Call to open the error dialog
+            setGeneralDefaultProperties();
+            alignValues();
             std::string message = e.what();
-            message += "\nPlease choose another device.";
+            message += "\nPlease close and restart the application.";
             errorDialog.critical(0, "Error", QString::fromStdString(message));
         }
-        screenRecorder.reset();
+    } catch (const std::exception &e) {
+        setGeneralDefaultProperties();
+        alignValues();
+        // Call to open the error dialog
+        std::string message = e.what();
+        message += "\nPlease choose another device.";
+        errorDialog.critical(0, "Error", QString::fromStdString(message));
     }
+    //screenRecorder.reset();
 }
 
 void MainWindow::on_pushButtonPause_clicked() {
