@@ -45,7 +45,6 @@ typedef struct
     int offset_x;
     int offset_y;
     int screen_number;
-    bool fullscreen;
 } RecordingRegionSettings;
 
 //NOTE: audio e video settings, riempiti con i parametri settati

@@ -192,25 +192,6 @@ void ScreenRecorder::initCommon() {
 }
 
 void ScreenRecorder::initVideoSource() {
-    char *displayName = getenv("DISPLAY");
-
-    if (rrs.fullscreen) {
-        rrs.offset_x = 0;
-        rrs.offset_y = 0;
-#if defined _WIN32
-        SetProcessDPIAware();  //A program must tell the operating system that it is DPI-aware to get the true resolution when you go past 125%.
-        rrs.width = (int)GetSystemMetrics(SM_CXSCREEN);
-        rrs.height = (int)GetSystemMetrics(SM_CYSCREEN);
-#endif
-#if defined __linux__
-        Display *display = XOpenDisplay(displayName);
-        int screenNum = DefaultScreen(display);
-        rrs.width = DisplayWidth(display, screenNum);
-        rrs.height = DisplayHeight(display, screenNum);
-        XCloseDisplay(display);
-#endif
-    }
-
     rrs.width = rrs.width / 32 * 32;
     rrs.height = rrs.height / 2 * 2;
 
@@ -237,6 +218,7 @@ void ScreenRecorder::initVideoSource() {
     }
 
 #elif defined __linux__
+    char *displayName = getenv("DISPLAY");
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
     if (avInputFmt == nullptr) {
