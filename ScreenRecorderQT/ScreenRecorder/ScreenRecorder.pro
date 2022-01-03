@@ -54,6 +54,8 @@ win32:DEPENDPATH += $$PWD/../include
 
 target.path=/opt/ScreenRecorder
 target.files=ScreenRecorder
+icon.path=/opt/ScreenRecorder
+icon.files=./icons/icon.svg
 launcher.path = /usr/share/applications/ScreenRecorder
 launcher.files = ../ScreenRecorder.desktop
 
