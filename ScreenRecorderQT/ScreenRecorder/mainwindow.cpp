@@ -401,6 +401,8 @@ void MainWindow::on_pushButtonStart_clicked() {
             try {
                 std::cout << "-> RECORDING..." << std::endl;
                 screenRecorder->record();
+                QMessageBox::information(this, tr("Recording ended"),
+                                         tr("The video have been recorded successfully.\n"));
             } catch (const std::exception &e) {
                 setGeneralDefaultProperties();
                 alignValues();
