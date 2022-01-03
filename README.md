@@ -34,6 +34,7 @@ There a re 2 main methods to compile the project:
 
 - Download **QtCreator** and the required libraries `sudo apt install qtcreator qtmultimedia5-dev `
 - Download the other required libraries `sudo apt install libasound2-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev` .
+- Install **c++ 20** `sudo apt install gcc-10 gcc-10-base gcc-10-doc g++-10` `sudo apt install libstdc++-10-dev libstdc++-10-doc`
 - Clone the repository `git clone https://github.com/cheina97/ScreenRecorderQT.git`
 - Open the **.pro** file in **ScreenRecorderQT/ScreenRecorder** with **QtCreator**
 - Click on the **Run** button to build the project and run it
