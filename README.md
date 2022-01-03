@@ -11,7 +11,7 @@ Project for the PDS course at the "Politecnico di Torino"
 
 This is a screen capture yadayadayada ......
 
-![](./img/screen1.png) ![](./img/screen2.png)
+![](./img/screen.png)
 
 
 
