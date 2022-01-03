@@ -10,12 +10,12 @@
 #ifdef __linux__
 using namespace std;
 #elif defined _WIN32
-#include <dshow.h>
+#include <windows.h>
 #include <initguid.h>
 #include <mmdeviceapi.h>
 #include <msxml.h>
 #include <objbase.h>
-#include <windows.h>
+#include <dshow.h>
 #pragma comment(lib, "strmiids.lib")
 #endif
 
@@ -126,6 +126,6 @@ std::vector<std::string> getAudioDevices() {
 #endif
         return devices;
     } catch (const std::exception& e) {
-        return std::vector<string>{};
+        return std::vector<std::string>{};
     }
 }
