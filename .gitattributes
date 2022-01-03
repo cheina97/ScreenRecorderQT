@@ -1,2 +1,2 @@
-lib linguist-vendored
-include linguist-vendored
+lib export-ignored
+include export-ignored
