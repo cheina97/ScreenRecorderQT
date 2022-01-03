@@ -1,2 +1,2 @@
-lib export-ignored
-include export-ignored
+lib/**/* export-ignored
+include/**/* export-ignored
