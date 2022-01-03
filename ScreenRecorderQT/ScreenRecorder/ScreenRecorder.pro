@@ -59,5 +59,5 @@ icon.files=./icons/icon.svg
 launcher.path = /usr/share/applications/ScreenRecorder
 launcher.files = ../ScreenRecorder.desktop
 
-unix:INSTALLS += launcher
+unix:INSTALLS += launcher icon
 unix:CONFIG += nostrip

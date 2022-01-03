@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Name=Screen Recorder
-Icon=/opt/ScreenRecorder/icon.png
+Icon=/opt/ScreenRecorder/icon.svg
 Exec=/opt/ScreenRecorder/ScreenRecorder
 Terminal=false
 Type=Application
