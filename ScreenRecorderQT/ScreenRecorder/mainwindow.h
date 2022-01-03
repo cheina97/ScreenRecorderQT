@@ -66,7 +66,6 @@ class MainWindow : public QMainWindow {
     QAction *pauseAction;
     QAction *stopAction;
     QAction *quitAction;
-    QShortcut *startstop_shortcut;
     bool minimizeInSysTray;
     QScreen *screen;
 

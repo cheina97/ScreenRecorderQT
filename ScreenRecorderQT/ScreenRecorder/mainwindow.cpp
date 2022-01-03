@@ -195,9 +195,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //set the general properties for the elements of the window
     setGeneralDefaultProperties();
 
-    startstop_shortcut = new QShortcut{QKeySequence(tr("Ctrl+O")), this};
-    connect(startstop_shortcut, &QShortcut::activated, this,
-            [&]() { qDebug() << "Pressed shortcut"; });
 }
 
 MainWindow::~MainWindow() {
@@ -403,8 +400,9 @@ void MainWindow::on_pushButtonStart_clicked() {
                 screenRecorder->record();
                 QMessageBox::information(this, tr("Recording ended"),
                                          tr(("The video has been recorded successfully.\n"
-                                            "The file has been saved at " +
-                                            outFilePath).c_str()));
+                                             "The file has been saved at " +
+                                             outFilePath)
+                                                .c_str()));
             } catch (const std::exception &e) {
                 setGeneralDefaultProperties();
                 alignValues();
