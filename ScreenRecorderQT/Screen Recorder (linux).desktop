@@ -1,8 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Name=Screen Recorder (linux)
-Icon=recordmydesktop
-Exec=./build-ScreenRecorder-Desktop-Debug/ScreenRecorder
-Terminal=false
-Type=Application
-

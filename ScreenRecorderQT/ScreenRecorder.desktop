@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Name=Screen Recorder
+Icon=recordmydesktop
+Exec=/opt/ScreenRecorder/ScreenRecorder
+Terminal=false
+Type=Application
+

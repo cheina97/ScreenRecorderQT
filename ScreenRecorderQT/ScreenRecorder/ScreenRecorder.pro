@@ -51,3 +51,11 @@ unix:LIBS += -lavformat -lavcodec -lavutil -lavdevice -lm -lswscale -lX11 -lpthr
 
 win32:INCLUDEPATH += $$PWD/../include
 win32:DEPENDPATH += $$PWD/../include
+
+target.path=/opt/ScreenRecorder
+target.files=ScreenRecorder
+launcher.path = /usr/share/applications/ScreenRecorder
+launcher.files = ../ScreenRecorder.desktop
+
+unix:INSTALLS += launcher
+unix:CONFIG += nostrip
