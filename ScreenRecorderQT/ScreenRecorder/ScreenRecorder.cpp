@@ -554,7 +554,6 @@ void ScreenRecorder::getRawPackets() {
 
             cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
             // STATUS MUTEX UNLOCK
-            if(status==RecordingStatus::stopped) break;
             ul.unlock();
 
             avRawPkt = av_packet_alloc();
