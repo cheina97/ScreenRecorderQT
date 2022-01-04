@@ -48,6 +48,7 @@ ScreenRecorder::~ScreenRecorder() {
     avformat_free_context(avFmtCtx);
     avio_close(avFmtCtxOut->pb);
     std::cout << "Screen Recorder deallocated" << endl;
+    handler_thread.get()->join();
 }
 
 void ScreenRecorder::handler() {

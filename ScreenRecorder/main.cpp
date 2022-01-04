@@ -26,7 +26,7 @@ int main(int argc, char const* argv[]) {
     vs.compression = atoi(argv[10]);
     string outFilePath = argv[11];
     try {
-        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[0].c_str()};
+        ScreenRecorder sr{rrs, vs, outFilePath, getAudioDevices()[2].c_str()};
         cout << "-> Costruito oggetto Screen Recorder" << endl;
         sr.record();
     } catch (const std::exception& e) {
