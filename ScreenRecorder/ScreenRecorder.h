@@ -10,18 +10,19 @@
 #include <queue>
 #include <string>
 #include <thread>
-#include <condition_variable>
 
 extern "C" {
 #if defined _WIN32
 #include <windows.h>
 
 #include "io.h"
-#else
+#elif defined __linux__
 #include <X11/Xlib.h>
 
 #include "alsa/asoundlib.h"
 #include "unistd.h"
+#elif defined __APPLE__
+
 #endif
 
 #include <stdlib.h>
@@ -39,6 +40,17 @@ extern "C" {
 
 using namespace std;
 
+//error messages
+
+const string err_msg_baddevice_audio =
+    "Couldn't use this audio device to record, maybe it is busy or cannot be used to record.\n"
+    "Check if it is used by another program, then try again.\n"
+    "If it still not work try with another device";
+const string err_msg_baddevice_video =
+    "Couldn't use this video device to record, maybe it is busy or cannot be used to record.\n"
+    "Check if it is used by another program, then try again.\n"
+    "If it still not work try with another device";
+const string err_msg_badpath = "Failed to create output file.\nThis path is invalid or doesn't exist.";
 typedef struct
 {
     int width;
@@ -71,6 +83,7 @@ class ScreenRecorder {
     void stopRecording();
     void pauseRecording();
     void resumeRecording();
+    RecordingStatus getStatus();
 
    private:
     //errors handling

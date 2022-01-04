@@ -859,6 +859,7 @@ void ScreenRecorder::acquireAudio() {
 #endif
         }
         cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
+        
         ul.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex) {
             //decode audio routing
