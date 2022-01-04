@@ -1,4 +1,4 @@
-# Screen Recorder QT
+# **f** Recorder QT
 Project for the PDS course at the "Politecnico di Torino"
 
 ### Group
@@ -7,15 +7,54 @@ Project for the PDS course at the "Politecnico di Torino"
 - Alessandra Comparetto
 - Alessandro Cannarella
 
-## Description
+## About Project
 
-This is a screen capture yadayadayada ......
+**Screen Recorder QT** is a software based on two components. 
 
-![](./img/screen.png)
+- The first is the **ScreenRecorder library**, a multiplatform **C++** library which allow to record the screen and optionally mux the audio recorded by the microphone with the captured video.
+- The second is the **QT application**, a **C++ native** frontend based on **QT libraries**, used to interact with the **ScreenRecorder library**.
+
+### Screen Recorder Library
+
+This is the **core** of the project. The library is composed by 2 main files **ScreenRecorder.ccp** and **ScreenRecorder.h**. It uses **ffmpeg** libraries to capture the frames (video and audio) , to elaborate them, and to save in a **.mp4** file. Those libraries are **avcodec**, **avdevice**, **avfilter**, **avformat** and **avutil**.
+
+It uses **2 threads** for the **video** recording and an for the **audio**:
+
+- **Video**: 
+    - **Raw Packets Thread**: It get the raw  video frames from the **os** virtual device (**x11grab** on Linux, **gdigrab** on Windows and  **avFoundation** on macOS) and insert them in a queue.
+    - **Elaboration Thread**: This take the raw packets from the queue and **decode and encode** it in the new format and **write** them in the output file. It also perform **scaling**.
+- **Audio**:
+	- **Microphone capture thread**: It get the raw audio frames from an **os** virtual device (**alsa** on Linux, **dshow** on Windows and  **avFoundation** on macOS) save them in a queue creating **bursts** that are then **elaborated (decode and encode)** and **written** in the output file.
+
+Those are the features offered by the library:
+
+- Record **Screen Video** without  **microphone audio**
+- Record **Screen Video** with **microphone audio**
+- **Pause** and **Resume** recording without creating separated files. 
+- **Compress** the video by a value chosen by the user *( 0 disable compression )*
+- **Rescale** the video by a value chosen by the user, between 0.1 and 1 *( 1 means no rescaling, 0.5 half rescaling ).*
+- Allows the user to specify the **position and the size** of the portion of screen that have to be recorded, by a value chosen by the user.
+- Allows the user to specify the **screen number**.
+- Allows the user to specify the screen recording's **fps**, by a value chosen by the user.
+- Allows the user to specify an **audio input device** *(the library doesn't find the available devices, it is up to the application )*.
+- Allows the user to specify the **output file name** (*it must end with **.mp4*** )
+- In case of **internal errors** throws an **exception** with a **description of the error** and gracefully **stop the registration** (if the library is recording), creating the output file with what has been recorded till that moment.
+
+### QT Application
+
+Allow to use the **ScreenRecorder library**, offering a **GUI** to set the **parameters** and to give **commands**.
+
+In order to improve the user experience, the **GUI** create also an icon in the os **system tray** to interact with the library without using the main window.
+
+It uses **QTmultimedia** library to find the available **audio devices** on **Windows** and **MacOS**. Instead on **Linux** is used the **getAudioDevices** function ( in getAudioDevices.cpp ), which return only the **input audio devices**.
+
+The dimensions of the screen are retrieved with **QGuiApplication** and a portion of the screen can be selected using the **AreaSelector** ( AreaSelector.cpp ).
+
+#### Screenshots
+
+![Main window](./img/screen.png)
 
 
-
-![](./img/graph.png)
 
 ## Linux
 
