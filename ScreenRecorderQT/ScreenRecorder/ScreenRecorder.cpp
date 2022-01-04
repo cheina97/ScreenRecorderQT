@@ -319,7 +319,7 @@ void ScreenRecorder::initVideoSource() {
 void ScreenRecorder::linuxVideoResume() {
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-    av_dict_set(&avRawOptions, "show_region", "1", 0);
+    //av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
     char *displayName = getenv("DISPLAY");
