@@ -1,11 +1,11 @@
-# **f** Recorder QT
-Project for the PDS course at the "Politecnico di Torino"
+# Screen Recorder QT
+Project for the **PDS** course at the **"Politecnico di Torino"**
 
 ### Group
 
-- Francesco Cheinasso
-- Alessandra Comparetto
-- Alessandro Cannarella
+- [Francesco Cheinasso](https://github.com/cheina97)
+- [Alessandra Comparetto](https://github.com/alessandracomparetto)
+- [Alessandro Cannarella](https://github.com/cannarelladev)
 
 ## About Project
 
@@ -53,6 +53,8 @@ The dimensions of the screen are retrieved with **QGuiApplication** and a portio
 #### Screenshots
 
 ![Main window](./img/screen.png)
+
+![Main window](./img/video.gif)
 
 
 
