@@ -73,3 +73,5 @@ Thumbs.db
 *.dll
 *.exe
 *.mp4
+
+build

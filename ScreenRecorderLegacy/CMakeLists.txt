@@ -19,22 +19,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 ##############################################
 
-################ START UNIX #################
-IF(UNIX)
-target_link_libraries(main PRIVATE Threads::Threads)
-include_directories(${FFMPEG_DEV_ROOT}/include)
-link_directories(${FFMPEG_DEV_ROOT}/lib)
-link_libraries(
-    avcodec
-    avformat
-    avfilter
-    avdevice
-    swresample
-    swscale
-    avutil
-)
-ENDIF(UNIX)
-##############################################
 SET(CMAKE_CXX_FLAGS_DEBUG "-0 -g")
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS_DEBUG)
 
