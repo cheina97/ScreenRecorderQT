@@ -1,5 +1,0 @@
-/home/alessandro/Scrivania/Repo/ScreenRecorder/ScreenRecorder/CMakeFiles/edit_cache.dir
-/home/alessandro/Scrivania/Repo/ScreenRecorder/ScreenRecorder/CMakeFiles/package_source.dir
-/home/alessandro/Scrivania/Repo/ScreenRecorder/ScreenRecorder/CMakeFiles/rebuild_cache.dir
-/home/alessandro/Scrivania/Repo/ScreenRecorder/ScreenRecorder/CMakeFiles/package.dir
-/home/alessandro/Scrivania/Repo/ScreenRecorder/ScreenRecorder/CMakeFiles/main.dir

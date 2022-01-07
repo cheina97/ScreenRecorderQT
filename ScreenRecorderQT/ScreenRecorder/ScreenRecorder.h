@@ -109,7 +109,6 @@ class ScreenRecorder {
     bool end = false;
 
     //common variables
-    unique_ptr<thread> handler_thread;
     unique_ptr<thread> captureVideo_thread;
     unique_ptr<thread> captureAudio_thread;
     unique_ptr<thread> elaborate_thread;

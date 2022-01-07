@@ -1,8 +1,0 @@
-# ninja log v5
-3	9869	1633361409664005262	CMakeFiles/main.dir/GetAudioDevices.cpp.o	35f6d58ba6463601
-4	4713	1633361404518654606	CMakeFiles/main.dir/ScreenRecorder.cpp.o	293287ecd03bfaf2
-3	2185	1633361401989983100	CMakeFiles/main.dir/MemoryCheckLinux.cpp.o	144b4bba342fdff9
-2	4957	1633361404758718122	CMakeFiles/main.dir/main.cpp.o	b80f986b3d55f031
-0	3476	1633356636335667812	CMakeFiles/ClasseUnica.dir/main.cpp.o	640875b8b199aa0
-10	2763	1633356635623649761	CMakeFiles/ClasseUnica.dir/ScreenRecorder.cpp.o	120664e70b3ece25
-3	1183	1633356634043609594	CMakeFiles/ClasseUnica.dir/MemoryCheckLinux.cpp.o	8ab1cec5c39f47c2

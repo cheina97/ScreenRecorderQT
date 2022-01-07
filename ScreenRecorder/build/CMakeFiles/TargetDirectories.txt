@@ -1,5 +1,0 @@
-/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build/CMakeFiles/edit_cache.dir
-/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build/CMakeFiles/package_source.dir
-/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build/CMakeFiles/rebuild_cache.dir
-/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build/CMakeFiles/package.dir
-/home/cheina/Desktop/PROGETTONDIPDS/ScreenCaptureQT/ffmpegProve/ClasseUnicaTentativo/build/CMakeFiles/main.dir

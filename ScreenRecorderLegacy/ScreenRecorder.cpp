@@ -50,6 +50,34 @@ ScreenRecorder::~ScreenRecorder() {
     std::cout << "Screen Recorder deallocated" << endl;
 }
 
+void ScreenRecorder::handler() {
+    bool handlerEnd = false;
+    int command = 0;
+    std::cout << "\nScreerRecorder Handler" << endl;
+    std::cout << "Commands:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+    while (!handlerEnd) {
+        cin >> command;
+        switch (command) {
+            case 1:
+                std::cout << "Pause Recording..." << endl;
+                pauseRecording();
+                break;
+            case 2:
+                std::cout << "Resuming Recording..." << endl;
+                resumeRecording();
+                break;
+            case 3:
+                std::cout << "End Recording!" << endl;
+                stopRecording();
+                handlerEnd = true;
+                break;
+            default:
+                std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+                break;
+        }
+    }
+}
+
 function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f) {
     return [&]() {
         try {
@@ -87,6 +115,7 @@ void ScreenRecorder::record() {
             })();
         });
     };
+    //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
     unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });

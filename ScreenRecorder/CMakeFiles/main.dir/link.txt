@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/main.dir/main.cpp.o CMakeFiles/main.dir/GetAudioDevices.cpp.o CMakeFiles/main.dir/MemoryCheckLinux.cpp.o CMakeFiles/main.dir/ScreenRecorder.cpp.o -o main  -pthread 
