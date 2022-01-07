@@ -50,34 +50,6 @@ ScreenRecorder::~ScreenRecorder() {
     std::cout << "Screen Recorder deallocated" << endl;
 }
 
-void ScreenRecorder::handler() {
-    bool handlerEnd = false;
-    int command = 0;
-    std::cout << "\nScreerRecorder Handler" << endl;
-    std::cout << "Commands:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
-    while (!handlerEnd) {
-        cin >> command;
-        switch (command) {
-            case 1:
-                std::cout << "Pause Recording..." << endl;
-                pauseRecording();
-                break;
-            case 2:
-                std::cout << "Resuming Recording..." << endl;
-                resumeRecording();
-                break;
-            case 3:
-                std::cout << "End Recording!" << endl;
-                stopRecording();
-                handlerEnd = true;
-                break;
-            default:
-                std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
-                break;
-        }
-    }
-}
-
 function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f) {
     return [&]() {
         try {
@@ -115,7 +87,6 @@ void ScreenRecorder::record() {
             })();
         });
     };
-    //handler_thread = std::make_unique<std::thread>([&]() { this->handler(); });
 
     unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
@@ -239,7 +210,7 @@ void ScreenRecorder::initVideoSource() {
     }
 #endif
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-    //av_dict_set(&avRawOptions, "show_region", "1", 0);
+    av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
     //av_dict_set(&avRawOptions, "minrate", "0", 0);
@@ -277,7 +248,7 @@ void ScreenRecorder::initVideoSource() {
     av_dict_set(&avRawOptions, "pixel_format", "uyvy422", 0); /* yuv420p */
     av_dict_set(&avRawOptions, "vf", ("crop=1920:1080:0:0" + to_string(rrs.width) + ":" + to_string(rrs.height) + ":" + to_string(rrs.offset_x) + ":" + to_string(rrs.offset_y)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-    //av_dict_set(&avRawOptions, "show_region", "1", 0);
+    av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "42M", 0);
 
     AVInputFormat *avInputFmt = nullptr;
@@ -319,7 +290,7 @@ void ScreenRecorder::initVideoSource() {
 void ScreenRecorder::linuxVideoResume() {
     av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-    //av_dict_set(&avRawOptions, "show_region", "1", 0);
+    av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
     char *displayName = getenv("DISPLAY");
