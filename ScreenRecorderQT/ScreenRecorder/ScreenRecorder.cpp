@@ -1,9 +1,5 @@
 #include "ScreenRecorder.h"
 
-#include <exception>
-#include <iostream>
-
-#include "GetAudioDevices.h"
 #if defined __linux__
 #include "MemoryCheckLinux.h"
 #endif
@@ -41,7 +37,7 @@ ScreenRecorder::~ScreenRecorder() {
         captureAudio_thread.get()->join();
         avformat_close_input(&FormatContextAudio);
         avformat_free_context(FormatContextAudio);
-    };
+    }
 
     av_write_trailer(avFmtCtxOut);
     avformat_close_input(&avFmtCtx);
@@ -86,7 +82,7 @@ void ScreenRecorder::record() {
                 this->acquireAudio();
             })();
         });
-    };
+    }
 
     unique_lock<mutex> error_queue_ul{error_queue_m};
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
@@ -795,7 +791,7 @@ void ScreenRecorder::acquireAudio() {
     if (!swrContext) {
         throw runtime_error("Cannot allocate the resample context");
     }
-    if ((swr_init(swrContext)) < 0) {
+    if (swr_init(swrContext) < 0) {
         throw runtime_error("Could not open resample context");
         swr_free(&swrContext);
     }
