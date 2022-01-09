@@ -15,7 +15,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
         initVideoSource();
         std::cout << "-> Finished initVideoSource" << std::endl;
         initVideoVariables();
-        std::cout << "-> Finished initiVideoVariables" << std::endl;
+        std::cout << "-> Finished initVideoVariables" << std::endl;
         if (vs.audioOn) {
             initAudioSource();
             initAudioVariables();
@@ -486,7 +486,7 @@ void ScreenRecorder::getRawPackets() {
     //bool run = true;
     int framesValue = getlatestFramesValue();
     if (vs.audioOn) {
-        // DOPPIA PORTA PER PARTENZA SINCRO
+        // Double port for sync, startup
         unique_lock<mutex> ul_video(video_lock);
         video_ready = true;
         std::cout << "Video Ready" << endl;
@@ -494,7 +494,7 @@ void ScreenRecorder::getRawPackets() {
         cv_audio.notify_all();
         ul_video.unlock();
         std::cout << "Video Started" << endl;
-        // FINE DOPPIA PORTA
+        // End double port
     }
 
     try {
@@ -532,7 +532,6 @@ void ScreenRecorder::getRawPackets() {
             avRawPkt_queue.push(avRawPkt);
             avRawPkt_queue_mutex.unlock();
 
-            //da togliere da qui e mettere nell'app con chiamata a stop();
 #if defined __linux__
             memoryCheck_limitSurpassed();
 #endif
@@ -573,7 +572,7 @@ void ScreenRecorder::decodeAndEncode() {
             avRawPkt_queue.pop();
             avRawPkt_queue_mutex.unlock();
             if (avRawPkt->stream_index == videoIndex) {
-                //Inizio DECODING
+                //Start DECODING
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
 
                 av_packet_unref(avRawPkt);
@@ -584,11 +583,11 @@ void ScreenRecorder::decodeAndEncode() {
                 }
                 got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
 
-                //Fine DECODING
+                //End DECODING
                 if (got_picture == 0) {
                     sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
 
-                    //Inizio ENCODING
+                    //Start ENCODING
                     avYUVFrame->pts = (int64_t)j * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                     j++;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
@@ -648,13 +647,13 @@ void ScreenRecorder::initAudioVariables() {
     }
     // OPEN CODEC
     if (avcodec_open2(AudioCodecContextIn, AudioCodecIn, NULL) < 0) {
-        throw runtime_error("Could not open decodec . ");
+        throw runtime_error("Could not open decoder . ");
     }
 
     // NEW AUDIOSTREAM OUTPUT
     AVStream *AudioStreamOut = avformat_new_stream(avFmtCtxOut, NULL);
     if (!AudioStreamOut) {
-        printf("cannnot create new audio stream for output!\n");
+        printf("cannot create new audio stream for output!\n");
     }
     // FIND CODEC OUTPUT
     AudioCodecOut = avcodec_find_encoder(AV_CODEC_ID_AAC);
@@ -685,7 +684,7 @@ void ScreenRecorder::initAudioVariables() {
     if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER)
         AudioCodecContextOut->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     if (avcodec_open2(AudioCodecContextOut, AudioCodecOut, NULL) < 0) {
-        throw runtime_error("errore open audio");
+        throw runtime_error("Error open audio");
     }
 
     //find a free stream index
@@ -801,8 +800,7 @@ void ScreenRecorder::acquireAudio() {
 #endif
 
     if (vs.audioOn) {
-        //TODO Riscrivo in inglese
-        // DOPPIA PORTA PER PARTENZA SINCRO
+        // Double port for sync, startup
         unique_lock<mutex> ul_audio(audio_lock);
         audio_ready = true;
         cout << "Audio Ready" << endl;
@@ -810,8 +808,7 @@ void ScreenRecorder::acquireAudio() {
         cv_video.notify_all();
         ul_audio.unlock();
         cout << "Audio Started" << endl;
-        //TODO Riscrivo in inglese
-        // FINE DOPPIA PORTA
+        // End double port
     }
 
     while (true) {
@@ -955,7 +952,7 @@ void ScreenRecorder::initConvertedSamples(uint8_t ***converted_input_samples, AV
     /* Allocate memory for the samples of all channels in one consecutive
   * block for convenience. */
     if (av_samples_alloc(*converted_input_samples, nullptr, output_codec_context->channels, frame_size, output_codec_context->sample_fmt, 0) < 0) {
-        throw runtime_error("could not allocate memeory for samples in all channels (audio)");
+        throw runtime_error("could not allocate memory for samples in all channels (audio)");
     }
 }
 
