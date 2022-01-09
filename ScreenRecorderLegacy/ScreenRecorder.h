@@ -162,6 +162,7 @@ class ScreenRecorder {
     bool audioReady();
     bool videoReady();
     void audioEnd();
+    void handler();
     void linuxVideoResume();
     void windowsResumeAudio();
     string statusToString();
