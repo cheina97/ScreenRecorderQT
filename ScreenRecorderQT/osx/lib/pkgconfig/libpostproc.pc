@@ -1,0 +1,14 @@
+prefix=/usr/local/Cellar/ffmpeg/4.4.1_5
+exec_prefix=${prefix}
+libdir=/usr/local/Cellar/ffmpeg/4.4.1_5/lib
+includedir=/usr/local/Cellar/ffmpeg/4.4.1_5/include
+
+Name: libpostproc
+Description: FFmpeg postprocessing library
+Version: 55.9.100
+Requires: 
+Requires.private: libavutil >= 56.70.100
+Conflicts:
+Libs: -L${libdir}  -lpostproc 
+Libs.private: -lm
+Cflags: -I${includedir}

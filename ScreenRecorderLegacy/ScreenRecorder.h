@@ -1,6 +1,6 @@
 #ifndef SCREENRECORDER_H
 #define SCREENRECORDER_H
-#include <time.h>
+//#include <time.h>
 
 #include <chrono>
 #include <condition_variable>
@@ -11,7 +11,8 @@
 #include <string>
 #include <thread>
 
-extern "C" {
+extern "C"
+{
 #if defined _WIN32
 #include <windows.h>
 
@@ -22,6 +23,9 @@ extern "C" {
 #include "alsa/asoundlib.h"
 #include "unistd.h"
 #elif defined __APPLE__
+#include <ctime>
+#include <X11/Xlib.h>
+#include "unistd.h"
 
 #endif
 
@@ -40,7 +44,7 @@ extern "C" {
 
 using namespace std;
 
-//error messages
+// error messages
 
 const string err_msg_baddevice_audio =
     "Couldn't use this audio device to record, maybe it is busy or cannot be used to record.\n"
@@ -60,23 +64,25 @@ typedef struct
     int screen_number;
 } RecordingRegionSettings;
 
-//NOTE: audio e video settings, riempiti con i parametri settati
+// NOTE: audio e video settings, riempiti con i parametri settati
 typedef struct
 {
     int fps;
-    float quality;    //value between 0.1 and 1
-    int compression;  // value between 1 and 8
+    float quality;   // value between 0.1 and 1
+    int compression; // value between 1 and 8
     bool audioOn;
 } VideoSettings;
 
-enum class RecordingStatus {
+enum class RecordingStatus
+{
     recording,
     paused,
     stopped
 };
 
-class ScreenRecorder {
-   public:
+class ScreenRecorder
+{
+public:
     ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice = "noDevice");
     ~ScreenRecorder();
     void record();
@@ -85,15 +91,15 @@ class ScreenRecorder {
     void resumeRecording();
     RecordingStatus getStatus();
 
-   private:
-    //errors handling
+private:
+    // errors handling
     queue<string> error_queue;
     mutex error_queue_m;
     int terminated_threads = 0;
     condition_variable error_queue_cv;
     function<void(void)> make_error_handler(function<void(void)> f);
 
-    //settings variables
+    // settings variables
     RecordingRegionSettings rrs;
     VideoSettings vs;
     RecordingStatus status;
@@ -108,13 +114,13 @@ class ScreenRecorder {
     bool audio_end = false;
     bool end = false;
 
-    //common variables
+    // common variables
     unique_ptr<thread> captureVideo_thread;
     unique_ptr<thread> captureAudio_thread;
     unique_ptr<thread> elaborate_thread;
     bool gotFirstValidVideoPacket;
 
-    //video variables
+    // video variables
     AVFormatContext *avFmtCtx, *avFmtCtxOut;
     AVCodecContext *avRawCodecCtx;
     AVCodecContext *avEncoderCtx;
@@ -130,7 +136,7 @@ class ScreenRecorder {
     AVStream *video_st;
     int64_t pts_offset;
 
-    //audio variables
+    // audio variables
     AVDictionary *AudioOptions;
     AVFormatContext *FormatContextAudio;
     AVCodecContext *AudioCodecContextIn;
@@ -143,7 +149,7 @@ class ScreenRecorder {
     mutex audio_stop_mutex;
     bool audio_stop;
 
-    int audioIndex;  // AUDIO STREAM INDEX
+    int audioIndex; // AUDIO STREAM INDEX
     int audioIndexOut;
 
     int64_t NextAudioPts = 0;
@@ -166,7 +172,7 @@ class ScreenRecorder {
     void windowsResumeAudio();
     string statusToString();
 
-    //functions
+    // functions
     void initCommon();
     void initVideoSource();
     void initVideoVariables();
@@ -182,4 +188,4 @@ class ScreenRecorder {
     void initConvertedSamples(uint8_t ***, AVCodecContext *, int);
 };
 
-#endif  // SCREENRECORDER_H
+#endif // SCREENRECORDER_H
