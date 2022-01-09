@@ -60,7 +60,6 @@ typedef struct
     int screen_number;
 } RecordingRegionSettings;
 
-//NOTE: audio e video settings, riempiti con i parametri settati
 typedef struct
 {
     int fps;

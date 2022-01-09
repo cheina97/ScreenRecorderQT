@@ -318,7 +318,7 @@ void MainWindow::on_pushButtonSelectArea_clicked() {
 
     ui->pushButtonFullscreen->setChecked(false);
     ui->pushButtonSelectArea->setChecked(true);
-    //evitare bad behaviour in caso di doppio click
+    //avoid bad behaviour in case of double click
     if (state) {
         if (first_call) {
             first_call = false;
@@ -383,9 +383,9 @@ void MainWindow::on_pushButtonStart_clicked() {
 
     alignValues();
 
-    qDebug() << "Valori rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
+    qDebug() << "Values rrs: \n wxh: " << rrs.width << " x " << rrs.height << "\noffset: " << rrs.offset_x << ", " << rrs.offset_y
              << "\n screen: " << rrs.screen_number << "\n fullscreen: " << ui->pushButtonFullscreen->isChecked() << "\n";
-    qDebug() << "valori di vs:"
+    qDebug() << "values di vs:"
              << "\n fps: " << vs.fps << "\n quality: " << vs.quality << "\n compression: " << vs.compression << "\n audio: " << QString::number(vs.audioOn) << "\n";
     qDebug() << "Directory: " << QString::fromStdString(outFilePath);
     qDebug() << "DeviceName: " << QString::fromStdString(deviceName);
