@@ -1,5 +1,4 @@
 #include "ScreenRecorder.h"
-#include <cmath>
 
 #include <exception>
 #include <iostream>
@@ -34,7 +33,7 @@ ScreenRecorder::ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, st
         }
         initOutputFile();
 #if defined __linux__
-        memoryCheck_init(3000); // ERROR
+        memoryCheck_init(4000); // ERROR
 #endif
     }
     catch (const std::exception &e)
@@ -48,17 +47,45 @@ ScreenRecorder::~ScreenRecorder()
     captureVideo_thread.get()->join();
     elaborate_thread.get()->join();
     if (vs.audioOn)
-    {
         captureAudio_thread.get()->join();
-        avformat_close_input(&FormatContextAudio);
-        avformat_free_context(FormatContextAudio);
-    };
 
     av_write_trailer(avFmtCtxOut);
     avformat_close_input(&avFmtCtx);
-    avformat_free_context(avFmtCtx);
     avio_close(avFmtCtxOut->pb);
+    avformat_free_context(avFmtCtx);
+    handler_thread.get()->join();
     std::cout << "Screen Recorder deallocated" << endl;
+}
+
+void ScreenRecorder::handler()
+{
+    bool handlerEnd = false;
+    int command = 0;
+    std::cout << "\nScreerRecorder Handler" << endl;
+    std::cout << "Commands:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+    while (!handlerEnd)
+    {
+        cin >> command;
+        switch (command)
+        {
+        case 1:
+            std::cout << "Pause Recording..." << endl;
+            pauseRecording();
+            break;
+        case 2:
+            std::cout << "Resuming Recording..." << endl;
+            resumeRecording();
+            break;
+        case 3:
+            std::cout << "End Recording!" << endl;
+            stopRecording();
+            handlerEnd = true;
+            break;
+        default:
+            std::cout << "Invalid Command:\n[1] Pause\n[2] Resume\n[3] Stop" << endl;
+            break;
+        }
+    }
 }
 
 function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f)
@@ -99,22 +126,21 @@ void ScreenRecorder::record()
                                                             { this->make_error_handler([this]()
                                                                                        { this->acquireAudio(); })(); });
     };
+    handler_thread = std::make_unique<std::thread>([&]()
+                                                   { this->handler(); });
 
-    unique_lock<mutex> error_queue_ul{error_queue_m};
-    error_queue_cv.wait(error_queue_ul, [&]()
-                        { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
-    if (!error_queue.empty())
-    {
+    /* unique_lock<mutex> error_queue_ul{error_queue_m};
+    error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
+    if (!error_queue.empty()) {
         this->stopRecording();
         string error_message = error_queue.front();
         error_queue.pop();
-        while (!error_queue.empty())
-        {
+        while (!error_queue.empty()) {
             error_message += string{"\n"} + error_queue.front();
             error_queue.pop();
         }
         throw runtime_error{error_message};
-    }
+    } */
 }
 
 bool ScreenRecorder::audioReady()
@@ -164,10 +190,7 @@ void ScreenRecorder::resumeRecording()
         linuxVideoResume();
 #endif
 #if defined _WIN32
-        if (vs.audioOn)
-        {
-            windowsResumeAudio();
-        }
+        windowsResumeAudio();
 #endif
         status = RecordingStatus::recording;
         cv.notify_all();
@@ -192,42 +215,17 @@ string ScreenRecorder::statusToString()
 
 int ScreenRecorder::getlatestFramesValue()
 {
-    int base = 10;
-    int result = 0;
-    double numerator = 4;
-    double fps = vs.fps;
-    if (fps < 8)
-        fps = 8;
-
-    double denominator = ((fps - 7) + 0.00) / 60.00;
-    double factor = numerator / denominator;
-    int divisor = factor / 5.00;
-    double rest_factor = factor - (divisor * 5);
-
-    if (rest_factor >= 2.5)
-    {
-        result = (divisor * 5) + 5;
-    }
-    else
-    {
-        result = (divisor * 5);
-    }
-
-    return base + result;
-
-    /* if (vs.fps == 60)
+    if (vs.fps == 60)
         return 10;
     else if (vs.fps == 30)
         return 20;
     else if (vs.fps == 24)
         return 25;
-    else if (vs.fps == 15)
-        return 40;
     else
     {
         std::cout << "Bad FPS Settings" << endl;
         return 1;
-    } */
+    }
 }
 
 void ScreenRecorder::initCommon()
@@ -257,17 +255,10 @@ void ScreenRecorder::initVideoSource()
 
     avRawOptions = nullptr;
 
-#if defined _WIN32
-    if (vs.fps > 15)
-    {
-        vs.fps = 15;
-    }
-#endif
-
-    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "x" + to_string(rrs.height)).c_str(), 0);
+    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     av_dict_set(&avRawOptions, "show_region", "1", 0);
-
+    av_dict_set(&avRawOptions, "probesize", "30M", 0);
     // av_dict_set(&avRawOptions, "maxrate", "200k", 0);
     // av_dict_set(&avRawOptions, "minrate", "0", 0);
     // av_dict_set(&avRawOptions, "bufsize", "2000k", 0);
@@ -278,18 +269,16 @@ void ScreenRecorder::initVideoSource()
     {
         throw logic_error{"av_find_input_format not found......"};
     }
-    av_dict_set(&avRawOptions, "probesize", "30M", 0);
     av_dict_set(&avRawOptions, "offset_x", to_string(rrs.offset_x).c_str(), 0);
     av_dict_set(&avRawOptions, "offset_y", to_string(rrs.offset_y).c_str(), 0);
 
     if (avformat_open_input(&avFmtCtx, "desktop", avInputFmt, &avRawOptions) != 0)
     {
-        throw logic_error{err_msg_baddevice_video};
+        throw logic_error{"Couldn't open input stream"};
     }
 
 #elif defined __linux__
     char *displayName = getenv("DISPLAY");
-    av_dict_set(&avRawOptions, "probesize", "30M", 0);
     AVInputFormat *avInputFmt = av_find_input_format("x11grab");
 
     if (avInputFmt == nullptr)
@@ -299,37 +288,17 @@ void ScreenRecorder::initVideoSource()
 
     if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0)
     {
-        throw runtime_error{err_msg_baddevice_video};
+        throw runtime_error{"Couldn't open input stream."};
     }
 #else
     // Apple
 
-    // System Resolution
-    CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
-    CGFloat monitorHeight = CGRectGetHeight(mainMonitor);
-    CGFloat monitorWidth = CGRectGetWidth(mainMonitor);
-    cout << "System Resolution: " << monitorWidth << " x " << monitorHeight << endl;
-
-    // Monitor Size MM
-    cout << "Monitor Size in MM: " << CGDisplayScreenSize(CGMainDisplayID()).width << " x " << CGDisplayScreenSize(CGMainDisplayID()).height << endl;
-
-    // Monitor Resolution
-
-    cout << CGDisplayPixelsWide(CGMainDisplayID()) << " x " << CGDisplayPixelsHigh(CGMainDisplayID()) << endl;
-
-    Display *display = XOpenDisplay(NULL);
-    Screen *screen = DefaultScreenOfDisplay(display);
-    cout << XPlanesOfScreen(screen) << " " << XHeightOfScreen(screen) << " " << screen->width << " " << screen->height << endl;
-
-    string video_format = "crop=" + to_string(rrs.width) + ":" + to_string(rrs.height) + ":" + to_string(rrs.offset_x) + ":" + to_string(rrs.offset_y);
-    cout << video_format << endl;
-
-    // av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "x" + to_string(rrs.height)).c_str(), 0);
-    // av_dict_set(&avRawOptions, "preset", "ultrafast", 0);
-    //av_dict_set(&avRawOptions, "list_devices", "true", 0);    // TO SHOW DEVICE LIST
+    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
+    av_dict_set(&avRawOptions, "preset", "ultrafast", 0);
+    // av_dict_set(&avRawOptions, "list_devices", "true", 0); // TO SHOW DEVICE LIST
     av_dict_set(&avRawOptions, "pixel_format", "uyvy422", 0); /* yuv420p */
-    av_dict_set(&avRawOptions, "vf", video_format.c_str(), 0);
-    //av_dict_set(&avRawOptions, "framerate", "30", 0);
+    av_dict_set(&avRawOptions, "vf", ("crop=1920:1080:0:0" + to_string(rrs.width) + ":" + to_string(rrs.height) + ":" + to_string(rrs.offset_x) + ":" + to_string(rrs.offset_y)).c_str(), 0);
+    av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     // av_dict_set(&avRawOptions, "show_region", "1", 0);
     av_dict_set(&avRawOptions, "probesize", "42M", 0);
 
@@ -337,18 +306,18 @@ void ScreenRecorder::initVideoSource()
     avInputFmt = av_find_input_format("avfoundation");
     if (avInputFmt == nullptr)
     {
-        throw runtime_error{err_msg_baddevice_video};
+        std::cout << "errore apertura" << endl;
     }
     //[video]:[audio]
-    if (int value = avformat_open_input(&avFmtCtx, (to_string(rrs.screen_number) + ":none").c_str(), avInputFmt, &avRawOptions))
+    if (int value = avformat_open_input(&avFmtCtx, "1:none", avInputFmt, &avRawOptions))
     {
-        throw runtime_error{err_msg_baddevice_video};
+        throw runtime_error{"Couldn't open Apple video input stream."};
     }
 #endif
 
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0)
     {
-        throw logic_error{err_msg_baddevice_video};
+        throw logic_error{"Couldn't open input stream."};
     }
 
     videoIndex = -1;
@@ -395,11 +364,11 @@ void ScreenRecorder::linuxVideoResume()
 
         if (avformat_open_input(&avFmtCtx, (string(displayName) + "." + to_string(rrs.screen_number) + "+" + to_string(rrs.offset_x) + "," + to_string(rrs.offset_y)).c_str(), avInputFmt, &avRawOptions) != 0)
         {
-            throw runtime_error{err_msg_baddevice_video};
+            throw runtime_error{"Couldn't open input stream."};
         }
     if (avformat_find_stream_info(avFmtCtx, &avRawOptions) < 0)
     {
-        throw logic_error{err_msg_baddevice_video};
+        throw logic_error{"Couldn't open input stream."};
     }
 
     videoIndex = -1;
@@ -508,7 +477,7 @@ void ScreenRecorder::initVideoVariables()
     // Open output URL
     if (avio_open(&avFmtCtxOut->pb, outFilePath.c_str(), AVIO_FLAG_READ_WRITE) < 0)
     {
-        throw runtime_error{err_msg_badpath};
+        throw runtime_error{"Failed to open output file!"};
     }
 
     swsCtx = sws_getContext(avRawCodecCtx->width,
@@ -546,7 +515,7 @@ void ScreenRecorder::initAudioSource()
     }
     if (avformat_open_input(&FormatContextAudio, "none:0", AudioInputFormat, &AudioOptions) < 0)
     {
-        throw runtime_error(err_msg_baddevice_audio);
+        throw runtime_error("Couldn't open audio input stream.");
     }
 #endif
 
@@ -560,7 +529,7 @@ void ScreenRecorder::initAudioSource()
 
     if (avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, NULL) < 0)
     {
-        throw runtime_error(err_msg_baddevice_audio);
+        throw runtime_error("Couldn't open audio input stream.");
     }
 #endif
 
@@ -573,7 +542,7 @@ void ScreenRecorder::initAudioSource()
     {
         // cerr << "Error in opening input device (audio)" << endl;
         // exit(-1);
-        throw runtime_error(err_msg_baddevice_audio);
+        throw runtime_error("Error in opening input device");
     }
 
 #endif
@@ -621,63 +590,59 @@ void ScreenRecorder::getRawPackets()
         // FINE DOPPIA PORTA
     }
 
-    try
+    while (framesValue != 0)
     {
-        while (framesValue != 0)
+        // STATUS MUTEX LOCK
+        unique_lock<mutex> ul(status_lock);
+
+        // STOP CHECK
+        if (status == RecordingStatus::stopped && audio_end)
         {
-            // STATUS MUTEX LOCK
-            unique_lock<mutex> ul(status_lock);
-
-            // STOP CHECK
-            if (status == RecordingStatus::stopped && (audio_end || !vs.audioOn))
-            {
-                // std::cout << "Video End" << endl;
-                framesValue--;
-            }
-            // PAUSE CHECK
-            if (status == RecordingStatus::paused)
-            {
-                std::cout << "Video Pause" << endl;
+            // std::cout << "Video End" << endl;
+            framesValue--;
+        }
+        // PAUSE CHECK
+        if (status == RecordingStatus::paused)
+        {
+            std::cout << "Video Pause" << endl;
 #if defined __linux__
-                avformat_close_input(&avFmtCtx);
-                if (avFmtCtx != nullptr)
-                {
-                    throw runtime_error("Unable to close the avFmtCtx (before pause)");
-                }
-#endif
-            }
-
-            cv.wait(ul, [this]()
-                    { return status != RecordingStatus::paused; });
-            // STATUS MUTEX UNLOCK
-            ul.unlock();
-
-            avRawPkt = av_packet_alloc();
-            int value = av_read_frame(avFmtCtx, avRawPkt);
-            if (value < 0)
+            avformat_close_input(&avFmtCtx);
+            if (avFmtCtx != nullptr)
             {
-                throw runtime_error(("Error in getting RawPacket" + to_string(value)).c_str());
+                throw runtime_error("Unable to close the avFmtCtx (before pause)");
             }
-
-            if (avRawPkt->size)
-            {
-                avRawPkt_queue_mutex.lock();
-                avRawPkt_queue.push(avRawPkt);
-                avRawPkt_queue_mutex.unlock();
-            }
-
-            // da togliere da qui e mettere nell'app con chiamata a stop();
-#if defined __linux__
-            memoryCheck_limitSurpassed();
 #endif
         }
-    }
-    catch (const std::exception &e)
-    {
-        end = true;
-        throw;
-    }
 
+        cv.wait(ul, [this]()
+                { return status != RecordingStatus::paused; });
+        // STATUS MUTEX UNLOCK
+        ul.unlock();
+
+        avRawPkt = av_packet_alloc();
+        int value = av_read_frame(avFmtCtx, avRawPkt) < 0;
+        if (value < 0)
+        {
+            throw runtime_error("Error in getting RawPacket from x11");
+        }
+
+        avRawPkt_queue_mutex.lock();
+        avRawPkt_queue.push(avRawPkt);
+        avRawPkt_queue_mutex.unlock();
+
+        // da togliere da qui e mettere nell'app con chiamata a stop();
+#if defined __linux__
+        try
+        {
+            memoryCheck_limitSurpassed();
+        }
+        catch (const runtime_error &e)
+        {
+            std::cout << "ERROR: MEMORY LIMIT SURPASSED" << endl;
+            stopRecording();
+        }
+#endif
+    }
     std::cout << "END GETRAWPACKET" << endl;
     end = true;
 }
@@ -735,10 +700,11 @@ void ScreenRecorder::decodeAndEncode()
                     j++;
                     flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
 
+                    // Fine ENCODING
+
                     if (flag >= 0)
                     {
                         got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
-                        // Fine ENCODING
                         if (got_picture == 0)
                         {
                             if (!gotFirstValidVideoPacket)
@@ -770,11 +736,9 @@ void ScreenRecorder::decodeAndEncode()
             unique_lock<mutex> ul(status_lock);
             if (status == RecordingStatus::stopped && avRawPkt_queue.empty() && end)
             {
-                // TODO  controllo se effettivamente serve
                 ul.unlock();
                 break;
             }
-            // TODO  controllo se effettivamente serve
             ul.unlock();
         }
     }
@@ -984,8 +948,7 @@ void ScreenRecorder::acquireAudio()
 
     if (vs.audioOn)
     {
-        // TODO Riscrivo in inglese
-        //  DOPPIA PORTA PER PARTENZA SINCRO
+        // DOPPIA PORTA PER PARTENZA SINCRO
         unique_lock<mutex> ul_audio(audio_lock);
         audio_ready = true;
         cout << "Audio Ready" << endl;
@@ -994,8 +957,7 @@ void ScreenRecorder::acquireAudio()
         cv_video.notify_all();
         ul_audio.unlock();
         cout << "Audio Started" << endl;
-        // TODO Riscrivo in inglese
-        //  FINE DOPPIA PORTA
+        // FINE DOPPIA PORTA
     }
 
     while (true)
@@ -1014,7 +976,6 @@ void ScreenRecorder::acquireAudio()
         }
         cv.wait(ul, [this]()
                 { return status != RecordingStatus::paused; });
-
         ul.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex)
         {
@@ -1055,7 +1016,7 @@ void ScreenRecorder::acquireAudio()
                 scaledFrame = av_frame_alloc();
                 if (!scaledFrame)
                 {
-                    throw runtime_error("Cannot allocate an AVPacket for encoded audio");
+                    throw runtime_error("Cannot allocate an AVPacket for encoded auio");
                 }
 
                 scaledFrame->nb_samples = AudioCodecContextOut->frame_size;
@@ -1087,7 +1048,12 @@ void ScreenRecorder::acquireAudio()
                         outPacket->stream_index = audioIndexOut;
 
                         write_lock.lock();
-#if defined __linux__
+#if defined _WIN32
+                        if (av_write_frame(avFmtCtxOut, outPacket) != 0)
+                        {
+                            throw runtime_error("Error in writing audio frame");
+                        }
+#elif defined __linux__
                         if (gotFirstValidVideoPacket)
                         {
                             if (!firstBuffer)
@@ -1101,11 +1067,6 @@ void ScreenRecorder::acquireAudio()
                             {
                                 firstBuffer = false;
                             }
-                        }
-#else
-                        if (av_write_frame(avFmtCtxOut, outPacket) != 0)
-                        {
-                            throw runtime_error("Error in writing audio frame");
                         }
 #endif
                         write_lock.unlock();
@@ -1123,11 +1084,9 @@ void ScreenRecorder::acquireAudio()
         {
             cout << "Audio End" << endl;
             audioEnd();
-            // TODO vedo se serve fare unlock
             ul.unlock();
             break;
         }
-        // TODO vedo se serve fare unlock
         ul.unlock();
     }
     cout << "END ACQUIREAUDIO" << endl;
@@ -1170,9 +1129,4 @@ void ScreenRecorder::initConvertedSamples(uint8_t ***converted_input_samples, AV
     {
         throw runtime_error("could not allocate memeory for samples in all channels (audio)");
     }
-}
-
-RecordingStatus ScreenRecorder::getStatus()
-{
-    return this->status;
 }
