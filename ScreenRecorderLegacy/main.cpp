@@ -53,7 +53,7 @@ int main(int argc, char const* argv[]) {
     string audioDevice = argv[10];
     string outFilePath = argv[11];
 
-    ScreenRecorder screenRecorder = ScreenRecorder{rrs, vs, outFilePath, audioDevice};
+    ScreenRecorder screenRecorder {rrs, vs, outFilePath, audioDevice};
 
     auto screenRecorder_thread = thread{
         [&]() {
