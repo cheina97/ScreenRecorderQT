@@ -97,3 +97,32 @@ In some cases installing **c++ 20** won't be enough to compile the application a
 ### Troubleshooting
 
 If the application return an error related to the video device when you start the recording it could be caused by the **DISPLAY** environment variable. Try to  **export** a new **DISPLAY** variable with the command `export DISPLAY=:1`. Sometimes (especially in **VM**) the **DISPLAY** variable contains the screen number  and looks like **:1.0** but this library is expecting a **DISPLAY** variable which look like **:1** (only the **Xserver**) without **screen number**.
+
+---
+## Windows
+
+### How to compile and run (QT legacy application) 
+- Download **Qt 5.15** or higher version.
+- Open with Qt Creator the file `ScreenRecorderLegacyQT.pro` that you can find in the folder `ScreenRecorderLegacyQT`.
+- Let Qt choose the best kit configuration. The default version provided should work just fine, but in case you need to know what has been used:
+    - Device type: Desktop
+    - Compiler C++: MinGW (C++, x86 64bit in C:\TDM-GCC-64\bin)
+    - Debugger: System GDB at C:\TDM-GCC\bin\gdb.exe
+    - Qt version: Qt 5.15.2 (mingw81_64)
+    - CMake Tool: CMake 3.19.2 (Qt)
+- Once the project is open, please click on "Project" in the side bar.
+- You will be able to see "Run" option on the left (Build & Run section). Click on this option.
+- Explicit the command line arguments in the field. An example may be `700 700 0 0 0 30 1 5 1 "Microphone (Realtek High Definition Audio)" ../outFolder/out.mp4`.
+- Check the "Run in terminal" option.
+- Finally, run the application using the green button. You will see the terminal pop up.
+
+### How to compile and run (QT application)
+- Download **Qt 5.15** or higher version.
+- Open with Qt Creator the file `ScreenRecorder.pro` that you can find in the folder `ScreenRecorderQT\ScreenRecorder`.
+- Let Qt choose the best kit configuration. The default version provided should work just fine, but in case you need to know what has been used:
+     - Device type: Desktop
+    - Compiler C++: MinGW (C++, x86 64bit in C:\TDM-GCC-64\bin)
+    - Debugger: System GDB at C:\TDM-GCC\bin\gdb.exe
+    - Qt version: Qt 5.15.2 (mingw81_64)
+    - CMake Tool: CMake 3.19.2 (Qt)
+- Finally, run the application using the green button. You will see GUI pop up.
