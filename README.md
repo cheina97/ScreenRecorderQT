@@ -56,7 +56,15 @@ The dimensions of the screen are retrieved with **QGuiApplication** and a portio
 
 ![Main window](./img/video.gif)
 
+### "Legacy" version
+**ScreenRecorder library** can be used without the support of the GUI mentioned before. In the "legacy" versions, the user is able to record a video using the terminal window provided by the OS. 
 
+In this case, it's possible to control the action of the application by pressing the commands
+ - [1] to pause
+ - [2] to resume
+ - [3] to stop
+
+While the folder **ScreenRecorderLegacyQT** holds the code to run this application specifically in Qt Creator (through `ScreenRecorderLegacyQT.pro`), **ScreenRecorderLegacy** code can be compiled using any IDE of your preference.
 
 ## Linux
 
