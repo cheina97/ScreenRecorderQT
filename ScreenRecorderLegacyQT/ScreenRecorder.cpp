@@ -116,9 +116,20 @@ void ScreenRecorder::audioEnd() {
 void ScreenRecorder::stopRecording() {
     std::cout << "trying to stop recording" << endl;
     lock_guard<mutex> lg(status_lock);
-    if (status == RecordingStatus::recording || status == RecordingStatus::paused)
+    if (status == RecordingStatus::recording || status == RecordingStatus::paused) {
+        if (status == RecordingStatus::paused) {
+#if defined __linux__
+            linuxVideoResume();
+#endif
+#if defined _WIN32
+            if (vs.audioOn) {
+                windowsResumeAudio();
+            }
+#endif
+        }
         status = RecordingStatus::stopped;
-    cv.notify_all();
+        cv.notify_all();
+    }
     std::cout << "status: " << statusToString() << endl;
 }
 
@@ -162,18 +173,25 @@ string ScreenRecorder::statusToString() {
 }
 
 int ScreenRecorder::getlatestFramesValue() {
-    if (vs.fps == 60)
-        return 10;
-    else if (vs.fps == 30)
-        return 20;
-    else if (vs.fps == 24)
-        return 25;
-    else if (vs.fps == 15)
-        return 40;
-    else {
-        std::cout << "Bad FPS Settings" << endl;
-        return 1;
+    int base = 10;
+    int result = 0;
+    double numerator = 4;
+    double fps = vs.fps;
+    if (fps < 8)
+        fps = 8;
+
+    double denominator = ((fps - 7) + 0.00) / 60.00;
+    double factor = numerator / denominator;
+    int divisor = factor / 5.00;
+    double rest_factor = factor - (divisor * 5);
+
+    if (rest_factor >= 2.5) {
+        result = (divisor * 5) + 5;
+    } else {
+        result = (divisor * 5);
     }
+
+    return base + result;
 }
 
 void ScreenRecorder::initCommon() {
@@ -206,9 +224,7 @@ void ScreenRecorder::initVideoSource() {
     }
 #endif
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-#if not defined _WIN32
     av_dict_set(&avRawOptions, "show_region", "1", 0);
-#endif
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
     //av_dict_set(&avRawOptions, "minrate", "0", 0);
@@ -503,12 +519,6 @@ void ScreenRecorder::getRawPackets() {
         while (framesValue != 0) {
             // STATUS MUTEX LOCK
             unique_lock<mutex> ul(status_lock);
-
-            // STOP CHECK
-            if (status == RecordingStatus::stopped && (audio_end || !vs.audioOn)) {
-                //std::cout << "Video End" << endl;
-                framesValue--;
-            }
             // PAUSE CHECK
             if (status == RecordingStatus::paused) {
                 std::cout << "Video Pause" << endl;
@@ -520,8 +530,13 @@ void ScreenRecorder::getRawPackets() {
 #endif
             }
 
-
             cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
+            // STOP CHECK
+            if (status == RecordingStatus::stopped && (audio_end || !vs.audioOn)) {
+                framesValue--;
+                //break;
+            }
+
             // STATUS MUTEX UNLOCK
             ul.unlock();
 
@@ -619,13 +634,16 @@ void ScreenRecorder::decodeAndEncode() {
         } else {
             avRawPkt_queue_mutex.unlock();
             unique_lock<mutex> ul(status_lock);
-            if (status == RecordingStatus::stopped && avRawPkt_queue.empty() && end) {
-                //TODO  controllo se effettivamente serve
+            if (status == RecordingStatus::stopped) {
                 ul.unlock();
-                break;
+                avRawPkt_queue_mutex.lock();
+                if (avRawPkt_queue.empty() && end) {
+                    //TODO  controllo se effettivamente serve
+                    avRawPkt_queue_mutex.unlock();
+                    break;
+                }
+                avRawPkt_queue_mutex.unlock();
             }
-            //TODO  controllo se effettivamente serve
-            ul.unlock();
         }
     }
 
@@ -825,7 +843,13 @@ void ScreenRecorder::acquireAudio() {
 #endif
         }
         cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
-
+        if (status == RecordingStatus::stopped) {
+            cout << "Audio End" << endl;
+            audioEnd();
+            //TODO vedo se serve fare unlock
+            ul.unlock();
+            break;
+        }
         ul.unlock();
         if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == audioIndex) {
             //decode audio routing
@@ -913,16 +937,10 @@ void ScreenRecorder::acquireAudio() {
                 av_packet_unref(outPacket);
             }
         }
-        ul.lock();
-        if (status == RecordingStatus::stopped) {
-            cout << "Audio End" << endl;
-            audioEnd();
-            //TODO vedo se serve fare unlock
-            ul.unlock();
-            break;
-        }
+        //ul.lock();
+
         //TODO vedo se serve fare unlock
-        ul.unlock();
+        //ul.unlock();
     }
     cout << "END ACQUIREAUDIO" << endl;
 }
