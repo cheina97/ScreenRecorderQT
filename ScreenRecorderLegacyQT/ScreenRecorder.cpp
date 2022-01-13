@@ -206,7 +206,9 @@ void ScreenRecorder::initVideoSource() {
     }
 #endif
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
+#if not defined _WIN32
     av_dict_set(&avRawOptions, "show_region", "1", 0);
+#endif
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
     //av_dict_set(&avRawOptions, "minrate", "0", 0);
