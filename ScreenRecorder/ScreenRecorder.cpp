@@ -566,7 +566,7 @@ void ScreenRecorder::getRawPackets()
         unique_lock<mutex> ul(status_lock);
 
         // STOP CHECK
-        if (status == RecordingStatus::stopped && audio_end)
+        if (status == RecordingStatus::stopped && (audio_end || !vs.audioOn))
         {
             //cout << "Video End" << endl;
             framesValue--;
@@ -684,12 +684,12 @@ void ScreenRecorder::decodeAndEncode()
                             pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                             pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
 
-                            write_lock.lock();
+                            /* write_lock.lock();
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0)
                             {
                                 throw runtime_error("Error in writing file");
                             }
-                            write_lock.unlock();
+                            write_lock.unlock(); */
                             i++;
                         }
                     }
