@@ -56,7 +56,7 @@ The dimensions of the screen are retrieved with **QGuiApplication** and a portio
 
 ![Main window](./img/video.gif)
 
-### "Legacy" version
+### Legacy Applications
 **ScreenRecorder library** can be used without the support of the GUI mentioned before. In the "legacy" versions, the user is able to record a video using the terminal window provided by the OS. 
 
 In this case, it's possible to control the action of the application by pressing the commands
@@ -64,7 +64,7 @@ In this case, it's possible to control the action of the application by pressing
  - [2] to resume
  - [3] to stop
 
-While the folder **ScreenRecorderLegacyQT** holds the code to run this application specifically in Qt Creator (through `ScreenRecorderLegacyQT.pro`), **ScreenRecorderLegacy** code can be compiled using any IDE of your preference.
+While the folder **ScreenRecorderLegacyQT** holds the code to build this application using **Qmake** (through `ScreenRecorderLegacyQT.pro`), **ScreenRecorderLegacy** code can be compiled using **VisualStudio** of your preference.
 
 ## Linux
 
@@ -94,13 +94,24 @@ In some cases installing **c++ 20** won't be enough to compile the application a
 
 #### Legacy application
 
-- Download the required **Qt libraries** `sudo apt install qt5-qmake qtmultimedia5-dev `
-- Download the other required libraries `sudo apt install libasound2-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev`
+- Download the required libraries `sudo apt install libasound2-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev`
 - Install **c++ 20** `sudo apt install gcc-10 gcc-10-base gcc-10-doc g++-10` `sudo apt install libstdc++-10-dev libstdc++-10-doc`
 - Clone the repository `git clone https://github.com/cheina97/ScreenRecorderQT.git`
 - Go in the project folder  `cd ScreenRecorderQT/ScreenRecorderLegacy`
 - Compile it `make clean-linux; make compile-linux`
+- Allow the **binary** to be executed  `chmod 777 ScreenRecorder`
 - Run it `./main`
+
+#### Legacy application (Qmake)
+
+- Download the required libraries `sudo apt install libasound2-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev`
+- Install **c++ 20** `sudo apt install gcc-10 gcc-10-base gcc-10-doc g++-10` `sudo apt install libstdc++-10-dev libstdc++-10-doc`
+- Clone the repository `git clone https://github.com/cheina97/ScreenRecorderQT.git`
+- Go in the project folder  `cd ScreenRecorderQT/ScreenRecorderLegacyQT`
+- Generate the **Makefile** `qmake ScreenRecorderLegacyQT.pro`
+- Compile it `make clean; make all`
+- Allow the **binary** to be executed  `chmod 777 ScreenRecorder`
+- Run it `./ScreenRecorderLegacyQT `
 
 ### Troubleshooting
 
@@ -111,7 +122,7 @@ If the application return an error related to the video device when you start th
 
 ### How to compile and run (QT legacy application) 
 - Download **Qt 5.15** or higher version.
-- Open with Qt Creator the file `ScreenRecorderLegacyQT.pro` that you can find in the folder `ScreenRecorderLegacyQT`.
+- Open with **Qt Creator** the file `ScreenRecorderLegacyQT.pro` that you can find in the folder `ScreenRecorderLegacyQT`.
 - Let Qt choose the best kit configuration. The default version provided should work just fine, but in case you need to know what has been used:
     - Device type: Desktop
     - Compiler C++: MinGW (C++, x86 64bit in C:\TDM-GCC-64\bin)
