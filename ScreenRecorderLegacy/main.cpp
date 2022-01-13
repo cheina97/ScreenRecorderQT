@@ -53,21 +53,27 @@ int main(int argc, char const* argv[]) {
     string audioDevice = argv[10];
     string outFilePath = argv[11];
 
-    ScreenRecorder screenRecorder {rrs, vs, outFilePath, audioDevice};
+    try {
+        ScreenRecorder screenRecorder{rrs, vs, outFilePath, audioDevice};
 
-    auto screenRecorder_thread = thread{
-        [&]() {
-            try {
-                screenRecorder.record();
-            } catch (const std::exception& e) {
-                cout<<"There was an error in the library, please write 3 and press enter to save what has been recorded"<<endl;
-                screenRecorder.stopRecording();
-            }
-        }};
+        auto screenRecorder_thread = thread{
+            [&]() {
+                try {
+                    screenRecorder.record();
+                } catch (const std::exception& e) {
+                    std::cerr << e.what() << endl;
+                    cout << "There was an error in the library, please write 3 and press enter to save what has been recorded" << endl;
+                    screenRecorder.stopRecording();
+                }
+            }};
 
-    handler(screenRecorder);
+        handler(screenRecorder);
 
-    screenRecorder_thread.join();
+        screenRecorder_thread.join();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << endl;
+        cout << "Maybe there was an error opening a device, try to change it" << endl;
+    }
 
     return 0;
 }
