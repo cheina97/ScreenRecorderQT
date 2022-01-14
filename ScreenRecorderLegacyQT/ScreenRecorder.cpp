@@ -206,9 +206,7 @@ void ScreenRecorder::initVideoSource() {
     }
 #endif
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
-#if not defined _WIN32
     av_dict_set(&avRawOptions, "show_region", "1", 0);
-#endif
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
     //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
     //av_dict_set(&avRawOptions, "minrate", "0", 0);
@@ -520,7 +518,6 @@ void ScreenRecorder::getRawPackets() {
 #endif
             }
 
-
             cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
             // STATUS MUTEX UNLOCK
             ul.unlock();
@@ -530,9 +527,9 @@ void ScreenRecorder::getRawPackets() {
                 throw runtime_error("Error in getting RawPacket");
             }
 
-            avRawPkt_queue_mutex.lock();
+            unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
             avRawPkt_queue.push(avRawPkt);
-            avRawPkt_queue_mutex.unlock();
+            avRawPkt_queue_ul.unlock();
 
 #if defined __linux__
             memoryCheck_limitSurpassed();
@@ -568,11 +565,11 @@ void ScreenRecorder::decodeAndEncode() {
     int j = 1;
 
     while (true) {
-        avRawPkt_queue_mutex.lock();
+        unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
         if (!avRawPkt_queue.empty()) {
             avRawPkt = avRawPkt_queue.front();
             avRawPkt_queue.pop();
-            avRawPkt_queue_mutex.unlock();
+            avRawPkt_queue_ul.unlock();
             if (avRawPkt->stream_index == videoIndex) {
                 //Start DECODING
                 flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
@@ -617,7 +614,7 @@ void ScreenRecorder::decodeAndEncode() {
                 }
             }
         } else {
-            avRawPkt_queue_mutex.unlock();
+            avRawPkt_queue_ul.unlock();
             unique_lock<mutex> ul(status_lock);
             if (status == RecordingStatus::stopped && avRawPkt_queue.empty() && end) {
                 //TODO  controllo se effettivamente serve
