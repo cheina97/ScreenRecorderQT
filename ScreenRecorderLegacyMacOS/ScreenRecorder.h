@@ -22,7 +22,10 @@ extern "C" {
 #include "alsa/asoundlib.h"
 #include "unistd.h"
 #elif defined __APPLE__
-
+#include <ctime>
+#include <X11/Xlib.h>
+#include "unistd.h"
+#include <CoreGraphics/CGDisplayConfiguration.h>
 #endif
 
 #include <stdlib.h>
@@ -75,7 +78,7 @@ enum class RecordingStatus {
 };
 
 class ScreenRecorder {
-   public:
+public:
     ScreenRecorder(RecordingRegionSettings rrs, VideoSettings vs, string outFilePath, string audioDevice = "noDevice");
     ~ScreenRecorder();
     void record();
@@ -84,7 +87,7 @@ class ScreenRecorder {
     void resumeRecording();
     RecordingStatus getStatus();
 
-   private:
+private:
     //errors handling
     queue<string> error_queue;
     mutex error_queue_m;
