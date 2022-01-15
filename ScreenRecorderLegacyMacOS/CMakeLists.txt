@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-set(CMAKE_VERBOSE_MAKEFILE ON) # VERBOSE BUILD
+set(CMAKE_VERBOSE_MAKEFILE OFF) # VERBOSE BUILD
 add_compile_options(--std=c++20)
 
 add_executable(main main.cpp GetAudioDevices.cpp MemoryCheckLinux.cpp ScreenRecorder.cpp) 
@@ -36,6 +36,10 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
         libswresample
         libswscale
         libavutil
+)
+target_link_libraries(main PRIVATE
+        "-framework CoreGraphics"
+        "-framework Foundation"
 )
 ENDIF(APPLE)
 ##############################################

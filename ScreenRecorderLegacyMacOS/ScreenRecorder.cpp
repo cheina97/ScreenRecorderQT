@@ -62,7 +62,6 @@ function<void(void)> ScreenRecorder::make_error_handler(function<void(void)> f) 
 }
 
 void ScreenRecorder::record() {
-    //stop = false;
     audio_stop = false;
     gotFirstValidVideoPacket = false;
 
@@ -111,6 +110,20 @@ bool ScreenRecorder::videoReady() {
 void ScreenRecorder::audioEnd() {
     lock_guard<mutex> lg(audio_lock);
     audio_end = true;
+}
+
+void ScreenRecorder::videoEnd() {
+    lock_guard<mutex> lg(video_lock);
+    video_end = true;
+    cout << video_end << endl;
+    if(vs.audioOn){
+        cv_audio.notify_all();
+    }
+}
+
+bool ScreenRecorder::isVideoEnd() {
+    lock_guard<mutex> lg(video_lock);
+    return video_end;
 }
 
 void ScreenRecorder::stopRecording() {
@@ -174,7 +187,7 @@ string ScreenRecorder::statusToString() {
 int ScreenRecorder::getlatestFramesValue() {
     int base = 10;
     int result = 0;
-    double numerator = 4;
+    double numerator = 5;
     double fps = vs.fps;
     if (fps < 8)
         fps = 8;
@@ -224,7 +237,7 @@ void ScreenRecorder::initVideoSource() {
         vs.fps = 15;
     }
 #endif
-    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "*" + to_string(rrs.height)).c_str(), 0);
+    av_dict_set(&avRawOptions, "video_size", (to_string(rrs.width) + "x" + to_string(rrs.height)).c_str(), 0);
     av_dict_set(&avRawOptions, "framerate", to_string(vs.fps).c_str(), 0);
     av_dict_set(&avRawOptions, "show_region", "1", 0);
     //av_dict_set(&avRawOptions, "maxrate", "200k", 0);
@@ -274,7 +287,7 @@ void ScreenRecorder::initVideoSource() {
 
     Display *display = XOpenDisplay(NULL);
     Screen *screen = DefaultScreenOfDisplay(display);
-    cout << XPlanesOfScreen(screen) << " " << XHeightOfScreen(screen) << " " << screen->width << " " << screen->height << endl;*/
+    cout << XPlanesOfScreen(screen) << " " << XHeightOfScreen(screen) << " " << screen->width << " " << screen->height << endl; */
 
     string video_format = "crop=" + to_string(rrs.width) + ":" + to_string(rrs.height) + ":" + to_string(rrs.offset_x) + ":" + to_string(rrs.offset_y); 
     cout << video_format << endl;
@@ -525,7 +538,11 @@ void ScreenRecorder::initAudioSource() {
 
 void ScreenRecorder::getRawPackets() {
     AVPacket *avRawPkt;
+    int value = -1;
     int framesValue = getlatestFramesValue();
+#if defined __APPLE__
+    framesValue = framesValue * 2;
+#endif
     if (vs.audioOn) {
         // Double port for sync, startup
         unique_lock<mutex> ul_video(video_lock);
@@ -557,14 +574,15 @@ void ScreenRecorder::getRawPackets() {
             cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
             // STOP CHECK
             if (status == RecordingStatus::stopped && (audio_end || !vs.audioOn)) {
-                //std::cout << "Video End" << endl;
-                framesValue--;
+                if(value >= 0){
+                    framesValue--;
+                }
             }
             // STATUS MUTEX UNLOCK
             ul.unlock();
             
             avRawPkt = av_packet_alloc();
-            int value = av_read_frame(avFmtCtx, avRawPkt);
+            value = av_read_frame(avFmtCtx, avRawPkt);
             if (value >= 0 && avRawPkt->size){
                 //throw runtime_error(("Error in getting RawPacket" + to_string(value)).c_str());
                 unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
@@ -577,12 +595,12 @@ void ScreenRecorder::getRawPackets() {
 #endif
         }
     } catch (const std::exception &e) {
-        end = true;
+        videoEnd();
         throw;
     }
 
     std::cout << "END GETRAWPACKET" << endl;
-    end = true;
+    videoEnd();
 }
 
 void ScreenRecorder::decodeAndEncode() {
@@ -660,13 +678,13 @@ void ScreenRecorder::decodeAndEncode() {
             if (status == RecordingStatus::stopped) {
                 ul.unlock();
                 avRawPkt_queue_ul.lock();
-                if(avRawPkt_queue.empty() && end){
+                if(avRawPkt_queue.empty() && isVideoEnd()){
                     avRawPkt_queue_ul.unlock();
                     break;
                 }
                 avRawPkt_queue_ul.unlock();
             }
-            ul.unlock();
+            //ul.unlock();
         }
     }
 
@@ -842,17 +860,15 @@ void ScreenRecorder::acquireAudio() {
     bool firstBuffer = true;
 #endif
 
-    if (vs.audioOn) {
-        // Double port for sync, startup
-        unique_lock<mutex> ul_audio(audio_lock);
-        audio_ready = true;
-        cout << "Audio Ready" << endl;
-        cv_audio.wait(ul_audio, [this]() { return videoReady(); });
-        cv_video.notify_all();
-        ul_audio.unlock();
-        cout << "Audio Started" << endl;
-        // End double port
-    }
+    // Double port for sync, startup
+    unique_lock<mutex> ul_audio(audio_lock);
+    audio_ready = true;
+    cout << "Audio Ready" << endl;
+    cv_audio.wait(ul_audio, [this]() { return videoReady(); });
+    cv_video.notify_all();
+    ul_audio.unlock();
+    cout << "Audio Started" << endl;
+    // End double port
 
     while (true) {
         unique_lock<mutex> ul(status_lock);
@@ -870,6 +886,10 @@ void ScreenRecorder::acquireAudio() {
             cout << "Audio End" << endl;
             audioEnd();
             ul.unlock();
+            // WAIT VIDEO GETRAWPACKET ENDS
+            ul_audio.lock();
+            cv_audio.wait(ul_audio, [this]() { return isVideoEnd(); });
+            ul_audio.unlock();
             break;
         }
         ul.unlock();

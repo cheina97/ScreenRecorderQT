@@ -108,7 +108,7 @@ private:
     bool audio_ready = false;
     bool video_ready = false;
     bool audio_end = false;
-    bool end = false;
+    bool video_end = false;
 
     //common variables
     unique_ptr<thread> captureVideo_thread;
@@ -164,6 +164,8 @@ private:
     bool audioReady();
     bool videoReady();
     void audioEnd();
+    void videoEnd();
+    bool isVideoEnd();
     void handler();
     void linuxVideoResume();
     void windowsResumeAudio();
