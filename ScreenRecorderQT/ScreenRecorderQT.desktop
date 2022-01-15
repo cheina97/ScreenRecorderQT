@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Name=Screen Recorder QT
+Icon=/opt/ScreenRecorderQT/icon.svg
+Exec=/opt/ScreenRecorderQT/ScreenRecorderQT
+Terminal=false
+Type=Application
+

@@ -52,12 +52,12 @@ unix:LIBS += -lavformat -lavcodec -lavutil -lavdevice -lm -lswscale -lX11 -lpthr
 win32:INCLUDEPATH += $$PWD/../include
 win32:DEPENDPATH += $$PWD/../include
 
-target.path=/opt/ScreenRecorder
-target.files=ScreenRecorder
-icon.path=/opt/ScreenRecorder
+target.path=/opt/ScreenRecorderQT
+target.files=ScreenRecorderQT
+icon.path=/opt/ScreenRecorderQT
 icon.files=./icons/icon.svg
-launcher.path = /usr/share/applications/ScreenRecorder
-launcher.files = ../ScreenRecorder.desktop
+launcher.path = /usr/share/applications/ScreenRecorderQT
+launcher.files = ../ScreenRecorderQT.desktop
 
 unix:INSTALLS += launcher icon
 unix:CONFIG += nostrip
