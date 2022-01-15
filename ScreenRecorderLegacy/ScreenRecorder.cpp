@@ -656,7 +656,7 @@ void ScreenRecorder::getRawPackets()
             int value = av_read_frame(avFmtCtx, avRawPkt);
             if (value < 0)
             {
-                throw runtime_error(("Error in getting RawPacket" + to_string(value)).c_str());
+                //throw runtime_error(("Error in getting RawPacket" + to_string(value)).c_str());
             }
 
             if (avRawPkt->size)
