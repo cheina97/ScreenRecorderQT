@@ -68,7 +68,7 @@ In this case, it's possible to control the action of the application by pressing
 
 ### How to run (QT application only)
 
-- Download the latest binary from this [link](https://github.com/cheina97/PDS_Project/releases/latest/download/ScreenRecorder_linux_amd64)
+- Download the latest binary from this [link](https://github.com/cheina97/PDS_Project/releases/latest/download/ScreenRecorderQT_linux_amd64)
 - Install the required libraries with `sudo apt install ffmpeg qt5-default` (Needs QT 5.15 or higher versions)
 - Allow the binary execution with `chmod 777 ScreenRecorder_linux_amd64`
 - Run the program with `./ScreenRecorder_linux_amd64`
