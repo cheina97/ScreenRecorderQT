@@ -16,7 +16,7 @@ AreaSelector::AreaSelector()
       frame_width(320 + framePenWidth), // default dimension
       frame_height(200 + framePenWidth), frame_min_width(320 + framePenWidth),
       frame_min_height(200 + framePenWidth), frameColor(Qt::black) {
-    setWindowTitle("ScreenCapture");
+    setWindowTitle("Screen Recorder QT");
     QIcon icon(QString::fromUtf8(":/icons/mainIcon.jpg"));
     setWindowIcon(icon);
 

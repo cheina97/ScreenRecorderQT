@@ -137,7 +137,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     areaSelector = new AreaSelector();
 
-    setWindowTitle("ScreenCapture");
+    setWindowTitle("Screen Recorder QT");
 
     errorDialog.setFixedSize(500, 200);
 
