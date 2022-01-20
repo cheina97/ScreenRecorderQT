@@ -75,7 +75,6 @@ class MainWindow : public QMainWindow {
     void setGeneralDefaultProperties();
     void showOrHideWindow(bool);
     void setQualityANDCompression(int);
-    void check_stopped_and_exec(std::function<void(void)> f, QCloseEvent *event);
     std::string forge_outpath(std::string outFilePath);
 };
 #endif  // MAINWINDOW_H

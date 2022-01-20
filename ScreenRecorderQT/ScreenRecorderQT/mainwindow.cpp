@@ -231,11 +231,8 @@ void MainWindow::createActions() {
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, &QAction::triggered, qApp, [&]() {
-        check_stopped_and_exec([&]() {
-            emit signal_close();
-            QCoreApplication::quit();
-        },
-                               nullptr);
+        emit signal_close();
+        QCoreApplication::quit();
     });
 }
 
@@ -268,39 +265,24 @@ string MainWindow::forge_outpath(string outFilePath) {
     return outFilePath;
 }
 
-void MainWindow::check_stopped_and_exec(function<void(void)> f, QCloseEvent *event) {
-    if (screenRecorder && screenRecorder.get()->getStatus() != RecordingStatus::stopped) {
-        QMessageBox::information(this, tr("Action forbidden"),
-                                 tr("The application is still recording.\n"
-                                    "Please stop the video recording before closing the application"));
-        if (event != nullptr) event->ignore();
-    } else {
-        f();
-    }
-}
-
 void MainWindow::closeEvent(QCloseEvent *event) {
 #ifdef Q_OS_MACOS
     if (!event->spontaneous() || !isVisible()) {
         return;
     }
 #endif
-    check_stopped_and_exec(
-        [this, event]() {
-            if (trayIcon->isVisible()) {
-                QMessageBox::information(this, tr("Systray"),
-                                         tr("The program will keep running in the "
-                                            "system tray. To terminate the program, "
-                                            "choose <b>Quit</b> in the context menu "
-                                            "of the system tray entry."));
-                hide();
-                event->ignore();
-            } else {
-                emit signal_close();
-                QCoreApplication::quit();
-            }
-        },
-        event);
+    if (trayIcon->isVisible()) {
+        QMessageBox::information(this, tr("Systray"),
+                                 tr("The program will keep running in the "
+                                    "system tray. To terminate the program, "
+                                    "choose <b>Quit</b> in the context menu "
+                                    "of the system tray entry."));
+        hide();
+        event->ignore();
+    } else {
+        emit signal_close();
+        QCoreApplication::quit();
+    }
 }
 
 void MainWindow::enable_or_disable_tabs(bool val) {
