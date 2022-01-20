@@ -581,8 +581,6 @@ void ScreenRecorder::getRawPackets() {
             avRawPkt = av_packet_alloc();
             value = av_read_frame(avFmtCtx, avRawPkt);
             if (value >= 0 && avRawPkt->size) {
-                //TODO: DELETE
-                //throw runtime_error(("Error in getting RawPacket" + to_string(value)).c_str());
                 unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
                 avRawPkt_queue.push(avRawPkt);
                 avRawPkt_queue_ul.unlock();
