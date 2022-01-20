@@ -508,8 +508,6 @@ void ScreenRecorder::initAudioSource() {
     AudioInputFormat = av_find_input_format("dshow");
     int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0) {
-        //cerr << "Error in opening input device (audio)" << endl;
-        //exit(-1);
         throw runtime_error(err_msg_baddevice_audio);
     }
 

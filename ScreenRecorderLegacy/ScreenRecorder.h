@@ -166,7 +166,6 @@ private:
     void audioEnd();
     void videoEnd();
     bool isVideoEnd();
-    void handler();
     void linuxVideoResume();
     void windowsResumeAudio();
     string statusToString();
