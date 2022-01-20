@@ -87,6 +87,9 @@ void ScreenRecorder::record() {
     error_queue_cv.wait(error_queue_ul, [&]() { return (!error_queue.empty() || terminated_threads == (vs.audioOn ? 3 : 2)); });
     if (!error_queue.empty()) {
         this->stopRecording();
+        if (vs.audioOn) {
+            audioEnd();
+        }
         string error_message = error_queue.front();
         error_queue.pop();
         while (!error_queue.empty()) {
@@ -504,8 +507,6 @@ void ScreenRecorder::initAudioSource() {
     AudioInputFormat = av_find_input_format("dshow");
     int value = avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
     if (value != 0) {
-        //cerr << "Error in opening input device (audio)" << endl;
-        //exit(-1);
         throw runtime_error(err_msg_baddevice_audio);
     }
 
@@ -655,11 +656,11 @@ void ScreenRecorder::decodeAndEncode() {
                             pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
                             pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vs.fps;
 
-                            write_lock.lock();
+                            unique_lock<mutex> write_lock_ul{write_lock};
                             if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
                                 throw runtime_error("Error in writing file");
                             }
-                            write_lock.unlock();
+                            write_lock_ul.unlock();
                             i++;
                         }
                     }
@@ -948,7 +949,7 @@ void ScreenRecorder::acquireAudio() {
                         av_packet_rescale_ts(outPacket, AudioCodecContextOut->time_base, avFmtCtxOut->streams[audioIndexOut]->time_base);
                         outPacket->stream_index = audioIndexOut;
 
-                        write_lock.lock();
+                        unique_lock<mutex> write_lock_ul{write_lock};
 #if defined _WIN32
                         if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
                             throw runtime_error("Error in writing audio frame");
@@ -964,7 +965,7 @@ void ScreenRecorder::acquireAudio() {
                             }
                         }
 #endif
-                        write_lock.unlock();
+                        write_lock_ul.unlock();
                         av_packet_unref(outPacket);
                     }
                     ret = 0;
