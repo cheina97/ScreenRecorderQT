@@ -135,3 +135,24 @@ In this case, it's possible to control the action of the application by pressing
     - Qt version: Qt 5.15.2 (mingw81_64)
     - CMake Tool: CMake 3.19.2 (Qt)
 - Finally, run the application using the green button. You will see GUI pop up.
+
+---
+
+## Mac OS
+
+### How to compile and run 
+
+#### Legacy application
+
+- Clone or Download the repository in a folder
+- Install the required libraries with Homebrew packet manager `brew install ffmpeg`
+- Open a new Terminal on `/ScreenRecorderLegacyMacOS/`folder
+- Execute the following command
+    - `cd build`
+    - `cmake ..`
+    - `make`
+- Make sure you are still in the build folder. Now you can lanch the `./main` executable file with the right options to start recording
+- `./main width height offset_x offset_y screen_num fps quality compression audioOn audioDevice outFilePath`
+- Example `./main 3600 2338 0 0 1 30 1 1 1 0 out.mp4`
+- You can find the `screen_num` value and `audioDevice` value by digiting from terminal the following command:
+- `ffmpeg -f avfoundation -list_devices true -i ""`
