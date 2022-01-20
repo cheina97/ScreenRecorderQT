@@ -118,7 +118,6 @@ void ScreenRecorder::audioEnd() {
 void ScreenRecorder::videoEnd() {
     lock_guard<mutex> lg(video_lock);
     video_end = true;
-    cout << video_end << endl;
     if (vs.audioOn) {
         cv_audio.notify_all();
     }
