@@ -30,3 +30,6 @@ add_executable(ScreenRecorderQT
 target_link_libraries(ScreenRecorderQT  
     Qt5::Widgets  Qt5::Multimedia 
     avcodec avcodec  avdevice avfilter avformat avutil postproc swresample swscale )
+
+
+add_subdirectory("example")
