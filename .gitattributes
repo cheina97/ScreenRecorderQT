@@ -1,3 +1,6 @@
-*.h linguist-language=C++
-lib/**/* linguist-vendored=false
-include/**/* linguist-vendored=false
+ScreenRecorderLegacy/include/** linguist-vendored
+ScreenRecorderLegacy/lib/** linguist-vendored
+ScreenRecorderLegacyMacOS/include/** linguist-vendored
+ScreenRecorderLegacyMacOS/lib/** linguist-vendored
+ScreenRecorderQT/include/** linguist-vendored
+ScreenRecorderQT/lib/** linguist-vendored
