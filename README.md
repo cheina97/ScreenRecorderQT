@@ -16,7 +16,7 @@ Project for the **PDS** course at the **"Politecnico di Torino"**
 
 ### Screen Recorder Library
 
-This is the **core** of the project. The library is composed by 2 main files **ScreenRecorder.ccp** and **ScreenRecorder.h**. It uses **ffmpeg** libraries to capture the frames (video and audio) , to elaborate them, and to save in a **.mp4** file. Those libraries are **avcodec**, **avdevice**, **avfilter**, **avformat** and **avutil**.
+This is the **core** of the project. The library is composed by 2 main files **ScreenRecorder.cpp** and **ScreenRecorder.h**. It uses **ffmpeg** libraries to capture the frames (video and audio) , to elaborate them, and to save in a **.mp4** file. Those libraries are **avcodec**, **avdevice**, **avfilter**, **avformat** and **avutil**.
 
 It uses **2 threads** for the **video** recording and an for the **audio**:
 
