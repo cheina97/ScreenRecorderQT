@@ -1,6 +1,7 @@
 #ifndef AREASELECTORBUTTONS_H
 #define AREASELECTORBUTTONS_H
 
+#include <QObject>
 #include <QPainter>
 #include <QPainterPath>
 

@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 
-#include <QAudioDeviceInfo>
 #include <QCloseEvent>
 #include <QDebug>
 #include <QDir>
@@ -164,19 +163,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->horizontalSlider->setMinimum(1);
     ui->horizontalSlider->setMaximum(7);
 
-    //options in the combobox
-#if defined _WIN32
-    const auto deviceInfos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
-    for (const QAudioDeviceInfo &deviceInfo : deviceInfos)
-        ui->comboBox->addItem(tr(deviceInfo.deviceName().toStdString().c_str()));
-        //deviceInfo.deviceName() is a QString but the addItem function needs a char*.
-        //there is no viable conversion from QString to char* so the conversion is: QString->std::string->char*
-#endif
-#if defined __linux__
+    //options in the combobox: enumerate input devices
+    //(DirectShow friendly names on Windows, ALSA hw ids on Linux) via getAudioDevices()
     for (auto &device : getAudioDevices()) {
         ui->comboBox->addItem(tr(device.c_str()));
     }
-#endif
 
     //default values for screen recorder object:
     alignValues();
