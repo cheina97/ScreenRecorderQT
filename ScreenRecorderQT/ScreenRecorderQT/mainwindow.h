@@ -45,6 +45,7 @@ class MainWindow : public QMainWindow {
     void on_horizontalSlider_sliderMoved(int position);
     void on_lineEditPath_textEdited(const QString &arg1);
     void on_comboBox_activated(const QString &arg1);
+    void slot_screenSelected(int index);
 
    signals:
     void signal_close();
@@ -68,6 +69,7 @@ class MainWindow : public QMainWindow {
     QAction *quitAction;
     bool minimizeInSysTray;
     QScreen *screen;
+    QComboBox *comboBoxScreen;
 
     void enable_or_disable_tabs(bool);
     void defaultButtonProperties();

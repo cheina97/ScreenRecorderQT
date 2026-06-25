@@ -29,6 +29,9 @@ public:
 
     QColor getFrameColor();
 
+    //choose which physical screen the selection overlay covers
+    void setScreen( QScreen *s );
+
 
 public slots:
     void slot_areaReset();

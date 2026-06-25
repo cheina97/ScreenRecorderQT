@@ -37,6 +37,7 @@ extern "C" {
 #include "libavutil/audio_fifo.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/channel_layout.h"
 #include "libswresample/swresample.h"
 #include "libswscale/swscale.h"
 }
@@ -121,14 +122,14 @@ private:
     AVCodecContext *avRawCodecCtx;
     AVCodecContext *avEncoderCtx;
     AVDictionary *avRawOptions;
-    AVCodec *avDecodec;
-    AVCodec *avEncodec;
+    const AVCodec *avDecodec;
+    const AVCodec *avEncodec;
     struct SwsContext *swsCtx;
     queue<AVPacket *> avRawPkt_queue;
     mutex avRawPkt_queue_mutex;
     int videoIndex;
     AVFrame *avYUVFrame;
-    AVOutputFormat *fmt;
+    const AVOutputFormat *fmt;
     AVStream *video_st;
     int64_t pts_offset;
 
@@ -137,7 +138,7 @@ private:
     AVFormatContext *FormatContextAudio;
     AVCodecContext *AudioCodecContextIn;
     AVCodecContext *AudioCodecContextOut;
-    AVInputFormat *AudioInputFormat;
+    const AVInputFormat *AudioInputFormat;
     const AVCodec *AudioCodecIn;
     const AVCodec *AudioCodecOut;
     AVAudioFifo *AudioFifoBuff;

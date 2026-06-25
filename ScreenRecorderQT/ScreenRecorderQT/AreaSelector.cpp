@@ -25,8 +25,11 @@ AreaSelector::AreaSelector()
                    Qt::ToolTip);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
+    screen = nullptr; // set via setScreen() before slot_init()
     hide(); // setVisibile(false);
 }
+
+void AreaSelector::setScreen(QScreen *s) { screen = s; }
 
 AreaSelector::~AreaSelector() {}
 
@@ -614,7 +617,8 @@ void AreaSelector::paintEvent(QPaintEvent *event) {
 // slots
 ////////////////////////////*/
 void AreaSelector::slot_init() {
-    screen = QGuiApplication::primaryScreen();
+    if (screen == nullptr)
+        screen = QGuiApplication::primaryScreen();
     resize(screen->size().width(), screen->size().height());
     screenWidth = screen->size().width();
     screenHeight = screen->size().height();
