@@ -4,7 +4,9 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileDialog>
+#include <QLabel>
 #include <QMenu>
+#include <QScreen>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
 #include <condition_variable>
@@ -30,15 +32,19 @@ void MainWindow::alignValues() {
     if (ui->pushButtonFullscreen->isChecked()) {
         rrs.width = screen->size().width();
         rrs.height = screen->size().height();
-        rrs.offset_x = 0;
-        rrs.offset_y = 0;
+        rrs.offset_x = screen->geometry().x();
+        rrs.offset_y = screen->geometry().y();
 
         rrs.screen_number = 0;
     } else {
         rrs.height = areaSelector->getHeight();
         rrs.width = areaSelector->getWidth();
-        rrs.offset_x = areaSelector->getX();
-        rrs.offset_y = areaSelector->getY();
+        // areaSelector coords are local to its screen; add the screen origin
+        // so gdigrab/x11grab "desktop" offsets land on the chosen monitor
+        rrs.offset_x = areaSelector->getX() + screen->geometry().x();
+        rrs.offset_y = areaSelector->getY() + screen->geometry().y();
+
+        rrs.screen_number = 0;
     }
 
     ///vs values
@@ -135,6 +141,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->lineEditPath->setText(QString::fromStdString(forge_outpath(QStandardPaths::writableLocation(QStandardPaths::MoviesLocation).toStdString())));
 
     areaSelector = new AreaSelector();
+
+    // monitor picker: list every screen, drive capture at the chosen one
+    comboBoxScreen = new QComboBox(this);
+    {
+        const auto screens = QGuiApplication::screens();
+        for (int i = 0; i < screens.size(); ++i) {
+            const QRect g = screens[i]->geometry();
+            comboBoxScreen->addItem(
+                QString("Screen %1: %2x%3 @ (%4,%5)")
+                    .arg(i + 1)
+                    .arg(g.width())
+                    .arg(g.height())
+                    .arg(g.x())
+                    .arg(g.y()));
+        }
+    }
+    ui->verticalLayout->addWidget(new QLabel(tr("Select monitor:"), this));
+    ui->verticalLayout->addWidget(comboBoxScreen);
+    areaSelector->setScreen(screen);
+    connect(comboBoxScreen, &QComboBox::currentIndexChanged, this,
+            &MainWindow::slot_screenSelected);
 
     setWindowTitle("Screen Recorder QT");
 
@@ -325,12 +352,27 @@ void MainWindow::on_pushButtonFullscreen_clicked() {
 
     rrs.width = screen->size().width();
     rrs.height = screen->size().height();
-    rrs.offset_x = 0;
-    rrs.offset_y = 0;
+    rrs.offset_x = screen->geometry().x();
+    rrs.offset_y = screen->geometry().y();
 
     qDebug() << "fullscreen: " << rrs.width << "x" << rrs.height;
 
     emit signal_show(false);
+}
+
+void MainWindow::slot_screenSelected(int index) {
+    const auto screens = QGuiApplication::screens();
+    if (index < 0 || index >= screens.size())
+        return;
+    screen = screens[index];
+    areaSelector->setScreen(screen);
+    areaSelector->slot_init();  // re-center the selection overlay on this screen
+    if (ui->pushButtonFullscreen->isChecked()) {
+        rrs.width = screen->size().width();
+        rrs.height = screen->size().height();
+        rrs.offset_x = screen->geometry().x();
+        rrs.offset_y = screen->geometry().y();
+    }
 }
 
 void MainWindow::on_toolButton_clicked() {
